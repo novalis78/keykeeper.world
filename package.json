@@ -21,7 +21,6 @@
   },
   "homepage": "https://github.com/novalis78/keykeeper.world#readme",
   "dependencies": {
-    "next": "^14.0.0",
     "@headlessui/react": "^2.2.2",
     "@heroicons/react": "^2.2.0",
     "bcryptjs": "^3.0.2",
