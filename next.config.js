@@ -2,7 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  output: 'export',  // Export as static HTML
   images: {
     unoptimized: true, // For static export
   },
