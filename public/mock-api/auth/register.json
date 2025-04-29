@@ -1,0 +1,8 @@
+{
+  "message": "Registration successful",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJrZXlJZCI6Im1vY2sta2V5LWZpbmdlcnByaW50IiwiaWF0IjoxNzE0NDYwMTI4LCJleHAiOjE3MTQ1NDY1MjgsImlzcyI6ImtleWtlZXBlci53b3JsZCJ9.JfEYLcyiCN2bqXp1Q5KGpgWI9Lh_3vN4zvLVr4RNb1A",
+  "user": {
+    "email": "user@example.com",
+    "name": "Test User"
+  }
+}

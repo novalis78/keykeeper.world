@@ -2,6 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  output: 'export',  // Add this line to export as static HTML
+  output: 'export',  // Export as static HTML
+  images: {
+    unoptimized: true, // For static export
+  },
+  skipTrailingSlashRedirect: true,
+  distDir: 'out',
 };
 module.exports = nextConfig;
