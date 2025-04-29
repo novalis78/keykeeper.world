@@ -11,7 +11,8 @@ import {
   UserCircleIcon,
   CogIcon,
   PlusIcon,
-  ArrowRightOnRectangleIcon
+  ArrowRightOnRectangleIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { LockClosedIcon } from '@heroicons/react/24/solid';
 
