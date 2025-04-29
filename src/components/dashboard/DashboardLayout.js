@@ -21,6 +21,7 @@ export default function DashboardLayout({ children }) {
   const navigation = [
     { name: 'Inbox', href: '/dashboard', icon: EnvelopeIcon, current: true },
     { name: 'Addresses', href: '/dashboard/addresses', icon: KeyIcon, current: false },
+    { name: 'Analytics', href: '/dashboard/analytics', icon: ArrowPathIcon, current: false },
     { name: 'Security', href: '/dashboard/security', icon: ShieldCheckIcon, current: false },
     { name: 'Profile', href: '/dashboard/profile', icon: UserCircleIcon, current: false },
     { name: 'Settings', href: '/dashboard/settings', icon: CogIcon, current: false },

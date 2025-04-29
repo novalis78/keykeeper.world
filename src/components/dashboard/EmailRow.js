@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { LockClosedIcon, PaperClipIcon } from '@heroicons/react/20/solid';
+import { LockClosedIcon, PaperClipIcon, StarIcon } from '@heroicons/react/20/solid';
+import { motion } from 'framer-motion';
 
-export default function EmailRow({ message, onClick }) {
+export default function EmailRow({ message, onClick, isSelected }) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isStarred, setIsStarred] = useState(false);
   
   const formattedDate = (dateString) => {
     const date = new Date(dateString);
@@ -19,34 +21,63 @@ export default function EmailRow({ message, onClick }) {
     }
   };
 
+  const handleStar = (e) => {
+    e.stopPropagation();
+    setIsStarred(!isStarred);
+  };
+
   return (
-    <div 
-      className={`${
-        message.read ? 'bg-white dark:bg-gray-800' : 'bg-primary-50 dark:bg-primary-900/20'
-      } flex items-center py-3 px-4 cursor-pointer border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors`}
+    <motion.div 
+      className={`
+        ${message.read ? 'bg-sidebar' : 'bg-sidebar/80 dark:bg-primary-900/10'}
+        ${isSelected ? 'bg-primary-700/20 border-l-4 border-primary-500' : 'border-l-4 border-transparent'}
+        flex items-center py-3 px-4 cursor-pointer border-b border-gray-700 
+        hover:bg-primary-900/20 transition-colors relative
+      `}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={onClick}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      whileHover={{ scale: 1.005 }}
     >
+      {/* Star icon */}
+      <div className="mr-3 flex-shrink-0">
+        <button 
+          onClick={handleStar}
+          className="focus:outline-none"
+        >
+          <StarIcon 
+            className={`h-5 w-5 ${isStarred ? 'text-yellow-400' : 'text-gray-500'} 
+              ${isHovered && !isStarred ? 'opacity-60' : 'opacity-100'}`} 
+          />
+        </button>
+      </div>
+
+      {/* Sender photo */}
+      <div className="mr-4 flex-shrink-0 hidden sm:block">
+        <div className="h-9 w-9 rounded-full bg-primary-600/30 flex items-center justify-center text-sm font-medium text-primary-400 uppercase">
+          {message.from.name.charAt(0)}
+        </div>
+      </div>
+      
       {/* Sender and subject */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center">
-          <p className={`text-sm font-medium truncate mr-2 ${message.read ? 'text-gray-900 dark:text-gray-200' : 'text-gray-900 dark:text-white'}`}>
+          <p className={`text-sm font-medium truncate mr-2 ${message.read ? 'text-gray-200' : 'text-white font-semibold'}`}>
             {message.from.name}
-            {message.encryptedBody && (
-              <LockClosedIcon className="inline ml-1.5 h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
-            )}
           </p>
-          <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">
-            {`<${message.from.email}>`}
-          </span>
           
-          {/* Labels */}
-          <div className="ml-2 hidden md:flex space-x-1">
+          {/* Email tags */}
+          <div className="ml-auto sm:ml-2 flex space-x-1">
             {message.labels?.map(label => (
               <span 
                 key={label} 
-                className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-800/40 px-2 py-0.5 text-xs font-medium text-primary-800 dark:text-primary-200"
+                className={`hidden sm:inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium 
+                ${label === 'important' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 
+                  label === 'alert' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' :
+                  'bg-primary-100 dark:bg-primary-800/40 text-primary-800 dark:text-primary-300'}`}
               >
                 {label}
               </span>
@@ -54,32 +85,39 @@ export default function EmailRow({ message, onClick }) {
           </div>
         </div>
         
-        <div className="flex items-center">
-          <p className="text-sm truncate mr-1 text-gray-700 dark:text-gray-300">
+        <div className="flex items-baseline">
+          <p className={`text-sm ${message.read ? 'text-gray-400' : 'text-gray-300'} mr-1`}>
             {message.subject}
           </p>
-          <span className="text-sm truncate text-gray-500 dark:text-gray-400">
+          
+          <p className="text-xs truncate text-gray-500">
             - {message.snippet}
-          </span>
+          </p>
         </div>
       </div>
       
-      {/* Metadata */}
+      {/* Indicators and time */}
       <div className="ml-4 flex-shrink-0 flex flex-col items-end space-y-1">
         <div className="flex items-center">
-          <span className="text-xs text-gray-500 dark:text-gray-400">
+          <span className={`text-xs ${message.read ? 'text-gray-500' : 'text-primary-400'}`}>
             {formattedDate(message.timestamp)}
           </span>
           
-          {message.attachments?.length > 0 && (
-            <PaperClipIcon className="ml-1.5 h-4 w-4 text-gray-400 dark:text-gray-500" />
-          )}
+          <div className="flex ml-2">
+            {message.encryptedBody && (
+              <LockClosedIcon className="h-4 w-4 text-primary-500" />
+            )}
+            
+            {message.attachments?.length > 0 && (
+              <PaperClipIcon className="ml-1 h-4 w-4 text-gray-400" />
+            )}
+          </div>
         </div>
         
-        <span className="text-xs text-gray-500 dark:text-gray-400">
+        <span className="text-xs text-gray-500">
           via {message.to.email.split('@')[0]}
         </span>
       </div>
-    </div>
+    </motion.div>
   );
 }
