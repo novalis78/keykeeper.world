@@ -32,64 +32,64 @@ export default function StatsCard({ stats, userProfile }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {/* Email Stats */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+      <div className="bg-sidebar shadow-sm rounded-lg p-6 border border-gray-700">
         <div className="flex items-center">
-          <div className="p-2 rounded-md bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+          <div className="p-2 rounded-md bg-primary-600/30 text-primary-400">
             <EnvelopeIcon className="h-6 w-6" />
           </div>
-          <h3 className="ml-3 text-lg font-medium text-gray-900 dark:text-white">Email Stats</h3>
+          <h3 className="ml-3 text-lg font-medium text-white">Email Stats</h3>
         </div>
         
         <div className="mt-6 space-y-4">
           <div className="flex justify-between">
-            <span className="text-gray-500 dark:text-gray-400">Emails Received</span>
-            <span className="font-medium text-gray-900 dark:text-white">{stats.emailsReceived}</span>
+            <span className="text-gray-400">Emails Received</span>
+            <span className="font-medium text-white">{stats.emailsReceived}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500 dark:text-gray-400">Emails Forwarded</span>
-            <span className="font-medium text-gray-900 dark:text-white">{stats.emailsForwarded}</span>
+            <span className="text-gray-400">Emails Forwarded</span>
+            <span className="font-medium text-white">{stats.emailsForwarded}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500 dark:text-gray-400">Emails Encrypted</span>
-            <span className="font-medium text-gray-900 dark:text-white">{stats.emailsEncrypted}</span>
+            <span className="text-gray-400">Emails Encrypted</span>
+            <span className="font-medium text-white">{stats.emailsEncrypted}</span>
           </div>
         </div>
       </div>
       
       {/* Address Stats */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+      <div className="bg-sidebar shadow-sm rounded-lg p-6 border border-gray-700">
         <div className="flex items-center">
-          <div className="p-2 rounded-md bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+          <div className="p-2 rounded-md bg-primary-600/30 text-primary-400">
             <KeyIcon className="h-6 w-6" />
           </div>
-          <h3 className="ml-3 text-lg font-medium text-gray-900 dark:text-white">Address Usage</h3>
+          <h3 className="ml-3 text-lg font-medium text-white">Address Usage</h3>
         </div>
         
         <div className="mt-6 space-y-4">
           <div className="flex justify-between">
-            <span className="text-gray-500 dark:text-gray-400">Active Addresses</span>
-            <span className="font-medium text-gray-900 dark:text-white">{stats.addressesActive}</span>
+            <span className="text-gray-400">Active Addresses</span>
+            <span className="font-medium text-white">{stats.addressesActive}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500 dark:text-gray-400">Expired Addresses</span>
-            <span className="font-medium text-gray-900 dark:text-white">{stats.addressesExpired}</span>
+            <span className="text-gray-400">Expired Addresses</span>
+            <span className="font-medium text-white">{stats.addressesExpired}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-gray-500 dark:text-gray-400">Address Quota</span>
-            <span className="font-medium text-gray-900 dark:text-white">
+            <span className="text-gray-400">Address Quota</span>
+            <span className="font-medium text-white">
               {userProfile.addressQuota.used}/{userProfile.addressQuota.total}
             </span>
           </div>
           
           {/* Progress bar */}
           <div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-1">
+            <div className="w-full bg-gray-700 rounded-full h-2.5 mb-1">
               <div 
-                className="bg-primary-600 h-2.5 rounded-full" 
+                className="bg-primary-500 h-2.5 rounded-full" 
                 style={{ width: `${addressPercentage}%` }}
               ></div>
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 text-right">
+            <div className="text-xs text-gray-400 text-right">
               {addressPercentage}% used
             </div>
           </div>
@@ -97,41 +97,41 @@ export default function StatsCard({ stats, userProfile }) {
       </div>
       
       {/* System Stats */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+      <div className="bg-sidebar shadow-sm rounded-lg p-6 border border-gray-700">
         <div className="flex items-center">
-          <div className="p-2 rounded-md bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+          <div className="p-2 rounded-md bg-primary-600/30 text-primary-400">
             <ShieldCheckIcon className="h-6 w-6" />
           </div>
-          <h3 className="ml-3 text-lg font-medium text-gray-900 dark:text-white">System Stats</h3>
+          <h3 className="ml-3 text-lg font-medium text-white">System Stats</h3>
         </div>
         
         <div className="mt-6 space-y-4">
           <div className="flex justify-between">
-            <span className="text-gray-500 dark:text-gray-400">Response Time</span>
-            <span className="font-medium text-gray-900 dark:text-white">{stats.averageResponseTime} ms</span>
+            <span className="text-gray-400">Response Time</span>
+            <span className="font-medium text-white">{stats.averageResponseTime} ms</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-500 dark:text-gray-400">Subscription</span>
-            <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
+            <span className="text-gray-400">Subscription</span>
+            <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary-600/30 text-primary-400">
               {userProfile.plan.charAt(0).toUpperCase() + userProfile.plan.slice(1)}
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-gray-500 dark:text-gray-400">Storage</span>
-            <span className="font-medium text-gray-900 dark:text-white">
+            <span className="text-gray-400">Storage</span>
+            <span className="font-medium text-white">
               {formatBytes(userProfile.storageQuota.used)}/{formatBytes(userProfile.storageQuota.total)}
             </span>
           </div>
           
           {/* Progress bar */}
           <div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-1">
+            <div className="w-full bg-gray-700 rounded-full h-2.5 mb-1">
               <div 
-                className="bg-primary-600 h-2.5 rounded-full" 
+                className="bg-primary-500 h-2.5 rounded-full" 
                 style={{ width: `${storagePercentage}%` }}
               ></div>
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 text-right">
+            <div className="text-xs text-gray-400 text-right">
               {storagePercentage}% used
             </div>
           </div>

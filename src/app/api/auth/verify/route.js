@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { verifyToken, getTokenFromHeader } from '../../../../lib/auth/jwt';
 
+// Fix for static export by setting dynamic mode
+export const dynamic = 'force-dynamic';
+
 /**
  * Verify a JWT token is valid
  */

@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { createToken } from '../../../../lib/auth/jwt';
 import { verifySignature } from '../../../../lib/auth/pgp';
 
+// Fix for static export by setting dynamic mode
+export const dynamic = 'force-dynamic';
+
 /**
  * Authenticate using PGP signature verification
  * 

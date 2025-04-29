@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createToken } from '../../../../lib/auth/jwt';
 
+// Fix for static export by setting dynamic mode
+export const dynamic = 'force-dynamic';
+
 /**
  * Register a new user with their PGP public key
  */

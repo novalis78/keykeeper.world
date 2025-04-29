@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { 
   ArrowLeftIcon, 
-  ReplyIcon, 
+  ArrowUturnLeftIcon, 
   ArchiveBoxIcon, 
   TrashIcon, 
   EyeIcon, 
@@ -45,7 +45,7 @@ export default function EmailDetail({ message, onBack }) {
               type="button"
               className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 dark:text-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
             >
-              <ReplyIcon className="h-4 w-4 mr-1.5" />
+              <ArrowUturnLeftIcon className="h-4 w-4 mr-1.5" />
               Reply
             </button>
             <button

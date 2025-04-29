@@ -28,8 +28,8 @@ export default function Dashboard() {
     <DashboardLayout>
       <div>
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+          <p className="mt-1 text-sm text-gray-400">
             Welcome to your secure email dashboard
           </p>
         </div>
@@ -40,10 +40,10 @@ export default function Dashboard() {
         </div>
         
         {/* Email Section */}
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-          <div className="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="bg-sidebar shadow rounded-lg overflow-hidden">
+          <div className="px-4 py-5 sm:px-6 border-b border-gray-700">
             <div className="flex flex-col sm:flex-row justify-between">
-              <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
+              <h3 className="text-lg font-medium leading-6 text-white">
                 {selectedEmail ? 'Email Detail' : 'Inbox'}
               </h3>
               
@@ -57,21 +57,21 @@ export default function Dashboard() {
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white dark:bg-gray-700 dark:border-gray-600 placeholder-gray-500 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm dark:text-white"
+                      className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md leading-5 bg-dashboard placeholder-gray-500 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm text-white"
                       placeholder="Search emails"
                     />
                   </div>
                   
                   <button 
                     type="button"
-                    className="ml-3 inline-flex items-center p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none"
+                    className="ml-3 inline-flex items-center p-2 border border-gray-700 rounded-md shadow-sm text-sm font-medium text-white bg-sidebar hover:bg-dashboard focus:outline-none"
                   >
                     <FunnelIcon className="h-5 w-5" />
                   </button>
                   
                   <button 
                     type="button"
-                    className="ml-3 inline-flex items-center p-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none"
+                    className="ml-3 inline-flex items-center p-2 border border-gray-700 rounded-md shadow-sm text-sm font-medium text-white bg-sidebar hover:bg-dashboard focus:outline-none"
                   >
                     <ArrowPathIcon className="h-5 w-5" />
                   </button>
