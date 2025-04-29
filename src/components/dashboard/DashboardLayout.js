@@ -27,11 +27,11 @@ export default function DashboardLayout({ children }) {
   ];
 
   return (
-    <div className="min-h-screen bg-dashboard">
+    <div className="flex h-screen bg-dashboard overflow-hidden">
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 bg-gray-900/80 z-40 md:hidden ${sidebarOpen ? 'block' : 'hidden'}`} onClick={() => setSidebarOpen(false)} />
 
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-sidebar shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:z-0`}>
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-sidebar shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:z-0 flex-shrink-0`}>
         <div className="flex justify-between items-center h-16 px-4 border-b border-gray-700">
           <Link href="/dashboard" className="flex items-center space-x-2">
             <LockClosedIcon className="h-7 w-7 text-primary-500" />
@@ -89,7 +89,7 @@ export default function DashboardLayout({ children }) {
       </div>
 
       {/* Main content */}
-      <div className="flex flex-col md:pl-64">
+      <div className="flex flex-col flex-1 overflow-auto">
         {/* Top header */}
         <header className="sticky top-0 z-10 bg-dashboard shadow-sm">
           <div className="flex items-center justify-between h-16 px-4">
