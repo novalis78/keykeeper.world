@@ -5,10 +5,8 @@
  * including key generation, challenge signing, and verification.
  */
 
-// In a production environment, we would import a proper PGP library
-// import * as openpgp from 'openpgp';
+import * as openpgp from 'openpgp';
 
-// Mock implementations for development
 const pgpUtils = {
   /**
    * Generate a new PGP key pair
@@ -20,28 +18,37 @@ const pgpUtils = {
   generateKey: async (name, email, options = {}) => {
     console.log(`Generating PGP key for ${name} <${email}>`);
     
-    // In production, this would use openpgp.generateKey()
-    // For now, simulate key generation with a delay
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Generate hex key ID in standard 8-character format
-        const keyId = Array.from({ length: 8 }, () => 
-          Math.floor(Math.random() * 16).toString(16)
-        ).join('').toUpperCase();
-        
-        // Generate fingerprint in standard 40-character format
-        const fingerprint = Array.from({ length: 40 }, () => 
-          Math.floor(Math.random() * 16).toString(16)
-        ).join('').toUpperCase();
-        
-        resolve({
-          publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----\nVersion: KeyKeeper v1.0\n\nmQINBGW${keyId}...\n-----END PGP PUBLIC KEY BLOCK-----`,
-          privateKey: `-----BEGIN PGP PRIVATE KEY BLOCK-----\nVersion: KeyKeeper v1.0\n\nlQdGBGW${keyId}...\n-----END PGP PRIVATE KEY BLOCK-----`,
-          keyId: keyId,
-          fingerprint: fingerprint,
-        });
-      }, 1500);
-    });
+    try {
+      // Configure key generation parameters
+      const config = {
+        type: options.type || 'ecc', // Use ECC keys by default (curve25519)
+        curve: options.curve || 'curve25519', // Modern, secure, smaller keys
+        userIDs: [{ name, email }],
+        format: 'armored', // ASCII armor format
+        passphrase: options.passphrase || '', // Optional passphrase protection
+        keyExpirationTime: options.keyExpirationTime || 0, // Default: never expire
+      };
+      
+      // Generate actual PGP key pair
+      const { privateKey, publicKey, revocationCertificate } = 
+        await openpgp.generateKey(config);
+      
+      // Read key details for ID and fingerprint
+      const publicKeyObj = await openpgp.readKey({ armoredKey: publicKey });
+      const keyId = publicKeyObj.getKeyID().toHex().toUpperCase();
+      const fingerprint = publicKeyObj.getFingerprint().toUpperCase();
+      
+      return {
+        publicKey,
+        privateKey,
+        revocationCertificate,
+        keyId,
+        fingerprint
+      };
+    } catch (error) {
+      console.error('Error generating PGP key:', error);
+      throw new Error('Failed to generate PGP key: ' + error.message);
+    }
   },
   
   /**
@@ -65,13 +72,28 @@ const pgpUtils = {
   signChallenge: async (challenge, privateKey, passphrase = '') => {
     console.log('Signing challenge with private key');
     
-    // In production, this would use openpgp.sign()
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Mock signature
-        resolve(`-----BEGIN PGP SIGNATURE-----\nVersion: KeyKeeper v1.0\n\niQIzBAEBCAAdFiEE...\n-----END PGP SIGNATURE-----`);
-      }, 800);
-    });
+    try {
+      // Parse the private key
+      const privateKeyObj = await openpgp.readPrivateKey({
+        armoredKey: privateKey,
+        passphrase
+      });
+      
+      // Create a message from the challenge
+      const message = await openpgp.createMessage({ text: challenge });
+      
+      // Sign the message
+      const signature = await openpgp.sign({
+        message,
+        signingKeys: privateKeyObj,
+        detached: true
+      });
+      
+      return signature;
+    } catch (error) {
+      console.error('Error signing challenge:', error);
+      throw new Error('Failed to sign challenge: ' + error.message);
+    }
   },
   
   /**
@@ -84,13 +106,32 @@ const pgpUtils = {
   verifySignature: async (challenge, signature, publicKey) => {
     console.log('Verifying signature against public key');
     
-    // In production, this would use openpgp.verify()
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Mock verification (randomly fail 5% of the time for testing)
-        resolve(Math.random() > 0.05);
-      }, 600);
-    });
+    try {
+      // Parse the public key
+      const publicKeyObj = await openpgp.readKey({ armoredKey: publicKey });
+      
+      // Parse the signature
+      const signatureObj = await openpgp.readSignature({
+        armoredSignature: signature
+      });
+      
+      // Create a message from the challenge
+      const message = await openpgp.createMessage({ text: challenge });
+      
+      // Verify the signature
+      const verificationResult = await openpgp.verify({
+        message,
+        signature: signatureObj,
+        verificationKeys: publicKeyObj
+      });
+      
+      // Check the verification result
+      const { valid } = verificationResult.signatures[0];
+      return valid;
+    } catch (error) {
+      console.error('Error verifying signature:', error);
+      return false;
+    }
   },
   
   /**
@@ -99,15 +140,67 @@ const pgpUtils = {
    * @returns {Promise<Object>} - Key information (id, fingerprint, etc)
    */
   getKeyInfo: async (publicKey) => {
-    // In production, this would parse the key using openpgp.readKey()
-    return {
-      keyId: publicKey.substring(100, 108),
-      fingerprint: publicKey.substring(100, 140),
-      algorithm: 'RSA',
-      bits: 4096,
-      created: new Date(),
-      expires: null,
-    };
+    try {
+      // Parse the public key
+      const publicKeyObj = await openpgp.readKey({ armoredKey: publicKey });
+      
+      // Extract primary key details
+      const primaryKey = publicKeyObj.keyPacket;
+      const keyId = publicKeyObj.getKeyID().toHex().toUpperCase();
+      const fingerprint = publicKeyObj.getFingerprint().toUpperCase();
+      const created = primaryKey.created;
+      
+      // Determine algorithm and bits
+      let algorithm = 'Unknown';
+      let bits = null;
+      
+      if (primaryKey.algorithm) {
+        // Map algorithm ID to string
+        const algoMap = {
+          1: 'RSA',
+          2: 'RSA',
+          3: 'RSA',
+          16: 'ElGamal',
+          17: 'DSA',
+          18: 'ECDH',
+          19: 'ECDSA',
+          22: 'EdDSA'
+        };
+        algorithm = algoMap[primaryKey.algorithm] || `Algorithm ${primaryKey.algorithm}`;
+        
+        // Get key strength info
+        if (primaryKey.getBitSize) {
+          bits = primaryKey.getBitSize();
+        } else if (primaryKey.keySize) {
+          bits = primaryKey.keySize;
+        } else if (primaryKey.curve) {
+          bits = primaryKey.curve;
+        }
+      }
+      
+      // Check expiration
+      const expirationTime = await publicKeyObj.getExpirationTime();
+      const expires = expirationTime !== Infinity ? expirationTime : null;
+      
+      // Get user IDs
+      const userIds = publicKeyObj.users.map(user => {
+        const { name, email } = user.userID.userID;
+        return { name, email };
+      });
+      
+      return {
+        keyId,
+        fingerprint,
+        algorithm,
+        bits,
+        created,
+        expires,
+        userIds
+      };
+    } catch (error) {
+      console.error('Error getting key info:', error);
+      throw new Error('Failed to parse PGP key information');
+    }
   },
   
   /**
@@ -145,13 +238,24 @@ const pgpUtils = {
   encryptMessage: async (message, publicKey) => {
     console.log('Encrypting message with public key');
     
-    // In production, this would use openpgp.encrypt()
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Mock encrypted message
-        resolve(`-----BEGIN PGP MESSAGE-----\nVersion: KeyKeeper v1.0\n\nhQIMA...\n-----END PGP MESSAGE-----`);
-      }, 700);
-    });
+    try {
+      // Parse the public key
+      const publicKeyObj = await openpgp.readKey({ armoredKey: publicKey });
+      
+      // Create a message object from the plaintext
+      const messageObj = await openpgp.createMessage({ text: message });
+      
+      // Encrypt the message
+      const encrypted = await openpgp.encrypt({
+        message: messageObj,
+        encryptionKeys: publicKeyObj
+      });
+      
+      return encrypted;
+    } catch (error) {
+      console.error('Error encrypting message:', error);
+      throw new Error('Failed to encrypt message: ' + error.message);
+    }
   },
   
   /**
@@ -164,13 +268,29 @@ const pgpUtils = {
   decryptMessage: async (encryptedMessage, privateKey, passphrase = '') => {
     console.log('Decrypting message with private key');
     
-    // In production, this would use openpgp.decrypt()
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Mock decryption
-        resolve('This is the decrypted content of the message.');
-      }, 900);
-    });
+    try {
+      // Parse the private key
+      const privateKeyObj = await openpgp.readPrivateKey({
+        armoredKey: privateKey,
+        passphrase
+      });
+      
+      // Parse the encrypted message
+      const message = await openpgp.readMessage({
+        armoredMessage: encryptedMessage
+      });
+      
+      // Decrypt the message
+      const { data: decrypted } = await openpgp.decrypt({
+        message,
+        decryptionKeys: privateKeyObj
+      });
+      
+      return decrypted;
+    } catch (error) {
+      console.error('Error decrypting message:', error);
+      throw new Error('Failed to decrypt message: ' + error.message);
+    }
   }
 };
 
