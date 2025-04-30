@@ -18,7 +18,7 @@ import crypto from 'crypto';
 
 // Configuration - in production, these would come from environment variables
 const SMTP_CONFIG = {
-  host: 'mail.keykeeper.world',
+  host: process.env.MAIL_HOST || '172.17.0.1', // Use Docker bridge IP for connecting from inside container
   port: 587,
   secure: false, // true for 465, false for other ports
   auth: {
@@ -28,7 +28,7 @@ const SMTP_CONFIG = {
 };
 
 const IMAP_CONFIG = {
-  host: 'mail.keykeeper.world',
+  host: process.env.MAIL_HOST || '172.17.0.1', // Use Docker bridge IP for connecting from inside container
   port: 993,
   secure: true,
   auth: {
