@@ -15,7 +15,15 @@ export async function GET(request) {
     return NextResponse.json({
       success: true,
       message: 'Database connection successful',
-      details: result
+      details: result,
+      environment: {
+        NODE_ENV: process.env.NODE_ENV,
+        isConnected: db.isConnected(),
+        uptime: process.uptime(),
+        memoryUsage: process.memoryUsage(),
+        platform: process.platform,
+        nodeVersion: process.version
+      }
     }, { status: 200 });
     
   } catch (error) {

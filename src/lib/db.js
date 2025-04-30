@@ -411,12 +411,25 @@ export const activityLogs = {
   }
 };
 
-export default {
+// Export the database library with a version marker
+// that can be used to verify which version of the code is running
+const dbInterface = {
   query,
   generateUuid,
   users,
   challenges,
   sessions,
   activityLogs,
-  isConnected: () => !!pool
+  isConnected: () => !!pool,
+  test: {
+    version: '2.0.1',
+    initialized: new Date().toISOString(),
+    poolCreated: !!pool
+  }
 };
+
+// Log database connection status on startup
+console.log(`Database module loaded - connection status: ${dbInterface.isConnected() ? 'CONNECTED' : 'NOT CONNECTED'}`);
+console.log(`Database version: ${dbInterface.test.version}, initialized at: ${dbInterface.test.initialized}`);
+
+export default dbInterface;

@@ -8,13 +8,38 @@ import validation from '@/lib/utils/validation';
  * This endpoint receives a new user's information and PGP public key,
  * validates the information, and creates a new user account in the database.
  */
+// Set dynamic mode to ensure this is handled server-side
+export const dynamic = 'force-dynamic';
+
+// Add a version identifier to track which code version is running
+const VERSION = 'v2.0.1';
+
 export async function POST(request) {
+  console.log(`[Register API ${VERSION}] Registration request received`);
+  
+  // Check if database connection is available first
+  if (!db.isConnected()) {
+    console.error('[Register API] Database connection not available!');
+    return NextResponse.json(
+      { 
+        error: 'Database connection not available',
+        version: VERSION,
+        timestamp: new Date().toISOString()
+      },
+      { status: 503 }
+    );
+  }
+  
+  console.log('[Register API] Database connection confirmed available');
+  
   try {
     // Parse request body
     const body = await request.json();
+    console.log('[Register API] Request body parsed');
     
     // Extract required fields
     const { email, name, publicKey, keyId, fingerprint, authMethod } = body;
+    console.log(`[Register API] Processing registration for: ${email}`);
     
     // Validate required fields
     if (!email || !publicKey || !keyId || !fingerprint || !authMethod) {
@@ -66,61 +91,132 @@ export async function POST(request) {
     }
     
     // Check if user already exists
-    const existingUser = await db.users.findByEmail(email);
-    if (existingUser) {
+    console.log(`[Register API] Checking if email exists: ${email}`);
+    try {
+      const existingUser = await db.users.findByEmail(email);
+      console.log(`[Register API] Email check result:`, existingUser ? 'found' : 'not found');
+      
+      if (existingUser) {
+        return NextResponse.json(
+          { error: 'User with this email already exists' },
+          { status: 409 }
+        );
+      }
+    } catch (dbError) {
+      console.error('[Register API] Error checking email:', dbError);
       return NextResponse.json(
-        { error: 'User with this email already exists' },
-        { status: 409 }
+        { 
+          error: 'Database error while checking email', 
+          details: {
+            message: dbError.message,
+            code: dbError.code
+          },
+          version: VERSION
+        },
+        { status: 500 }
       );
     }
     
     // Check if fingerprint is already in use
-    const existingFingerprint = await db.users.findByFingerprint(fingerprint);
-    if (existingFingerprint) {
+    console.log(`[Register API] Checking if fingerprint exists: ${fingerprint.substring(0, 8)}...`);
+    try {
+      const existingFingerprint = await db.users.findByFingerprint(fingerprint);
+      console.log(`[Register API] Fingerprint check result:`, existingFingerprint ? 'found' : 'not found');
+      
+      if (existingFingerprint) {
+        return NextResponse.json(
+          { error: 'PGP key fingerprint already registered to another account' },
+          { status: 409 }
+        );
+      }
+    } catch (dbError) {
+      console.error('[Register API] Error checking fingerprint:', dbError);
       return NextResponse.json(
-        { error: 'PGP key fingerprint already registered to another account' },
-        { status: 409 }
+        { 
+          error: 'Database error while checking fingerprint', 
+          details: {
+            message: dbError.message,
+            code: dbError.code
+          },
+          version: VERSION
+        },
+        { status: 500 }
       );
     }
     
     // Create new user
-    const userId = await db.users.create({
-      email,
-      name: name || null,
-      publicKey,
-      keyId,
-      fingerprint,
-      authMethod: sanitizedAuthMethod,
-      // Default to 'pending' until email verification
-      status: 'pending'
-    });
+    console.log(`[Register API] Creating new user in database`);
+    let userId;
+    try {
+      userId = await db.users.create({
+        email,
+        name: name || null,
+        publicKey,
+        keyId,
+        fingerprint,
+        authMethod: sanitizedAuthMethod,
+        // Default to 'pending' until email verification
+        status: 'pending'
+      });
+      console.log(`[Register API] User created with ID: ${userId}`);
+    } catch (dbError) {
+      console.error('[Register API] Error creating user:', dbError);
+      return NextResponse.json(
+        { 
+          error: 'Database error while creating user', 
+          details: {
+            message: dbError.message,
+            code: dbError.code
+          },
+          version: VERSION
+        },
+        { status: 500 }
+      );
+    }
     
     // Log user registration
-    await db.activityLogs.create(userId, 'user_registration', {
-      ipAddress: request.headers.get('x-forwarded-for') || request.ip,
-      details: {
-        email,
-        keyId,
-        authMethod: sanitizedAuthMethod
-      }
-    });
+    console.log(`[Register API] Logging user registration activity`);
+    try {
+      await db.activityLogs.create(userId, 'user_registration', {
+        ipAddress: request.headers.get('x-forwarded-for') || request.ip,
+        details: {
+          email,
+          keyId,
+          authMethod: sanitizedAuthMethod
+        }
+      });
+      console.log(`[Register API] Registration activity logged`);
+    } catch (logError) {
+      // Non-fatal error - just log it and continue
+      console.error('[Register API] Error logging activity:', logError);
+    }
     
     // Return success response
+    console.log(`[Register API] Registration successful for: ${email}`);
     return NextResponse.json(
       { 
         success: true, 
         message: 'User registered successfully',
         userId,
-        status: 'pending'
+        status: 'pending',
+        version: VERSION
       },
       { status: 201 }
     );
     
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('[Register API] General registration error:', error);
     
     return NextResponse.json(
-      { error: 'Server error during registration' },
+      { 
+        error: 'Server error during registration', 
+        details: {
+          message: error.message,
+          code: error.code,
+          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        },
+        version: VERSION
+      },
       { status: 500 }
     );
   }
