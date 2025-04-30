@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createToken } from '../../../../lib/auth/jwt';
-import { verifySignature } from '../../../../lib/auth/pgp';
+import jwt from '@/lib/auth/jwt';
+import pgpUtils from '@/lib/auth/pgp';
 
 // Fix for static export by setting dynamic mode
 export const dynamic = 'force-dynamic';
@@ -27,7 +27,7 @@ export async function POST(request) {
     }
     
     // Verify the PGP signature against the public key
-    const isValid = await verifySignature(challenge, signature, publicKey);
+    const isValid = await pgpUtils.verifySignature(challenge, signature, publicKey);
     
     if (!isValid) {
       return NextResponse.json(
@@ -40,7 +40,7 @@ export async function POST(request) {
     // a registered user in our database
     
     // Generate JWT token
-    const token = await createToken({
+    const token = await jwt.generateToken({
       email,
       // Store a fingerprint or hash of the public key for reference
       keyId: 'mock-key-fingerprint', // In a real app, we'd compute this

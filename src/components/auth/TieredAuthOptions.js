@@ -31,7 +31,7 @@ export default function TieredAuthOptions({ onOptionSelect }) {
       description: 'Store your key in a password manager like Bitwarden or 1Password for better security.',
       securityLevel: 'Recommended',
       icon: KeyIcon,
-      details: 'We'll guide you through saving your key in your password manager for convenient and secure access.',
+      details: 'We will guide you through saving your key in your password manager for convenient and secure access.',
       recommended: true,
       buttonText: 'Use Password Manager',
       tier: 2
