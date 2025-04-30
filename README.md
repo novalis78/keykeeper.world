@@ -36,6 +36,26 @@ Built using modern, auditable technologies:
 - **Frontend**: Minimal Next.js interface for account management
 - **Security**: Open source codebase for transparency and community validation
 
+### Zero-Knowledge Architecture
+
+KeyKeeper employs a true zero-knowledge architecture:
+
+#### Server-Side (Everything Encrypted)
+- All email content is stored fully encrypted on our servers
+- Our systems only see encrypted data blobs, never plaintext content
+- Your private key is never transmitted to or stored on our servers
+- We only store your public key for verification and encryption
+- Even email metadata is minimized and obscured where possible
+
+#### Client-Side (Where Decryption Happens)
+- Decryption occurs exclusively in your browser or desktop client
+- Your private key remains on your device (or secured in your hardware key)
+- Email content is decrypted only after secure transmission to your device
+- Search functionality runs locally on decrypted content, not server-side
+- Composition and replies are encrypted on your device before transmission
+
+This architecture ensures that even if our servers were compromised, attackers would only access encrypted data they couldn't read. We simply cannot access your messages, even if compelled to do so.
+
 ## Why KeyKeeper?
 
 Unlike traditional email providers, KeyKeeper.world:
