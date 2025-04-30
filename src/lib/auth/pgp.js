@@ -1,108 +1,169 @@
 /**
- * PGP utility functions for key verification and message encryption/decryption
- * Note: This is a placeholder module with example functions.
- * Actual implementation would use a PGP library like openpgp.js
+ * PGP Authentication Utilities
+ * 
+ * This module provides utilities for PGP-based authentication in KeyKeeper.world,
+ * including key generation, challenge signing, and verification.
  */
 
-/**
- * Verifies a PGP signature against a public key
- * @param {string} message - The message that was signed
- * @param {string} signature - PGP signature as ASCII armored text
- * @param {string} publicKey - PGP public key as ASCII armored text
- * @returns {Promise<boolean>} - True if signature is valid
- */
-export async function verifySignature(message, signature, publicKey) {
-  // Placeholder - in real implementation would use openpgp.js
-  console.log('Verifying signature with PGP');
-  // Example implementation would look like:
-  //
-  // const verified = await openpgp.verify({
-  //   message: await openpgp.createMessage({ text: message }),
-  //   signature: await openpgp.readSignature({ armoredSignature: signature }),
-  //   verificationKeys: await openpgp.readKey({ armoredKey: publicKey })
-  // });
-  // return verified.signatures[0].verified;
+// In a production environment, we would import a proper PGP library
+// import * as openpgp from 'openpgp';
+
+// Mock implementations for development
+const pgpUtils = {
+  /**
+   * Generate a new PGP key pair
+   * @param {string} name - User's name
+   * @param {string} email - User's email
+   * @param {Object} options - Key generation options
+   * @returns {Promise<Object>} - Object containing public and private keys
+   */
+  generateKey: async (name, email, options = {}) => {
+    console.log(`Generating PGP key for ${name} <${email}>`);
+    
+    // In production, this would use openpgp.generateKey()
+    // For now, simulate key generation with a delay
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Mock key generation with random IDs
+        const keyId = Math.random().toString(36).substring(2, 15);
+        resolve({
+          publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----\nVersion: KeyKeeper v1.0\n\nmQINBGW${keyId}...\n-----END PGP PUBLIC KEY BLOCK-----`,
+          privateKey: `-----BEGIN PGP PRIVATE KEY BLOCK-----\nVersion: KeyKeeper v1.0\n\nlQdGBGW${keyId}...\n-----END PGP PRIVATE KEY BLOCK-----`,
+          keyId: keyId,
+          fingerprint: `${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+        });
+      }, 1500);
+    });
+  },
   
-  return true; // Mock success for placeholder
-}
-
-/**
- * Encrypts a message for a recipient using their public key
- * @param {string} message - Plain text message to encrypt
- * @param {string} publicKey - Recipient's PGP public key as ASCII armored text
- * @returns {Promise<string>} - PGP encrypted message as ASCII armored text
- */
-export async function encryptMessage(message, publicKey) {
-  // Placeholder - in real implementation would use openpgp.js
-  console.log('Encrypting message with PGP');
-  // Example implementation would look like:
-  //
-  // const encrypted = await openpgp.encrypt({
-  //   message: await openpgp.createMessage({ text: message }),
-  //   encryptionKeys: await openpgp.readKey({ armoredKey: publicKey })
-  // });
-  // return encrypted;
+  /**
+   * Generate a challenge for authentication
+   * @returns {string} - Random challenge string
+   */
+  generateChallenge: () => {
+    // Generate a random challenge string
+    const random = new Uint8Array(32);
+    window.crypto.getRandomValues(random);
+    return Array.from(random).map(b => b.toString(16).padStart(2, '0')).join('');
+  },
   
-  return `-----BEGIN PGP MESSAGE-----
-Version: Example 1.0.0
-
-[Encrypted data would be here]
------END PGP MESSAGE-----`; // Mock result
-}
-
-/**
- * Decrypts a PGP encrypted message using a private key
- * @param {string} encryptedMessage - PGP encrypted message as ASCII armored text
- * @param {string} privateKey - PGP private key as ASCII armored text
- * @param {string} passphrase - Passphrase for the private key
- * @returns {Promise<string>} - Decrypted plain text message
- */
-export async function decryptMessage(encryptedMessage, privateKey, passphrase) {
-  // Placeholder - in real implementation would use openpgp.js
-  console.log('Decrypting message with PGP');
-  // Example implementation would look like:
-  //
-  // const { keys: [privateKey] } = await openpgp.key.readArmored(privateKeyArmored);
-  // await privateKey.decrypt(passphrase);
-  // 
-  // const { data: decrypted } = await openpgp.decrypt({
-  //   message: await openpgp.message.readArmored(encryptedMessage),
-  //   privateKeys: [privateKey]
-  // });
-  // return decrypted;
+  /**
+   * Sign a challenge with a private key
+   * @param {string} challenge - Challenge to sign
+   * @param {string} privateKey - User's private key
+   * @param {string} passphrase - Optional passphrase for private key
+   * @returns {Promise<string>} - Signed challenge
+   */
+  signChallenge: async (challenge, privateKey, passphrase = '') => {
+    console.log('Signing challenge with private key');
+    
+    // In production, this would use openpgp.sign()
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Mock signature
+        resolve(`-----BEGIN PGP SIGNATURE-----\nVersion: KeyKeeper v1.0\n\niQIzBAEBCAAdFiEE...\n-----END PGP SIGNATURE-----`);
+      }, 800);
+    });
+  },
   
-  return 'This is a decrypted message'; // Mock result
-}
-
-/**
- * Generates a new PGP key pair
- * @param {string} name - User's name
- * @param {string} email - User's email address
- * @param {string} passphrase - Passphrase to protect the private key
- * @returns {Promise<Object>} - Object containing public and private keys
- */
-export async function generateKeyPair(name, email, passphrase) {
-  // Placeholder - in real implementation would use openpgp.js
-  console.log('Generating PGP key pair');
-  // Example implementation would look like:
-  //
-  // const { key, privateKeyArmored, publicKeyArmored } = await openpgp.generateKey({
-  //   type: 'rsa',
-  //   rsaBits: 4096,
-  //   userIDs: [{ name, email }],
-  //   passphrase
-  // });
+  /**
+   * Verify a signed challenge
+   * @param {string} challenge - Original challenge
+   * @param {string} signature - Signed challenge
+   * @param {string} publicKey - User's public key
+   * @returns {Promise<boolean>} - Whether signature is valid
+   */
+  verifySignature: async (challenge, signature, publicKey) => {
+    console.log('Verifying signature against public key');
+    
+    // In production, this would use openpgp.verify()
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Mock verification (randomly fail 5% of the time for testing)
+        resolve(Math.random() > 0.05);
+      }, 600);
+    });
+  },
   
-  return {
-    publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----
-Version: Example 1.0.0
+  /**
+   * Extract key information
+   * @param {string} publicKey - PGP public key
+   * @returns {Promise<Object>} - Key information (id, fingerprint, etc)
+   */
+  getKeyInfo: async (publicKey) => {
+    // In production, this would parse the key using openpgp.readKey()
+    return {
+      keyId: publicKey.substring(100, 108),
+      fingerprint: publicKey.substring(100, 140),
+      algorithm: 'RSA',
+      bits: 4096,
+      created: new Date(),
+      expires: null,
+    };
+  },
+  
+  /**
+   * Check if WebAuthn/FIDO2 is supported (for hardware security keys)
+   * @returns {boolean} - Whether WebAuthn is supported
+   */
+  isWebAuthnSupported: () => {
+    return typeof window !== 'undefined' && 
+           window.PublicKeyCredential !== undefined;
+  },
+  
+  /**
+   * Check if a hardware security key is available
+   * @returns {Promise<boolean>} - Whether a compatible device is available
+   */
+  isSecurityKeyAvailable: async () => {
+    if (!pgpUtils.isWebAuthnSupported()) {
+      return false;
+    }
+    
+    try {
+      return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    } catch (error) {
+      console.error('Error checking for security key:', error);
+      return false;
+    }
+  },
+  
+  /**
+   * Encrypt a message using a recipient's public key
+   * @param {string} message - Message to encrypt
+   * @param {string} publicKey - Recipient's public key
+   * @returns {Promise<string>} - Encrypted message
+   */
+  encryptMessage: async (message, publicKey) => {
+    console.log('Encrypting message with public key');
+    
+    // In production, this would use openpgp.encrypt()
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Mock encrypted message
+        resolve(`-----BEGIN PGP MESSAGE-----\nVersion: KeyKeeper v1.0\n\nhQIMA...\n-----END PGP MESSAGE-----`);
+      }, 700);
+    });
+  },
+  
+  /**
+   * Decrypt a message using the user's private key
+   * @param {string} encryptedMessage - Encrypted message
+   * @param {string} privateKey - User's private key
+   * @param {string} passphrase - Optional passphrase for private key
+   * @returns {Promise<string>} - Decrypted message
+   */
+  decryptMessage: async (encryptedMessage, privateKey, passphrase = '') => {
+    console.log('Decrypting message with private key');
+    
+    // In production, this would use openpgp.decrypt()
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Mock decryption
+        resolve('This is the decrypted content of the message.');
+      }, 900);
+    });
+  }
+};
 
-[Public key would be here]
------END PGP PUBLIC KEY BLOCK-----`,
-    privateKey: `-----BEGIN PGP PRIVATE KEY BLOCK-----
-Version: Example 1.0.0
-
-[Private key would be here]
------END PGP PRIVATE KEY BLOCK-----`
-  }; // Mock result
-}
+export default pgpUtils;
