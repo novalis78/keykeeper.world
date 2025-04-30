@@ -1,69 +1,126 @@
 import { NextResponse } from 'next/server';
-import { createToken } from '../../../../lib/auth/jwt';
-
-// Fix for static export by setting dynamic mode
-export const dynamic = 'force-dynamic';
+import db from '@/lib/db';
+import validation from '@/lib/utils/validation';
 
 /**
- * Register a new user with their PGP public key
+ * User registration API endpoint
+ * 
+ * This endpoint receives a new user's information and PGP public key,
+ * validates the information, and creates a new user account in the database.
  */
 export async function POST(request) {
   try {
     // Parse request body
-    const { email, publicKey, name } = await request.json();
+    const body = await request.json();
+    
+    // Extract required fields
+    const { email, name, publicKey, keyId, fingerprint, authMethod } = body;
     
     // Validate required fields
-    if (!email || !publicKey) {
+    if (!email || !publicKey || !keyId || !fingerprint || !authMethod) {
       return NextResponse.json(
-        { error: 'Email and public key are required' },
+        { error: 'Missing required fields' },
         { status: 400 }
       );
     }
     
-    // In a real app, validate email format and check if it's already registered
-    if (email.indexOf('@') === -1) {
+    // Validate email format
+    if (!validation.isValidEmail(email)) {
       return NextResponse.json(
-        { error: 'Invalid email format' },
+        { error: 'Invalid email address format' },
         { status: 400 }
       );
     }
     
-    // In a real app, validate PGP key format
-    if (!publicKey.includes('-----BEGIN PGP PUBLIC KEY BLOCK-----')) {
+    // Validate public key format
+    if (!validation.isValidPublicKey(publicKey)) {
       return NextResponse.json(
         { error: 'Invalid PGP public key format' },
         { status: 400 }
       );
     }
     
-    // In a real app, we would:
-    // 1. Store the user details in the database
-    // 2. Extract and store the key fingerprint/ID
-    // 3. Set up email verification flow
+    // Validate key ID format
+    if (!validation.isValidKeyId(keyId)) {
+      return NextResponse.json(
+        { error: 'Invalid PGP key ID format' },
+        { status: 400 }
+      );
+    }
     
-    // Generate JWT token for immediate login
-    const token = await createToken({
+    // Validate fingerprint format
+    if (!validation.isValidFingerprint(fingerprint)) {
+      return NextResponse.json(
+        { error: 'Invalid PGP fingerprint format' },
+        { status: 400 }
+      );
+    }
+    
+    // Sanitize authentication method
+    const sanitizedAuthMethod = validation.sanitizeAuthMethod(authMethod);
+    if (!sanitizedAuthMethod) {
+      return NextResponse.json(
+        { error: 'Invalid authentication method' },
+        { status: 400 }
+      );
+    }
+    
+    // Check if user already exists
+    const existingUser = await db.users.findByEmail(email);
+    if (existingUser) {
+      return NextResponse.json(
+        { error: 'User with this email already exists' },
+        { status: 409 }
+      );
+    }
+    
+    // Check if fingerprint is already in use
+    const existingFingerprint = await db.users.findByFingerprint(fingerprint);
+    if (existingFingerprint) {
+      return NextResponse.json(
+        { error: 'PGP key fingerprint already registered to another account' },
+        { status: 409 }
+      );
+    }
+    
+    // Create new user
+    const userId = await db.users.create({
       email,
-      // Store a fingerprint or hash of the public key for reference
-      keyId: 'mock-key-fingerprint', // In a real app, we'd compute this
+      name: name || null,
+      publicKey,
+      keyId,
+      fingerprint,
+      authMethod: sanitizedAuthMethod,
+      // Default to 'pending' until email verification
+      status: 'pending'
     });
     
-    // Return success with token
-    return NextResponse.json({
-      message: 'Registration successful',
-      token,
-      user: {
+    // Log user registration
+    await db.activityLogs.create(userId, 'user_registration', {
+      ipAddress: request.headers.get('x-forwarded-for') || request.ip,
+      details: {
         email,
-        name: name || '',
-        // Include other non-sensitive user info
-      },
+        keyId,
+        authMethod: sanitizedAuthMethod
+      }
     });
+    
+    // Return success response
+    return NextResponse.json(
+      { 
+        success: true, 
+        message: 'User registered successfully',
+        userId,
+        status: 'pending'
+      },
+      { status: 201 }
+    );
     
   } catch (error) {
     console.error('Registration error:', error);
     
     return NextResponse.json(
-      { error: 'Registration failed' },
+      { error: 'Server error during registration' },
       { status: 500 }
     );
   }
