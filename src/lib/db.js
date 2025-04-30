@@ -367,5 +367,6 @@ export default {
   users,
   challenges,
   sessions,
-  activityLogs
+  activityLogs,
+  isConnected: () => !!pool
 };
