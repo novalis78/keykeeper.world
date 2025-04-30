@@ -54,3 +54,4 @@ yarn-error.log*
 # Misc
 .lock-wscript
 .node_repl_history
+/screenshots
