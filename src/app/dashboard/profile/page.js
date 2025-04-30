@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { UserCircleIcon, EnvelopeIcon, KeyIcon, ShieldCheckIcon, BellIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/lib/auth/useAuth';
+import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 
 export default function ProfilePage() {
   const { user } = useAuth();
@@ -29,8 +30,9 @@ export default function ProfilePage() {
   }, []);
   
   return (
-    <div className="max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Your Profile</h1>
+    <DashboardLayout>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Your Profile</h1>
       
       {loading ? (
         <div className="flex justify-center items-center h-64">
@@ -235,6 +237,7 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PlusIcon, TrashIcon, PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, PencilIcon, CheckIcon, XMarkIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
 
 export default function MailAccountsPage() {
   const [domains, setDomains] = useState([]);
   const [users, setUsers] = useState([]);
-  const [newUser, setNewUser] = useState({ domain_id: '', email: '', password: '' });
+  const [newUser, setNewUser] = useState({ domain_id: '', email: '', password: '', name: '', localPart: '', isAdmin: false });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
@@ -51,10 +51,19 @@ export default function MailAccountsPage() {
     if (name === 'localPart') {
       // Handle local part of email separately
       const domain = domains.find(d => d.id === parseInt(newUser.domain_id));
-      setNewUser({
-        ...newUser,
-        email: domain ? `${value}@${domain.name}` : value
-      });
+      if (domain) {
+        setNewUser({
+          ...newUser,
+          localPart: value,
+          email: `${value}@${domain.name}`
+        });
+      } else {
+        // No domain selected yet
+        setNewUser({
+          ...newUser,
+          localPart: value
+        });
+      }
     } else {
       setNewUser({
         ...newUser,
@@ -66,7 +75,9 @@ export default function MailAccountsPage() {
   const handleDomainChange = (e) => {
     const domainId = e.target.value;
     const domain = domains.find(d => d.id === parseInt(domainId));
-    const localPart = newUser.email ? newUser.email.split('@')[0] : '';
+    
+    // Use stored localPart if available, otherwise extract from existing email
+    const localPart = newUser.localPart || (newUser.email ? newUser.email.split('@')[0] : '');
     
     setNewUser({
       ...newUser,
@@ -86,11 +97,24 @@ export default function MailAccountsPage() {
   const handleCreateUser = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     
     try {
-      // Validation
-      if (!newUser.domain_id || !newUser.email || !newUser.password) {
-        throw new Error('All fields are required');
+      // Validation with more specific error messages
+      if (!newUser.domain_id) {
+        throw new Error('Please select a domain');
+      }
+      
+      if (!newUser.email || !newUser.email.includes('@')) {
+        throw new Error('Please enter a valid email address');
+      }
+      
+      if (!newUser.password) {
+        throw new Error('Password is required');
+      }
+      
+      if (newUser.password.length < 8) {
+        throw new Error('Password must be at least 8 characters long');
       }
       
       // In a real implementation, this would be an API call
@@ -111,7 +135,12 @@ export default function MailAccountsPage() {
       };
       
       setUsers([...users, createdUser]);
-      setNewUser({ domain_id: '', email: '', password: '', name: '', isAdmin: false });
+      
+      // Reset form with cleared values
+      setNewUser({ domain_id: '', email: '', password: '', name: '', localPart: '', isAdmin: false });
+      
+      // Show success message
+      setError('Account created successfully!');
       
     } catch (err) {
       console.error('Error creating user:', err);
@@ -149,18 +178,192 @@ export default function MailAccountsPage() {
     return domain ? domain.name : 'Unknown';
   };
 
+  const handleComposeClick = () => {
+    // In a real app, this would navigate to the compose page or open a compose modal
+    console.log('Compose button clicked');
+    alert('Navigating to compose email page...');
+    // In production, you would use router.push('/compose') or similar
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6">Email Account Management</h1>
+      {/* Prominent Compose Button */}
+      <div className="flex justify-between items-center mb-6">
+        <button
+          onClick={handleComposeClick}
+          className="flex items-center justify-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg text-lg shadow-md transition-colors duration-300"
+        >
+          <PaperAirplaneIcon className="h-6 w-6 mr-2 transform rotate-90" />
+          Compose
+        </button>
+        
+        <h1 className="text-3xl font-bold">Email Account Management</h1>
+      </div>
       
       {error && (
-        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
+        <div className={`p-4 mb-6 border-l-4 ${
+          error === 'Account created successfully!' 
+            ? 'bg-green-100 border-green-500 text-green-700' 
+            : 'bg-red-100 border-red-500 text-red-700'
+        }`}>
           <p>{error}</p>
         </div>
       )}
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 gap-8">
+        {/* Existing accounts section (now full width and more prominent) */}
         <div>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Existing Email Accounts</h2>
+            <button 
+              onClick={() => document.getElementById('create-account-form').classList.toggle('hidden')}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-primary-700 bg-primary-100 hover:bg-primary-200 dark:text-primary-200 dark:bg-primary-900/20 dark:hover:bg-primary-900/30"
+            >
+              <PlusIcon className="h-5 w-5 mr-1" />
+              New Account
+            </button>
+          </div>
+          
+          {loading && users.length === 0 ? (
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 text-center">
+              <p className="text-gray-500 dark:text-gray-400">Loading accounts...</p>
+            </div>
+          ) : users.length === 0 ? (
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 text-center">
+              <p className="text-gray-500 dark:text-gray-400">No email accounts found</p>
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-gray-800 shadow overflow-hidden rounded-lg">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-900">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Email Address
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Display Name
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Role
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {users.map((user) => (
+                    <tr key={user.id}>
+                      {editingUser && editingUser.id === user.id ? (
+                        // Edit mode
+                        <>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {user.email}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <input
+                              type="text"
+                              name="name"
+                              value={editingUser.name}
+                              onChange={handleEditInputChange}
+                              className="w-full px-2 py-1 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                            />
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <input
+                                name="isAdmin"
+                                type="checkbox"
+                                checked={editingUser.isAdmin}
+                                onChange={handleEditInputChange}
+                                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-500 rounded"
+                              />
+                              <label className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                                Admin
+                              </label>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button
+                              onClick={saveEditedUser}
+                              className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 mr-3"
+                            >
+                              <CheckIcon className="h-5 w-5" />
+                            </button>
+                            <button
+                              onClick={cancelEditingUser}
+                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            >
+                              <XMarkIcon className="h-5 w-5" />
+                            </button>
+                          </td>
+                        </>
+                      ) : (
+                        // View mode
+                        <>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                            {user.email}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {user.name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {user.isAdmin ? (
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
+                                Admin
+                              </span>
+                            ) : (
+                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                User
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            {showDeleteConfirm === user.id ? (
+                              <>
+                                <span className="text-sm text-gray-500 dark:text-gray-400 mr-2">Confirm delete?</span>
+                                <button
+                                  onClick={() => handleDeleteUser(user.id)}
+                                  className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 mr-2"
+                                >
+                                  Yes
+                                </button>
+                                <button
+                                  onClick={() => setShowDeleteConfirm(null)}
+                                  className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
+                                >
+                                  No
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => startEditingUser(user)}
+                                  className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300 mr-3"
+                                >
+                                  <PencilIcon className="h-5 w-5" />
+                                </button>
+                                <button
+                                  onClick={() => setShowDeleteConfirm(user.id)}
+                                  className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                >
+                                  <TrashIcon className="h-5 w-5" />
+                                </button>
+                              </>
+                            )}
+                          </td>
+                        </>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+        
+        {/* Create account form (collapsible, hidden by default) */}
+        <div id="create-account-form" className="hidden">
           <h2 className="text-xl font-semibold mb-4">Create New Email Account</h2>
           <form onSubmit={handleCreateUser} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
             <div className="mb-4">

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { CogIcon, LockClosedIcon, BellIcon, PaintBrushIcon, EnvelopeIcon, ServerIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('general');
@@ -17,8 +18,9 @@ export default function SettingsPage() {
   ];
   
   return (
-    <div className="max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Settings</h1>
+    <DashboardLayout>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Settings</h1>
       
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
         <div className="xl:grid xl:grid-cols-4">
@@ -699,6 +701,7 @@ export default function SettingsPage() {
           Save Changes
         </button>
       </div>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
