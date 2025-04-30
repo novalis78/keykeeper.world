@@ -183,7 +183,7 @@ export default function LoginPage() {
   
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+      <div className="sm:mx-auto sm:w-full sm:max-w-2xl">
         <Link href="/" className="flex justify-center">
           <span className="sr-only">KeyKeeper</span>
           <div className="h-14 w-14 rounded-full bg-primary-600 flex items-center justify-center">
@@ -198,7 +198,7 @@ export default function LoginPage() {
         </h2>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl">
         <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
           {error && (
             <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-300 text-sm">
@@ -275,7 +275,7 @@ export default function LoginPage() {
                   </label>
                   
                   <div className="mt-4 space-y-4">
-                    <div className="relative bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 p-4 hover:border-primary-500 dark:hover:border-primary-500 cursor-pointer">
+                    <div className="relative bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 p-3 hover:border-primary-500 dark:hover:border-primary-500 cursor-pointer">
                       <div className="flex items-start">
                         <div className="flex items-center h-5">
                           <input
@@ -316,7 +316,7 @@ export default function LoginPage() {
                       </div>
                     </div>
                     
-                    <div className="relative bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 p-4 hover:border-primary-500 dark:hover:border-primary-500 cursor-pointer">
+                    <div className="relative bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 p-3 hover:border-primary-500 dark:hover:border-primary-500 cursor-pointer">
                       <div className="flex items-start">
                         <div className="flex items-center h-5">
                           <input
@@ -338,7 +338,7 @@ export default function LoginPage() {
                             <textarea
                               id="paste-key"
                               name="paste-key"
-                              rows={3}
+                              rows={2}
                               className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
                               placeholder="Paste your PGP private key here..."
                               onChange={(e) => setPrivateKey(e.target.value)}
@@ -348,7 +348,7 @@ export default function LoginPage() {
                       </div>
                     </div>
                     
-                    <div className="relative bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 p-4 hover:border-primary-500 dark:hover:border-primary-500 cursor-pointer">
+                    <div className="relative bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 p-3 hover:border-primary-500 dark:hover:border-primary-500 cursor-pointer">
                       <div className="flex items-start">
                         <div className="flex items-center h-5">
                           <input

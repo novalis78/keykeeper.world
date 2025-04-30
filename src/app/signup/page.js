@@ -341,7 +341,7 @@ export default function SignupPage() {
   
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+      <div className="sm:mx-auto sm:w-full sm:max-w-2xl">
         <Link href="/" className="flex justify-center">
           <span className="sr-only">KeyKeeper</span>
           <div className="h-14 w-14 rounded-full bg-primary-600 flex items-center justify-center">
@@ -353,11 +353,11 @@ export default function SignupPage() {
         </h1>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-xl">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl">
         <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <form onSubmit={handleSubmit}>
             {/* Step indicator */}
-            <div className="mb-8">
+            <div className="mb-6">
               <ol className="flex items-center">
                 {[1, 2, 3, 4].map((stepNumber) => (
                   <li key={stepNumber} className="relative flex-1">
