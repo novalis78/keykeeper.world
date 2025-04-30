@@ -24,13 +24,21 @@ const pgpUtils = {
     // For now, simulate key generation with a delay
     return new Promise((resolve) => {
       setTimeout(() => {
-        // Mock key generation with random IDs
-        const keyId = Math.random().toString(36).substring(2, 15);
+        // Generate hex key ID in standard 8-character format
+        const keyId = Array.from({ length: 8 }, () => 
+          Math.floor(Math.random() * 16).toString(16)
+        ).join('').toUpperCase();
+        
+        // Generate fingerprint in standard 40-character format
+        const fingerprint = Array.from({ length: 40 }, () => 
+          Math.floor(Math.random() * 16).toString(16)
+        ).join('').toUpperCase();
+        
         resolve({
           publicKey: `-----BEGIN PGP PUBLIC KEY BLOCK-----\nVersion: KeyKeeper v1.0\n\nmQINBGW${keyId}...\n-----END PGP PUBLIC KEY BLOCK-----`,
           privateKey: `-----BEGIN PGP PRIVATE KEY BLOCK-----\nVersion: KeyKeeper v1.0\n\nlQdGBGW${keyId}...\n-----END PGP PRIVATE KEY BLOCK-----`,
           keyId: keyId,
-          fingerprint: `${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+          fingerprint: fingerprint,
         });
       }, 1500);
     });
