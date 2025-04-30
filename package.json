@@ -26,10 +26,13 @@
     "bcryptjs": "^3.0.2",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.9.2",
+    "imapflow": "^1.0.186",
     "jose": "^6.0.10",
     "jsonwebtoken": "^9.0.2",
+    "mailparser": "^3.7.2",
     "mysql2": "^3.14.1",
     "next": "^14.2.28",
+    "nodemailer": "^6.10.1",
     "openpgp": "^6.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
