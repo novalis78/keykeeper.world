@@ -3,13 +3,17 @@
  * 
  * This module provides direct integration with the Postfix mail server
  * using SMTP for sending emails and IMAP for receiving/fetching emails.
+ * 
+ * WARNING: This module is only meant to be imported in server components or API routes.
+ * It contains Node.js-specific code that will not run in the browser.
  */
 
-import nodemailer from 'nodemailer';
-import { ImapFlow } from 'imapflow';
-import { simpleParser } from 'mailparser';
-import fs from 'fs/promises';
-import path from 'path';
+// These imports are for server-side only
+const nodemailer = typeof window === 'undefined' ? require('nodemailer') : null;
+const ImapFlow = typeof window === 'undefined' ? require('imapflow').ImapFlow : null;
+const simpleParser = typeof window === 'undefined' ? require('mailparser').simpleParser : null;
+const fs = typeof window === 'undefined' ? require('fs/promises') : null;
+const path = typeof window === 'undefined' ? require('path') : null;
 import crypto from 'crypto';
 
 // Configuration - in production, these would come from environment variables

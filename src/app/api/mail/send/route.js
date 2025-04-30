@@ -13,6 +13,10 @@ import { sendEmail } from '@/lib/mail/mailbox';
  * - attachments: optional array of attachments
  * - pgpEncrypted: optional boolean for PGP encryption
  */
+
+// Mark this route as dynamically rendered
+export const dynamic = 'force-dynamic';
+
 export async function POST(request) {
   try {
     // Enable real mail server integration

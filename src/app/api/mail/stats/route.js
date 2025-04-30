@@ -6,6 +6,10 @@ import { getMailboxStats } from '@/lib/mail/mailbox';
  * Expects query parameter:
  * - email: the user's email address
  */
+
+// Mark this route as dynamically rendered
+export const dynamic = 'force-dynamic';
+
 export async function GET(request) {
   try {
     // Enable real mail server integration

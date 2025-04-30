@@ -9,6 +9,10 @@ import { fetchEmail, updateEmail, deleteEmail } from '@/lib/mail/mailbox';
  * - folder: (optional) the folder containing the email
  * - markAsRead: (optional) whether to mark as read (defaults to true)
  */
+
+// Mark these routes as dynamically rendered
+export const dynamic = 'force-dynamic';
+
 export async function GET(request) {
   try {
     // Enable real mail server integration

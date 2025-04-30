@@ -10,6 +10,10 @@ import { fetchEmails } from '@/lib/mail/mailbox';
  * - offset: (optional) offset for pagination
  * - search: (optional) search term
  */
+
+// Mark this route as dynamically rendered
+export const dynamic = 'force-dynamic';
+
 export async function GET(request) {
   try {
     // Enable real mail server integration
