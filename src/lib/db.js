@@ -1,24 +1,74 @@
 import mysql from 'mysql2/promise';
 
+// Parse the connection string - needed to fix possible uri vs url param confusion
+function parseConnectionString(connectionString) {
+  try {
+    // Handle both mysql:// and mysql2:// protocols
+    let url = connectionString;
+    if (!url.startsWith('mysql://') && !url.startsWith('mysql2://')) {
+      throw new Error('Invalid connection string protocol. Must begin with mysql:// or mysql2://');
+    }
+
+    // Extract components - very simplified parsing
+    const withoutProtocol = url.replace(/^mysql2?:\/\//, '');
+    const [userPart, hostPart] = withoutProtocol.split('@');
+    if (!userPart || !hostPart) throw new Error('Invalid connection string format');
+    
+    const [username, password] = userPart.split(':');
+    const [host, dbPart] = hostPart.split('/');
+    const [hostname, port] = host.split(':');
+    
+    // Split port if present, otherwise use default MySQL port
+    const parsedPort = port ? parseInt(port, 10) : 3306;
+    
+    // Parse database name and any query parameters
+    let database = dbPart;
+    let query = '';
+    if (dbPart && dbPart.includes('?')) {
+      [database, query] = dbPart.split('?');
+    }
+    
+    return {
+      host: hostname,
+      port: parsedPort,
+      user: username,
+      password: password,
+      database: database,
+      uri: connectionString // Keep the original string too
+    };
+  } catch (error) {
+    console.error('Error parsing connection string:', error.message);
+    throw error;
+  }
+}
+
 // Connection pool configuration
 let pool;
 
 try {
   // Create connection pool only if DATABASE_URL is provided
   if (process.env.DATABASE_URL) {
+    // Parse the connection string for better error handling
+    const config = parseConnectionString(process.env.DATABASE_URL);
+    
     pool = mysql.createPool({
-      uri: process.env.DATABASE_URL,
+      host: config.host,
+      port: config.port,
+      user: config.user,
+      password: config.password,
+      database: config.database,
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
       connectTimeout: 10000 // 10 seconds timeout
     });
-    console.log('MySQL connection pool created');
+    
+    console.log(`MySQL connection pool created for ${config.host}:${config.port}/${config.database}`);
   } else {
     console.warn('DATABASE_URL environment variable not set');
   }
 } catch (error) {
-  console.error('Error creating MySQL connection pool:', error);
+  console.error('Error creating MySQL connection pool:', error.message);
 }
 
 /**

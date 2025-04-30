@@ -42,9 +42,17 @@ export async function GET(request) {
  */
 async function testDatabaseConnection() {
   try {
+    // Log the connection params (safely, without credentials)
+    const dbUrl = process.env.DATABASE_URL || 'Not set';
+    const maskedUrl = dbUrl.replace(/:\/\/([^:]+):[^@]+@/, '://$1:****@');
+    console.log('Testing connection to:', maskedUrl);
+    
     // First check if we can get the server version (doesn't require any tables)
     const versionResult = await db.query('SELECT VERSION() as version');
     const version = versionResult[0]?.version || 'Unknown';
+    
+    // Display the connection config used
+    console.log('Connected using mysql2 to version:', version);
     
     // Try to get the list of tables to verify schema access
     const tablesResult = await db.query(`
@@ -53,6 +61,8 @@ async function testDatabaseConnection() {
       WHERE table_schema = DATABASE()
       ORDER BY table_name
     `);
+    
+    console.log('Tables found:', tablesResult.length);
     
     // Get user count if users table exists
     let userCount = null;
