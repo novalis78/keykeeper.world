@@ -1,5 +1,6 @@
 import { Inter, Roboto_Mono } from 'next/font/google';
 import './globals.css';
+import { AuthProvider } from '@/lib/auth/useAuth';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -23,7 +24,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${inter.variable} ${robotoMono.variable}`}>
       <body className="min-h-screen">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

@@ -89,19 +89,42 @@ export default function SignupPage() {
     }
     
     if (step === 3 && keyGenerated) {
-      // Final submission - would send to server in production
-      console.log('Submitting signup:', {
-        email: formData.email,
-        name: formData.name,
-        authOption: formData.authOption,
-        publicKey: generatedKey?.publicKey,
-        keyId: generatedKey?.keyId
-      });
+      setLoading(true);
       
-      // Navigate to success page or dashboard
-      // In a real application, we would register the user on the server
-      // and then redirect to a success page or dashboard
-      setStep(4);
+      try {
+        // Submit registration to the API
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            name: formData.name || '',
+            publicKey: generatedKey.publicKey,
+            keyId: generatedKey.keyId,
+            fingerprint: generatedKey.fingerprint,
+            authMethod: formData.authOption === 'browser-key' ? 'browser' : 
+                      formData.authOption === 'password-manager' ? 'password_manager' : 'hardware_key'
+          }),
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to register');
+        }
+        
+        console.log('Registration successful:', data);
+        
+        // Navigate to success step
+        setStep(4);
+      } catch (error) {
+        console.error('Registration error:', error);
+        alert(`Registration failed: ${error.message}`);
+      } finally {
+        setLoading(false);
+      }
     }
   };
   

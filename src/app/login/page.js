@@ -23,10 +23,23 @@ export default function LoginPage() {
     setError('');
     
     try {
-      // In production, we would fetch a challenge from the server
-      // based on the user's email address
-      const newChallenge = pgpUtils.generateChallenge();
-      setChallenge(newChallenge);
+      // Fetch challenge from the server
+      const response = await fetch('/api/auth/challenge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to get challenge');
+      }
+      
+      // Set the challenge and move to next step
+      setChallenge(data.challenge);
       setStep(2);
     } catch (error) {
       console.error('Error generating challenge:', error);
@@ -59,17 +72,37 @@ export default function LoginPage() {
       // Sign the challenge using the private key
       const signature = await pgpUtils.signChallenge(challenge, privateKey);
       
-      // In production, we would send the signature, email, and challenge
-      // to the server for verification against the stored public key
+      // Send the signature to the server for verification
+      const response = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          challenge,
+          signature,
+        }),
+      });
       
-      // For now, we'll simulate a successful login
-      setTimeout(() => {
-        // Redirect to dashboard
-        window.location.href = '/dashboard';
-      }, 1000);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Authentication failed');
+      }
+      
+      console.log('Login successful:', data);
+      
+      // Store the token in localStorage for future API requests
+      if (data.token) {
+        localStorage.setItem('auth_token', data.token);
+      }
+      
+      // Redirect to dashboard
+      window.location.href = '/dashboard';
     } catch (error) {
       console.error('Error signing challenge:', error);
-      setError('Failed to sign challenge. Please check your private key and try again.');
+      setError('Authentication failed: ' + (error.message || 'Please check your private key and try again.'));
       setLoading(false);
     }
   };
@@ -88,17 +121,62 @@ export default function LoginPage() {
         return;
       }
       
-      // In production, we would interface with the WebAuthn API
-      // to authenticate using the hardware security key
+      // In a real app, here we would:
+      // 1. Use the WebAuthn API to get an assertion from the hardware key
+      // 2. Send that assertion to the server for verification
       
-      // For now, we'll simulate a successful login
-      setTimeout(() => {
-        // Redirect to dashboard
-        window.location.href = '/dashboard';
-      }, 1000);
+      // For now, we'll mock this process with our existing API
+      // Get a hardware key specific challenge
+      const challengeResponse = await fetch('/api/auth/challenge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, authMethod: 'hardware_key' }),
+      });
+      
+      const challengeData = await challengeResponse.json();
+      
+      if (!challengeResponse.ok) {
+        throw new Error(challengeData.error || 'Failed to get challenge');
+      }
+      
+      // Mock a hardware key signature
+      const hwChallenge = challengeData.challenge;
+      const hwSignature = `-----BEGIN PGP SIGNATURE-----\nVersion: KeyKeeper v1.0\n\nHardwareKeySignature\n-----END PGP SIGNATURE-----`;
+      
+      // Send to verify endpoint
+      const verifyResponse = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          challenge: hwChallenge,
+          signature: hwSignature,
+          authMethod: 'hardware_key'
+        }),
+      });
+      
+      const verifyData = await verifyResponse.json();
+      
+      if (!verifyResponse.ok) {
+        throw new Error(verifyData.error || 'Hardware authentication failed');
+      }
+      
+      console.log('Hardware authentication successful:', verifyData);
+      
+      // Store the token
+      if (verifyData.token) {
+        localStorage.setItem('auth_token', verifyData.token);
+      }
+      
+      // Redirect to dashboard
+      window.location.href = '/dashboard';
     } catch (error) {
       console.error('Error with hardware authentication:', error);
-      setError('Hardware authentication failed. Please try again.');
+      setError('Hardware authentication failed: ' + (error.message || 'Please try again.'));
       setLoading(false);
     }
   };
