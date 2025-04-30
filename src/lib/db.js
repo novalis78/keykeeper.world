@@ -1,12 +1,25 @@
 import mysql from 'mysql2/promise';
 
 // Connection pool configuration
-const pool = mysql.createPool({
-  uri: process.env.DATABASE_URL,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
+let pool;
+
+try {
+  // Create connection pool only if DATABASE_URL is provided
+  if (process.env.DATABASE_URL) {
+    pool = mysql.createPool({
+      uri: process.env.DATABASE_URL,
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+      connectTimeout: 10000 // 10 seconds timeout
+    });
+    console.log('MySQL connection pool created');
+  } else {
+    console.warn('DATABASE_URL environment variable not set');
+  }
+} catch (error) {
+  console.error('Error creating MySQL connection pool:', error);
+}
 
 /**
  * Execute a database query
@@ -15,6 +28,11 @@ const pool = mysql.createPool({
  * @returns {Promise<Array>} - Query results
  */
 export async function query(sql, params) {
+  // Check if pool exists
+  if (!pool) {
+    throw new Error('Database connection not available. Make sure DATABASE_URL is properly configured.');
+  }
+  
   try {
     const [results] = await pool.execute(sql, params);
     return results;
