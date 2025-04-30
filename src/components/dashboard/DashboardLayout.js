@@ -12,7 +12,8 @@ import {
   CogIcon,
   PlusIcon,
   ArrowRightOnRectangleIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  PaperAirplaneIcon
 } from '@heroicons/react/24/outline';
 import { LockClosedIcon } from '@heroicons/react/24/solid';
 
@@ -50,11 +51,11 @@ export default function DashboardLayout({ children }) {
         
         <div className="p-4">
           <Link
-            href="/dashboard/addresses/new"
+            href="/dashboard/compose"
             className="flex items-center justify-center w-full p-2 mb-6 text-white bg-primary-600 hover:bg-primary-500 rounded-md transition-colors"
           >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            <span>New Address</span>
+            <PaperAirplaneIcon className="h-5 w-5 mr-2 transform rotate-90" />
+            <span>Compose</span>
           </Link>
           
           <nav className="space-y-1">

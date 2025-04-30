@@ -178,25 +178,9 @@ export default function MailAccountsPage() {
     return domain ? domain.name : 'Unknown';
   };
 
-  const handleComposeClick = () => {
-    // In a real app, this would navigate to the compose page or open a compose modal
-    console.log('Compose button clicked');
-    alert('Navigating to compose email page...');
-    // In production, you would use router.push('/compose') or similar
-  };
-
   return (
     <div className="container mx-auto py-8 px-4">
-      {/* Prominent Compose Button */}
-      <div className="flex justify-between items-center mb-6">
-        <button
-          onClick={handleComposeClick}
-          className="flex items-center justify-center px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg text-lg shadow-md transition-colors duration-300"
-        >
-          <PaperAirplaneIcon className="h-6 w-6 mr-2 transform rotate-90" />
-          Compose
-        </button>
-        
+      <div className="mb-6">
         <h1 className="text-3xl font-bold">Email Account Management</h1>
       </div>
       
