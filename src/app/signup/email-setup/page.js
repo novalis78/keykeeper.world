@@ -12,6 +12,8 @@ export default function EmailSetupPage() {
     displayName: '',
     passphrase: '',
     confirmPassphrase: '',
+    mailPassword: '',
+    confirmMailPassword: '',
     pgpKey: null,
     usePassphrase: false
   });
@@ -19,6 +21,7 @@ export default function EmailSetupPage() {
   const [isAvailable, setIsAvailable] = useState(null);
   const [error, setError] = useState(null);
   const [passphraseStrength, setPassphraseStrength] = useState(0);
+  const [mailPasswordStrength, setMailPasswordStrength] = useState(0);
   
   // Domain options - in a real implementation, these would come from an API
   const domainOptions = [
@@ -94,9 +97,11 @@ export default function EmailSetupPage() {
         [name]: value
       }));
       
-      // Calculate passphrase strength if applicable
+      // Calculate passphrase/password strength if applicable
       if (name === 'passphrase') {
         calculatePassphraseStrength(value);
+      } else if (name === 'mailPassword') {
+        calculatePasswordStrength(value);
       }
     }
   };
@@ -124,6 +129,27 @@ export default function EmailSetupPage() {
     strength += Math.min(2, words);
     
     setPassphraseStrength(Math.min(10, strength));
+  };
+  
+  // Password strength calculator for mail password
+  const calculatePasswordStrength = (password) => {
+    if (!password) {
+      setMailPasswordStrength(0);
+      return;
+    }
+    
+    let strength = 0;
+    
+    // Length check (up to 5 points)
+    strength += Math.min(5, Math.floor(password.length / 2));
+    
+    // Character variety checks
+    if (/[A-Z]/.test(password)) strength += 1; // uppercase
+    if (/[a-z]/.test(password)) strength += 1; // lowercase
+    if (/[0-9]/.test(password)) strength += 1; // numbers
+    if (/[^A-Za-z0-9]/.test(password)) strength += 2; // special chars
+    
+    setMailPasswordStrength(Math.min(10, strength));
   };
   
   const handleDomainChange = (e) => {
@@ -237,7 +263,8 @@ export default function EmailSetupPage() {
             publicKey: generatedKey.publicKey,
             keyId: generatedKey.keyId,
             fingerprint: generatedKey.fingerprint,
-            authMethod: authMethod
+            authMethod: authMethod,
+            mailPassword: formData.mailPassword // Include user-provided mail password
           }),
         });
         
@@ -296,6 +323,22 @@ export default function EmailSetupPage() {
     
     if (!formData.displayName) {
       setError('Please enter a display name');
+      return;
+    }
+    
+    // Mail password validation
+    if (!formData.mailPassword) {
+      setError('Please enter a mail account password');
+      return;
+    }
+    
+    if (formData.mailPassword.length < 8) {
+      setError('Mail password must be at least 8 characters long');
+      return;
+    }
+    
+    if (formData.mailPassword !== formData.confirmMailPassword) {
+      setError('Mail passwords do not match');
       return;
     }
     
@@ -457,6 +500,85 @@ export default function EmailSetupPage() {
                       <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                         This name will be shown to recipients of your emails
                       </p>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Mail Account Password</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      This password will be used to access your mail account via email clients and apps.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label htmlFor="mailPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Mail Password
+                        </label>
+                        <div className="mt-1">
+                          <input
+                            type="password"
+                            name="mailPassword"
+                            id="mailPassword"
+                            value={formData.mailPassword}
+                            onChange={handleInputChange}
+                            className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm"
+                            placeholder="Enter a strong password"
+                            required
+                          />
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          Use a strong, unique password different from your PGP passphrase
+                        </p>
+                        
+                        {/* Password strength indicator */}
+                        {formData.mailPassword && (
+                          <div className="mt-2">
+                            <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full ${
+                                  mailPasswordStrength < 4 ? 'bg-red-500' : 
+                                  mailPasswordStrength < 7 ? 'bg-yellow-500' : 
+                                  'bg-green-500'
+                                }`}
+                                style={{ width: `${mailPasswordStrength * 10}%` }}
+                              ></div>
+                            </div>
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                              {mailPasswordStrength < 4 ? 'Weak' : 
+                               mailPasswordStrength < 7 ? 'Moderate' : 
+                               'Strong'} password
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="confirmMailPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Confirm Mail Password
+                        </label>
+                        <div className="mt-1">
+                          <input
+                            type="password"
+                            name="confirmMailPassword"
+                            id="confirmMailPassword"
+                            value={formData.confirmMailPassword}
+                            onChange={handleInputChange}
+                            className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm"
+                            placeholder="Confirm your password"
+                            required
+                          />
+                        </div>
+                        {formData.mailPassword && formData.confirmMailPassword && (
+                          <p className={`mt-1 text-xs ${
+                            formData.mailPassword === formData.confirmMailPassword 
+                              ? 'text-green-500 dark:text-green-400' 
+                              : 'text-red-500 dark:text-red-400'
+                          }`}>
+                            {formData.mailPassword === formData.confirmMailPassword 
+                              ? 'Passwords match' 
+                              : 'Passwords do not match'}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
