@@ -79,7 +79,13 @@ export default function SignupPage() {
     }
     
     if (step === 2) {
-      setStep(3);
+      // Redirect to email-setup flow with current data
+      localStorage.setItem('signup_data', JSON.stringify({
+        email: formData.email,
+        name: formData.displayName || formData.name,
+        authOption: formData.authOption
+      }));
+      window.location.href = '/signup/email-setup';
       return;
     }
     
@@ -186,7 +192,7 @@ export default function SignupPage() {
             <div className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Email Address
+                  Your Existing Email Address
                 </label>
                 <input
                   type="email"

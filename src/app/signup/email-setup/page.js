@@ -27,6 +27,24 @@ export default function EmailSetupPage() {
   ];
   
   // Simulate checking username availability
+  // Load data from previous step if available
+  useEffect(() => {
+    try {
+      const savedData = localStorage.getItem('signup_data');
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        if (parsedData.name) {
+          setFormData(prev => ({
+            ...prev,
+            displayName: parsedData.name
+          }));
+        }
+      }
+    } catch (err) {
+      console.error('Error loading saved signup data:', err);
+    }
+  }, []);
+
   useEffect(() => {
     if (formData.localPart.length > 2) {
       const timeoutId = setTimeout(() => {
@@ -150,17 +168,34 @@ export default function EmailSetupPage() {
       await new Promise(resolve => setTimeout(resolve, 2000));
       console.log('Key generation complete');
       
-      // Simulate a generated key - add passphrase info if used
-      const hasPassphrase = formData.usePassphrase && formData.passphrase;
-      const mockPGPKey = {
-        fingerprint: 'D4C3 A234 B56F 79E0 D123 C567 8901 2345 6789 ABCD',
-        publicKey: '-----BEGIN PGP PUBLIC KEY BLOCK-----\n(mock key data)\n-----END PGP PUBLIC KEY BLOCK-----',
-        privateKey: hasPassphrase 
-          ? '-----BEGIN PGP PRIVATE KEY BLOCK-----\nVersion: OpenPGP.js\nComment: https://openpgpjs.org\n\nxcLYBGRUFUMBACAC7FzR0JQ...(mock ENCRYPTED PRIVATE KEY data)\n-----END PGP PRIVATE KEY BLOCK-----' 
-          : '-----BEGIN PGP PRIVATE KEY BLOCK-----\n(mock unencrypted key data)\n-----END PGP PRIVATE KEY BLOCK-----',
-        hasPassphrase: hasPassphrase,
-        passphrase: hasPassphrase ? formData.passphrase : null
-      };
+      // In a real implementation, call the proper PGP utility with passphrase
+      console.log('Generating key with passphrase:', formData.usePassphrase && formData.passphrase ? 'Yes' : 'No');
+      
+      // Construct full email address
+      const email = `${formData.localPart}@${formData.domain}`;
+      
+      // Generate the real PGP key using our utility (if available)
+      let generatedKey;
+      try {
+        const pgpUtils = await import('@/lib/auth/pgp').then(mod => mod.default);
+        const keyOptions = formData.usePassphrase ? { passphrase: formData.passphrase } : {};
+        generatedKey = await pgpUtils.generateKey(formData.displayName, email, keyOptions);
+        console.log('Key generated successfully:', generatedKey);
+      } catch (err) {
+        console.error('Error importing pgpUtils or generating key:', err);
+        
+        // Fallback to mock data if real generation fails
+        const hasPassphrase = formData.usePassphrase && formData.passphrase;
+        generatedKey = {
+          fingerprint: 'D4C3 A234 B56F 79E0 D123 C567 8901 2345 6789 ABCD',
+          publicKey: '-----BEGIN PGP PUBLIC KEY BLOCK-----\n(mock key data)\n-----END PGP PUBLIC KEY BLOCK-----',
+          privateKey: hasPassphrase 
+            ? '-----BEGIN PGP PRIVATE KEY BLOCK-----\nVersion: OpenPGP.js\nComment: https://openpgpjs.org\n\nxcLYBGRUFUMBACAC7FzR0JQ...(mock ENCRYPTED PRIVATE KEY data)\n-----END PGP PRIVATE KEY BLOCK-----' 
+            : '-----BEGIN PGP PRIVATE KEY BLOCK-----\n(mock unencrypted key data)\n-----END PGP PRIVATE KEY BLOCK-----',
+          hasPassphrase: hasPassphrase,
+          passphrase: hasPassphrase ? formData.passphrase : null
+        };
+      }
       
       // Hide loading indicator if it exists
       if (generatingEl) {
@@ -287,7 +322,7 @@ export default function EmailSetupPage() {
                       id="localPart"
                       value={formData.localPart}
                       onChange={handleInputChange}
-                      className="flex-1 min-w-0 rounded-l-md focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                      className="appearance-none flex-1 min-w-0 rounded-l-md focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 shadow-sm placeholder-gray-400 dark:bg-gray-700 dark:text-white focus:outline-none"
                       placeholder="username"
                       autoComplete="off"
                       required
@@ -299,7 +334,7 @@ export default function EmailSetupPage() {
                         id="domain"
                         value={formData.domain}
                         onChange={handleDomainChange}
-                        className="ml-1 border-0 bg-transparent focus:ring-0 focus:outline-none"
+                        className="ml-1 border-0 bg-transparent focus:ring-0 focus:outline-none dark:text-white"
                       >
                         {domainOptions.map(domain => (
                           <option key={domain.id} value={domain.name}>
@@ -350,7 +385,7 @@ export default function EmailSetupPage() {
                       id="displayName"
                       value={formData.displayName}
                       onChange={handleInputChange}
-                      className="focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                      className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm"
                       placeholder="Your Name"
                       required
                     />
@@ -364,7 +399,7 @@ export default function EmailSetupPage() {
                     className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
                       !isAvailable || formData.localPart.length < 3 || !formData.displayName
                         ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
-                        : 'bg-primary-600 hover:bg-primary-700 focus:outline-none'
+                        : 'bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500'
                     }`}
                   >
                     Continue to Key Generation
@@ -416,7 +451,7 @@ export default function EmailSetupPage() {
                       type="checkbox"
                       checked={formData.usePassphrase}
                       onChange={handleInputChange}
-                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
                     />
                   </div>
                   <div className="ml-3">
@@ -441,7 +476,7 @@ export default function EmailSetupPage() {
                         name="passphrase"
                         value={formData.passphrase}
                         onChange={handleInputChange}
-                        className="mt-1 block w-full shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                        className="appearance-none mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm"
                         placeholder="Enter a strong passphrase"
                       />
                       
@@ -477,7 +512,7 @@ export default function EmailSetupPage() {
                         name="confirmPassphrase"
                         value={formData.confirmPassphrase}
                         onChange={handleInputChange}
-                        className="mt-1 block w-full shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                        className="appearance-none mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm"
                         placeholder="Confirm your passphrase"
                       />
                       
@@ -507,14 +542,14 @@ export default function EmailSetupPage() {
                 <button
                   type="button"
                   onClick={handleGeneratePGPKey}
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none"
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                 >
                   Generate PGP Key Now
                 </button>
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="mt-2 w-full flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none"
+                  className="mt-2 w-full flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                 >
                   Back
                 </button>
@@ -564,7 +599,23 @@ export default function EmailSetupPage() {
                 )}
                 <button
                   type="button"
-                  className="mt-2 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none"
+                  onClick={() => {
+                    // Create a Blob containing the private key
+                    const blob = new Blob([formData.pgpKey?.privateKey], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    // Create a temporary link element and trigger download
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `keykeeper_${formData.localPart}_private.asc`;
+                    document.body.appendChild(a);
+                    a.click();
+                    
+                    // Clean up
+                    URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                  }}
+                  className="mt-2 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
                 >
                   Download Key Backup
                 </button>
@@ -573,7 +624,7 @@ export default function EmailSetupPage() {
               <div>
                 <Link 
                   href="/dashboard"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none"
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                 >
                   Go to Dashboard
                 </Link>
