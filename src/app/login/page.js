@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { LockClosedIcon, KeyIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { LockClosedIcon, KeyIcon, EnvelopeIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import pgpUtils from '@/lib/auth/pgp';
@@ -11,8 +11,10 @@ export default function LoginPage() {
   const [step, setStep] = useState(1);
   const [challenge, setChallenge] = useState('');
   const [privateKey, setPrivateKey] = useState('');
+  const [passphrase, setPassphrase] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassphraseField, setShowPassphraseField] = useState(false);
   
   const handleSubmitEmail = async (e) => {
     e.preventDefault();
@@ -55,7 +57,12 @@ export default function LoginPage() {
     
     const reader = new FileReader();
     reader.onload = (event) => {
-      setPrivateKey(event.target.result);
+      const keyContent = event.target.result;
+      setPrivateKey(keyContent);
+      
+      // Check if key likely has a passphrase by looking for encryption markers
+      const hasPassphrase = keyContent.includes('ENCRYPTED PRIVATE KEY');
+      setShowPassphraseField(hasPassphrase);
     };
     reader.readAsText(file);
   };
@@ -69,8 +76,8 @@ export default function LoginPage() {
     setError('');
     
     try {
-      // Sign the challenge using the private key
-      const signature = await pgpUtils.signChallenge(challenge, privateKey);
+      // Sign the challenge using the private key, including passphrase if provided
+      const signature = await pgpUtils.signChallenge(challenge, privateKey, passphrase);
       
       // Send the signature to the server for verification
       const response = await fetch('/api/auth/verify', {
@@ -294,6 +301,16 @@ export default function LoginPage() {
                             Select the PGP private key file you downloaded during signup.
                           </p>
                           
+                          <div className="bg-primary-50 dark:bg-primary-900/20 p-3 rounded-md mt-2 mb-3">
+                            <div className="flex items-start">
+                              <ShieldCheckIcon className="h-4 w-4 text-primary-600 dark:text-primary-400 mt-0.5 flex-shrink-0" />
+                              <p className="text-xs text-primary-700 dark:text-primary-300 ml-2">
+                                Your private key is processed entirely in your browser and never sent to our servers.
+                                This provides zero-knowledge security, meaning we cannot access your encrypted data.
+                              </p>
+                            </div>
+                          </div>
+                          
                           <div className="mt-3">
                             <label htmlFor="key-file" className="relative cursor-pointer bg-white dark:bg-gray-700 rounded-md font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 focus-within:outline-none">
                               <span>Upload key file</span>
@@ -312,6 +329,23 @@ export default function LoginPage() {
                               </span>
                             )}
                           </div>
+                          
+                          {showPassphraseField && (
+                            <div className="mt-3">
+                              <label htmlFor="passphrase" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Key Passphrase
+                              </label>
+                              <input
+                                type="password"
+                                id="passphrase"
+                                name="passphrase"
+                                value={passphrase}
+                                onChange={(e) => setPassphrase(e.target.value)}
+                                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-700 dark:text-white"
+                                placeholder="Enter passphrase for your key"
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -341,9 +375,33 @@ export default function LoginPage() {
                               rows={2}
                               className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
                               placeholder="Paste your PGP private key here..."
-                              onChange={(e) => setPrivateKey(e.target.value)}
+                              onChange={(e) => {
+                                const keyContent = e.target.value;
+                                setPrivateKey(keyContent);
+                                
+                                // Check if key likely has a passphrase by looking for encryption markers
+                                const hasPassphrase = keyContent.includes('ENCRYPTED PRIVATE KEY');
+                                setShowPassphraseField(hasPassphrase);
+                              }}
                             />
                           </div>
+                          
+                          {showPassphraseField && (
+                            <div className="mt-3">
+                              <label htmlFor="passphrase-text" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Key Passphrase
+                              </label>
+                              <input
+                                type="password"
+                                id="passphrase-text"
+                                name="passphrase-text"
+                                value={passphrase}
+                                onChange={(e) => setPassphrase(e.target.value)}
+                                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-700 dark:text-white"
+                                placeholder="Enter passphrase for your key"
+                              />
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
