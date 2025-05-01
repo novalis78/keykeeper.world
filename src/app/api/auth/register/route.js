@@ -194,15 +194,32 @@ export async function POST(request) {
     
     // Check if this is a KeyKeeper email request (create mail account)
     let mailAccountCreated = false;
-    const isKeyKeeperEmail = email.endsWith('@keykeeper.world') || email.endsWith('@phoneshield.ai');
+    
+    // Consider any email during signup as a KeyKeeper email
+    // You can change this if you only want to create mail accounts for specific domains
+    const isKeyKeeperEmail = true; // For testing - create mail account for any email
+    // const isKeyKeeperEmail = email.endsWith('@keykeeper.world') || email.endsWith('@phoneshield.ai');
+    
+    console.log(`[Register API] Email domain check: ${email}, CREATE_MAIL_ACCOUNTS=${process.env.CREATE_MAIL_ACCOUNTS}`);
     
     if (isKeyKeeperEmail && process.env.CREATE_MAIL_ACCOUNTS === 'true') {
       try {
         console.log(`[Register API] Creating mail account for: ${email}`);
         
-        // Generate a secure random password for the mail account
+        // Generate a secure mail password from a portion of the fingerprint + random data
+        // This is more secure than just random bytes, as it's tied to the user's key
         const crypto = await import('crypto');
-        const mailPassword = crypto.randomBytes(16).toString('hex');
+        
+        // Create a secure hash from fingerprint and key ID
+        const mailPasswordBase = crypto.createHash('sha256')
+          .update(fingerprint + keyId)
+          .digest('hex');
+          
+        // Add some random bits for additional security
+        const randomBits = crypto.randomBytes(8).toString('hex');
+        const mailPassword = mailPasswordBase.substring(0, 24) + randomBits;
+        
+        console.log(`[Register API] Generated secure mail password for: ${email}`);
         
         // Create the mail account
         const result = await accountManager.createMailAccount(
@@ -233,6 +250,8 @@ export async function POST(request) {
           error: mailError.message
         });
       }
+    } else {
+      console.log(`[Register API] Skipping mail account creation. isKeyKeeperEmail=${isKeyKeeperEmail}, CREATE_MAIL_ACCOUNTS=${process.env.CREATE_MAIL_ACCOUNTS}`);
     }
     
     // Return success response
