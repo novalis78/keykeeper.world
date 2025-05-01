@@ -138,56 +138,8 @@ export async function createMailAccount(email, password, name = null, quota = 10
     // Get the table name from env or use default
     const tableName = process.env.MAIL_USERS_TABLE || 'virtual_users';
     
-    // Check if needed tables exist, if not, try to create them (when using main DB)
-    if (process.env.USE_MAIN_DB_FOR_MAIL === 'true') {
-      try {
-        // Check if virtual_users table exists
-        const [userTables] = await connection.query(
-          `SHOW TABLES LIKE '${tableName}'`
-        );
-        
-        // Check if virtual_domains table exists
-        const domainTable = process.env.MAIL_DOMAINS_TABLE || 'virtual_domains';
-        const [domainTables] = await connection.query(
-          `SHOW TABLES LIKE '${domainTable}'`
-        );
-        
-        // Create domains table if needed
-        if (domainTables.length === 0) {
-          console.log(`[Account Manager] Table ${domainTable} doesn't exist, creating it`);
-          
-          await connection.execute(`
-            CREATE TABLE IF NOT EXISTS ${domainTable} (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              name VARCHAR(255) NOT NULL UNIQUE,
-              created DATETIME DEFAULT CURRENT_TIMESTAMP,
-              active TINYINT(1) DEFAULT 1
-            )
-          `);
-        }
-        
-        // Create virtual_users table if needed
-        if (userTables.length === 0) {
-          console.log(`[Account Manager] Table ${tableName} doesn't exist, creating it`);
-          
-          await connection.execute(`
-            CREATE TABLE IF NOT EXISTS ${tableName} (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              domain_id INT NOT NULL,
-              email VARCHAR(255) NOT NULL UNIQUE,
-              password VARCHAR(255) NOT NULL,
-              created DATETIME DEFAULT CURRENT_TIMESTAMP,
-              active TINYINT(1) DEFAULT 1,
-              FOREIGN KEY (domain_id) REFERENCES ${domainTable}(id) ON DELETE CASCADE
-            )
-          `);
-        }
-      } catch (tableError) {
-        console.warn(`[Account Manager] Error checking/creating table: ${tableError.message}`);
-      }
-    }
-    
-    // Make sure the domain exists in the domains table
+    // We assume tables exist as they're part of the mail server setup
+    // Get domain table name
     const domainTable = process.env.MAIL_DOMAINS_TABLE || 'virtual_domains';
     let domainId;
     
