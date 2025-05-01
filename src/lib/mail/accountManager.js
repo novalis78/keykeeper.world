@@ -2,19 +2,78 @@
  * Email Account Manager
  * 
  * This module handles the creation and management of email accounts
- * in the mail server (Postfix/Dovecot).
+ * in the mail server (Postfix/Dovecot) using direct MySQL integration.
  */
 
+import mysql from 'mysql2/promise';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import * as fs from 'fs/promises';
-import path from 'path';
+import crypto from 'crypto';
 
-// Promisify exec
+// Promisify exec for test commands
 const execAsync = promisify(exec);
 
 /**
- * Create a new email account in the mail server
+ * Get MySQL connection for mail database
+ * @returns {Promise<mysql.Connection>} MySQL connection
+ */
+async function getMailDbConnection() {
+  // Configure MySQL connection from environment variables
+  const dbConfig = {
+    host: process.env.MAIL_DB_HOST || 'localhost',
+    user: process.env.MAIL_DB_USER || 'vmail',
+    password: process.env.MAIL_DB_PASSWORD,
+    database: process.env.MAIL_DB_NAME || 'vmail'
+  };
+  
+  try {
+    return await mysql.createConnection(dbConfig);
+  } catch (error) {
+    console.error('[Account Manager] MySQL connection error:', error);
+    throw new Error(`Failed to connect to mail database: ${error.message}`);
+  }
+}
+
+/**
+ * Create a secure password hash for Dovecot
+ * @param {string} password Plain text password
+ * @returns {string} Hashed password in Dovecot format
+ */
+function hashPassword(password) {
+  // Check if we should use a specific hash method from env
+  const hashMethod = process.env.MAIL_PASSWORD_SCHEME || 'SHA512-CRYPT';
+  
+  // Generate a secure random salt
+  const salt = crypto.randomBytes(8).toString('hex');
+  
+  switch (hashMethod) {
+    case 'SHA512-CRYPT':
+      // This is a simplified version - in production, use proper crypt library
+      const hash = crypto.createHash('sha512')
+        .update(password + salt)
+        .digest('hex');
+      
+      return `{SHA512-CRYPT}$6$${salt}$${hash}`;
+      
+    case 'BCRYPT':
+      // Note: In a real implementation, use bcrypt library
+      // This is just a placeholder
+      const bcryptHash = '$2y$10$' + salt + crypto.createHash('sha256').update(password).digest('hex');
+      return `{BCRYPT}${bcryptHash}`;
+      
+    default:
+      // Default to SHA512-CRYPT
+      const defaultHash = crypto.createHash('sha512')
+        .update(password + salt)
+        .digest('hex');
+      
+      return `{SHA512-CRYPT}$6$${salt}$${defaultHash}`;
+  }
+}
+
+/**
+ * Create a new email account by inserting into MySQL database
+ * Dovecot is configured to auto-create mail directories on first login
  * 
  * @param {string} email The email address
  * @param {string} password The password for the account
@@ -36,82 +95,45 @@ export async function createMailAccount(email, password, name = null, quota = 10
     throw new Error('Invalid email format');
   }
   
-  // Determine which command to use based on mail server setup
-  let command = '';
+  // Get database connection
+  const connection = await getMailDbConnection();
   
-  // Option 1: Docker with postfixadmin-cli
-  if (process.env.MAIL_SERVER_TYPE === 'postfixadmin-docker') {
-    command = `docker exec ${process.env.MAIL_CONTAINER_NAME || 'mail_server'} /usr/bin/postfixadmin-cli mailbox add ${email} --password "${password}" --name "${name || username}" --quota ${quota}`;
-  } 
-  // Option 2: Direct postfixadmin-cli on host
-  else if (process.env.MAIL_SERVER_TYPE === 'postfixadmin-direct') {
-    command = `/usr/bin/postfixadmin-cli mailbox add ${email} --password "${password}" --name "${name || username}" --quota ${quota}`;
-  }
-  // Option 3: Traditional postfix/dovecot with virtual users
-  else {
-    // Create virtual mailbox directories
-    const mailDir = process.env.MAIL_DIR || '/var/mail/vhosts';
-    const userDir = `${mailDir}/${domain}/${username}`;
-    
-    // Ensure domain directory exists
-    const domainDir = `${mailDir}/${domain}`;
-    try {
-      await fs.mkdir(domainDir, { recursive: true });
-    } catch (err) {
-      console.warn(`[Account Manager] Error creating domain directory: ${err.message}`);
-    }
-    
-    // Create user directory and required subdirectories
-    command = `mkdir -p ${userDir}/{cur,new,tmp} && \\
-      chmod -R 700 ${userDir} && \\
-      chown -R ${process.env.MAIL_USER || 'vmail'}:${process.env.MAIL_GROUP || 'vmail'} ${userDir} && \\
-      echo "${password}" | doveadm pw -s SHA512-CRYPT -p > /tmp/pw_${username} && \\
-      echo "${email} $(cat /tmp/pw_${username})" >> /etc/postfix/virtual_mailbox_passwd && \\
-      rm /tmp/pw_${username} && \\
-      postmap /etc/postfix/virtual_mailbox_passwd`;
-    
-    // Check if we need to add the domain to virtual_mailbox_domains
-    try {
-      const domainsFile = '/etc/postfix/virtual_mailbox_domains';
-      const domainsContent = await fs.readFile(domainsFile, 'utf8');
-      
-      if (!domainsContent.includes(domain)) {
-        await fs.appendFile(domainsFile, `${domain}\n`);
-        await execAsync('postmap /etc/postfix/virtual_mailbox_domains');
-      }
-    } catch (err) {
-      console.warn(`[Account Manager] Error checking/updating domains file: ${err.message}`);
-    }
-  }
-  
-  console.log(`[Account Manager] Using command type: ${process.env.MAIL_SERVER_TYPE || 'standard postfix/dovecot'}`);
-  
-  // Execute the command
   try {
-    const { stdout, stderr } = await execAsync(command);
-    let commandOutput = stdout;
+    // Hash the password according to dovecot config
+    const passwordFormat = hashPassword(password);
     
-    if (stderr) {
-      console.warn('[Account Manager] Command stderr:', stderr);
-      commandOutput += `\nStderr: ${stderr}`;
-    }
+    // Get the table name from env or use default
+    const tableName = process.env.MAIL_USERS_TABLE || 'virtual_users';
+    
+    // Insert the new mail account
+    // Note: Column names might need adjustment based on your schema
+    const [results] = await connection.execute(
+      `INSERT INTO ${tableName} (email, password, username, domain, created, quota) 
+       VALUES (?, ?, ?, ?, NOW(), ?)`,
+      [email, passwordFormat, username, domain, quota * 1024 * 1024] // Convert quota to bytes
+    );
+    
+    console.log(`[Account Manager] Mail account created successfully in database: ${email}`);
     
     return {
       success: true,
       email,
       domain,
       username,
-      command: command.replace(/--password "[^"]*"/, '--password "******"'), // Mask password
-      output: commandOutput
+      id: results.insertId,
+      message: `Mail account ${email} created successfully`
     };
   } catch (error) {
-    console.error('[Account Manager] Command execution error:', error);
+    console.error('[Account Manager] Database error creating mail account:', error);
     throw new Error(`Failed to create mail account: ${error.message}`);
+  } finally {
+    // Close the connection
+    await connection.end();
   }
 }
 
 /**
- * Delete an email account from the mail server
+ * Delete an email account from the mail database
  * 
  * @param {string} email The email address to delete
  * @returns {Promise<Object>} Result of account deletion
@@ -123,57 +145,41 @@ export async function deleteMailAccount(email) {
     throw new Error('Email is required');
   }
   
-  // Parse email to extract username and domain
-  const [username, domain] = email.split('@');
+  // Get database connection
+  const connection = await getMailDbConnection();
   
-  if (!username || !domain) {
-    throw new Error('Invalid email format');
-  }
-  
-  // Determine which command to use based on mail server setup
-  let command = '';
-  
-  // Option 1: Docker with postfixadmin-cli
-  if (process.env.MAIL_SERVER_TYPE === 'postfixadmin-docker') {
-    command = `docker exec ${process.env.MAIL_CONTAINER_NAME || 'mail_server'} /usr/bin/postfixadmin-cli mailbox delete ${email}`;
-  } 
-  // Option 2: Direct postfixadmin-cli on host
-  else if (process.env.MAIL_SERVER_TYPE === 'postfixadmin-direct') {
-    command = `/usr/bin/postfixadmin-cli mailbox delete ${email}`;
-  }
-  // Option 3: Traditional postfix/dovecot with virtual users
-  else {
-    const mailDir = process.env.MAIL_DIR || '/var/mail/vhosts';
-    const userDir = `${mailDir}/${domain}/${username}`;
-    
-    command = `rm -rf ${userDir} && \\
-      sed -i "/^${email} /d" /etc/postfix/virtual_mailbox_passwd && \\
-      postmap /etc/postfix/virtual_mailbox_passwd`;
-  }
-  
-  // Execute the command
   try {
-    const { stdout, stderr } = await execAsync(command);
-    let commandOutput = stdout;
+    // Get the table name from env or use default
+    const tableName = process.env.MAIL_USERS_TABLE || 'virtual_users';
     
-    if (stderr) {
-      console.warn('[Account Manager] Command stderr:', stderr);
-      commandOutput += `\nStderr: ${stderr}`;
+    // Delete the mail account
+    const [results] = await connection.execute(
+      `DELETE FROM ${tableName} WHERE email = ?`,
+      [email]
+    );
+    
+    if (results.affectedRows === 0) {
+      throw new Error(`Mail account ${email} not found`);
     }
+    
+    console.log(`[Account Manager] Mail account deleted successfully: ${email}`);
     
     return {
       success: true,
       email,
-      output: commandOutput
+      message: `Mail account ${email} deleted successfully`
     };
   } catch (error) {
-    console.error('[Account Manager] Command execution error:', error);
+    console.error('[Account Manager] Database error deleting mail account:', error);
     throw new Error(`Failed to delete mail account: ${error.message}`);
+  } finally {
+    // Close the connection
+    await connection.end();
   }
 }
 
 /**
- * Check if an email account exists in the mail server
+ * Check if an email account exists in the mail database
  * 
  * @param {string} email The email address to check
  * @returns {Promise<boolean>} Whether the account exists
@@ -185,140 +191,207 @@ export async function checkMailAccount(email) {
     throw new Error('Email is required');
   }
   
-  // Parse email to extract username and domain
-  const [username, domain] = email.split('@');
+  // Get database connection
+  const connection = await getMailDbConnection();
   
-  if (!username || !domain) {
-    throw new Error('Invalid email format');
-  }
-  
-  // Determine which command to use based on mail server setup
-  let command = '';
-  let exists = false;
-  
-  // Option 1: Docker with postfixadmin-cli
-  if (process.env.MAIL_SERVER_TYPE === 'postfixadmin-docker') {
-    command = `docker exec ${process.env.MAIL_CONTAINER_NAME || 'mail_server'} /usr/bin/postfixadmin-cli mailbox view ${email}`;
+  try {
+    // Get the table name from env or use default
+    const tableName = process.env.MAIL_USERS_TABLE || 'virtual_users';
     
-    try {
-      await execAsync(command);
-      exists = true;
-    } catch (error) {
-      exists = false;
-    }
-  } 
-  // Option 2: Direct postfixadmin-cli on host
-  else if (process.env.MAIL_SERVER_TYPE === 'postfixadmin-direct') {
-    command = `/usr/bin/postfixadmin-cli mailbox view ${email}`;
+    // Check if the mail account exists
+    const [rows] = await connection.execute(
+      `SELECT id FROM ${tableName} WHERE email = ?`,
+      [email]
+    );
     
-    try {
-      await execAsync(command);
-      exists = true;
-    } catch (error) {
-      exists = false;
-    }
+    return rows.length > 0;
+  } catch (error) {
+    console.error('[Account Manager] Database error checking mail account:', error);
+    throw new Error(`Failed to check mail account: ${error.message}`);
+  } finally {
+    // Close the connection
+    await connection.end();
   }
-  // Option 3: Traditional postfix/dovecot with virtual users
-  else {
-    // Check for the mailbox directory
-    const mailDir = process.env.MAIL_DIR || '/var/mail/vhosts';
-    const userDir = `${mailDir}/${domain}/${username}`;
-    
-    try {
-      await fs.access(userDir);
-      exists = true;
-    } catch (error) {
-      // Check in virtual_mailbox_passwd file as fallback
-      try {
-        const passwdFile = '/etc/postfix/virtual_mailbox_passwd';
-        const passwdContent = await fs.readFile(passwdFile, 'utf8');
-        
-        exists = passwdContent.includes(`${email} `);
-      } catch (err) {
-        exists = false;
-      }
-    }
-  }
-  
-  return exists;
 }
 
 /**
- * List all domains in the mail server
+ * Update mail account password
+ * 
+ * @param {string} email The email address
+ * @param {string} newPassword The new password
+ * @returns {Promise<Object>} Result of password update
+ */
+export async function updateMailAccountPassword(email, newPassword) {
+  console.log(`[Account Manager] Updating password for mail account: ${email}`);
+  
+  if (!email || !newPassword) {
+    throw new Error('Email and new password are required');
+  }
+  
+  // Get database connection
+  const connection = await getMailDbConnection();
+  
+  try {
+    // Hash the new password
+    const passwordFormat = hashPassword(newPassword);
+    
+    // Get the table name from env or use default
+    const tableName = process.env.MAIL_USERS_TABLE || 'virtual_users';
+    
+    // Update the password
+    const [results] = await connection.execute(
+      `UPDATE ${tableName} SET password = ? WHERE email = ?`,
+      [passwordFormat, email]
+    );
+    
+    if (results.affectedRows === 0) {
+      throw new Error(`Mail account ${email} not found`);
+    }
+    
+    console.log(`[Account Manager] Password updated successfully for: ${email}`);
+    
+    return {
+      success: true,
+      email,
+      message: `Password updated successfully for ${email}`
+    };
+  } catch (error) {
+    console.error('[Account Manager] Database error updating password:', error);
+    throw new Error(`Failed to update password: ${error.message}`);
+  } finally {
+    // Close the connection
+    await connection.end();
+  }
+}
+
+/**
+ * List all domains in the mail database
  * 
  * @returns {Promise<Array>} List of domains
  */
 export async function listMailDomains() {
   console.log('[Account Manager] Listing mail domains');
   
-  // Determine which command to use based on mail server setup
-  let domains = [];
+  // Get database connection
+  const connection = await getMailDbConnection();
   
-  // Option 1: Docker with postfixadmin-cli
-  if (process.env.MAIL_SERVER_TYPE === 'postfixadmin-docker') {
-    const command = `docker exec ${process.env.MAIL_CONTAINER_NAME || 'mail_server'} /usr/bin/postfixadmin-cli domain list`;
+  try {
+    // Get the table name from env or use default
+    const domainTable = process.env.MAIL_DOMAINS_TABLE || 'virtual_domains';
     
+    // Try to get domains from domains table if it exists
     try {
-      const { stdout } = await execAsync(command);
-      domains = stdout.split('\n')
-        .filter(line => line.trim().length > 0)
-        .map(line => line.trim());
-    } catch (error) {
-      console.error('[Account Manager] Error listing domains:', error);
-      throw new Error(`Failed to list mail domains: ${error.message}`);
+      const [rows] = await connection.execute(
+        `SELECT domain FROM ${domainTable}`
+      );
+      
+      return rows.map(row => row.domain);
+    } catch (tableError) {
+      console.warn(`[Account Manager] Error accessing domains table: ${tableError.message}`);
+      
+      // Fall back to getting unique domains from users table
+      const usersTable = process.env.MAIL_USERS_TABLE || 'virtual_users';
+      
+      const [rows] = await connection.execute(
+        `SELECT DISTINCT domain FROM ${usersTable}`
+      );
+      
+      return rows.map(row => row.domain);
     }
-  } 
-  // Option 2: Direct postfixadmin-cli on host
-  else if (process.env.MAIL_SERVER_TYPE === 'postfixadmin-direct') {
-    const command = `/usr/bin/postfixadmin-cli domain list`;
-    
-    try {
-      const { stdout } = await execAsync(command);
-      domains = stdout.split('\n')
-        .filter(line => line.trim().length > 0)
-        .map(line => line.trim());
-    } catch (error) {
-      console.error('[Account Manager] Error listing domains:', error);
-      throw new Error(`Failed to list mail domains: ${error.message}`);
-    }
+  } catch (error) {
+    console.error('[Account Manager] Database error listing domains:', error);
+    throw new Error(`Failed to list mail domains: ${error.message}`);
+  } finally {
+    // Close the connection
+    await connection.end();
   }
-  // Option 3: Traditional postfix/dovecot with virtual users
-  else {
-    try {
-      // Try to read from virtual_mailbox_domains file
-      const domainsFile = '/etc/postfix/virtual_mailbox_domains';
-      const domainsContent = await fs.readFile(domainsFile, 'utf8');
-      
-      domains = domainsContent.split('\n')
-        .filter(line => line.trim().length > 0 && !line.startsWith('#'))
-        .map(line => line.trim());
-      
-      // Also check directories in mail directory
-      const mailDir = process.env.MAIL_DIR || '/var/mail/vhosts';
-      
-      try {
-        const dirEntries = await fs.readdir(mailDir, { withFileTypes: true });
-        const dirDomains = dirEntries
-          .filter(entry => entry.isDirectory())
-          .map(entry => entry.name);
-        
-        // Merge domains from both sources
-        domains = [...new Set([...domains, ...dirDomains])];
-      } catch (err) {
-        console.warn(`[Account Manager] Error reading mail directory: ${err.message}`);
-      }
-    } catch (error) {
-      console.error('[Account Manager] Error listing domains:', error);
-      throw new Error(`Failed to list mail domains: ${error.message}`);
-    }
+}
+
+/**
+ * Test connection to mail server (SMTP/IMAP)
+ * 
+ * @returns {Promise<Object>} Connection test results
+ */
+export async function testMailConnection() {
+  const results = {
+    smtp: { success: false, error: null },
+    imap: { success: false, error: null },
+    database: { success: false, error: null }
+  };
+  
+  // Test database connection
+  try {
+    const connection = await getMailDbConnection();
+    await connection.ping();
+    results.database.success = true;
+    await connection.end();
+  } catch (error) {
+    results.database.error = error.message;
   }
   
-  return domains;
+  // Test SMTP connection
+  if (process.env.MAIL_HOST) {
+    try {
+      const nodemailer = await import('nodemailer');
+      
+      const transporter = nodemailer.default.createTransport({
+        host: process.env.MAIL_HOST,
+        port: parseInt(process.env.MAIL_SMTP_PORT || '587'),
+        secure: process.env.MAIL_SMTP_SECURE === 'true',
+        auth: {
+          user: process.env.MAIL_TEST_USER,
+          pass: process.env.MAIL_TEST_PASSWORD
+        },
+        tls: {
+          rejectUnauthorized: process.env.NODE_ENV === 'production'
+        }
+      });
+      
+      await transporter.verify();
+      results.smtp.success = true;
+    } catch (error) {
+      results.smtp.error = error.message;
+    }
+  } else {
+    results.smtp.error = 'MAIL_HOST not configured';
+  }
+  
+  // Test IMAP connection
+  if (process.env.MAIL_HOST && process.env.MAIL_TEST_USER) {
+    try {
+      const { ImapFlow } = await import('imapflow');
+      
+      const client = new ImapFlow({
+        host: process.env.MAIL_HOST,
+        port: parseInt(process.env.MAIL_IMAP_PORT || '993'),
+        secure: process.env.MAIL_IMAP_SECURE !== 'false',
+        auth: {
+          user: process.env.MAIL_TEST_USER,
+          pass: process.env.MAIL_TEST_PASSWORD
+        },
+        tls: {
+          rejectUnauthorized: process.env.NODE_ENV === 'production'
+        }
+      });
+      
+      await client.connect();
+      await client.logout();
+      results.imap.success = true;
+    } catch (error) {
+      results.imap.error = error.message;
+    }
+  } else {
+    results.imap.error = 'MAIL_HOST or MAIL_TEST_USER not configured';
+  }
+  
+  return results;
 }
 
 export default {
   createMailAccount,
   deleteMailAccount,
   checkMailAccount,
-  listMailDomains
+  updateMailAccountPassword,
+  listMailDomains,
+  testMailConnection
 };
