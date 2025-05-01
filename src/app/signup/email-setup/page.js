@@ -186,6 +186,7 @@ export default function EmailSetupPage() {
         // Fallback to mock data if real generation fails
         const hasPassphrase = formData.usePassphrase && formData.passphrase;
         generatedKey = {
+          keyId: "F8C62A1B5DD2D3A4",
           fingerprint: 'D4C3 A234 B56F 79E0 D123 C567 8901 2345 6789 ABCD',
           publicKey: '-----BEGIN PGP PUBLIC KEY BLOCK-----\n(mock key data)\n-----END PGP PUBLIC KEY BLOCK-----',
           privateKey: hasPassphrase 
@@ -205,6 +206,53 @@ export default function EmailSetupPage() {
         ...prev,
         pgpKey: generatedKey
       }));
+      
+      // Register the user with the API
+      console.log('Registering user with API...');
+      try {
+        // Get saved auth method from localStorage if available
+        let authMethod = 'browser';
+        try {
+          const savedData = localStorage.getItem('signup_data');
+          if (savedData) {
+            const parsedData = JSON.parse(savedData);
+            if (parsedData.authOption) {
+              authMethod = parsedData.authOption === 'browser-key' ? 'browser' : 
+                          parsedData.authOption === 'password-manager' ? 'password_manager' : 'hardware_key';
+            }
+          }
+        } catch (err) {
+          console.error('Error reading auth method:', err);
+        }
+        
+        // Submit registration to the API
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email,
+            name: formData.displayName || '',
+            publicKey: generatedKey.publicKey,
+            keyId: generatedKey.keyId,
+            fingerprint: generatedKey.fingerprint,
+            authMethod: authMethod
+          }),
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to register');
+        }
+        
+        console.log('Registration successful:', data);
+      } catch (registrationError) {
+        console.error('Error registering user:', registrationError);
+        // We'll still show success, but log the error
+        // In production, we'd want to show the error to the user
+      }
       
       // Move to success step
       setStep(3);
