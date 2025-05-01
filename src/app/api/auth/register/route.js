@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import validation from '@/lib/utils/validation';
+import accountManager from '@/lib/mail/accountManager';
 
 /**
  * User registration API endpoint
@@ -12,7 +13,7 @@ import validation from '@/lib/utils/validation';
 export const dynamic = 'force-dynamic';
 
 // Add a version identifier to track which code version is running
-const VERSION = 'v2.0.1';
+const VERSION = 'v2.0.2';
 
 export async function POST(request) {
   console.log(`[Register API ${VERSION}] Registration request received`);
@@ -191,6 +192,49 @@ export async function POST(request) {
       console.error('[Register API] Error logging activity:', logError);
     }
     
+    // Check if this is a KeyKeeper email request (create mail account)
+    let mailAccountCreated = false;
+    const isKeyKeeperEmail = email.endsWith('@keykeeper.world') || email.endsWith('@phoneshield.ai');
+    
+    if (isKeyKeeperEmail && process.env.CREATE_MAIL_ACCOUNTS === 'true') {
+      try {
+        console.log(`[Register API] Creating mail account for: ${email}`);
+        
+        // Generate a secure random password for the mail account
+        const crypto = await import('crypto');
+        const mailPassword = crypto.randomBytes(16).toString('hex');
+        
+        // Create the mail account
+        const result = await accountManager.createMailAccount(
+          email,
+          mailPassword,
+          name || email.split('@')[0],
+          parseInt(process.env.DEFAULT_MAIL_QUOTA || '1024')
+        );
+        
+        console.log(`[Register API] Mail account created successfully: ${email}`);
+        mailAccountCreated = true;
+        
+        // Store mail account password in user record (encrypted)
+        await db.users.updateMailPassword(userId, mailPassword);
+        
+        // Log mail account creation
+        await db.activityLogs.create(userId, 'mail_account_creation', {
+          email,
+          success: true
+        });
+      } catch (mailError) {
+        console.error('[Register API] Error creating mail account:', mailError);
+        
+        // Log the error but continue - we'll still create the user account
+        await db.activityLogs.create(userId, 'mail_account_creation', {
+          email,
+          success: false,
+          error: mailError.message
+        });
+      }
+    }
+    
     // Return success response
     console.log(`[Register API] Registration successful for: ${email}`);
     return NextResponse.json(
@@ -199,6 +243,7 @@ export async function POST(request) {
         message: 'User registered successfully',
         userId,
         status: 'pending',
+        mailAccountCreated,
         version: VERSION
       },
       { status: 201 }

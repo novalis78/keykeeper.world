@@ -31,10 +31,12 @@ KeyKeeper.world is a privacy-focused mail service designed as a companion to the
 ## Technical Implementation
 
 Built using modern, auditable technologies:
-- **Server**: Postfix mail server with custom PGP integration
+- **Server**: Postfix/Dovecot mail server with custom PGP integration
 - **Key Server**: Hagrid-based implementation (similar to keys.openpgp.org)
 - **Frontend**: Minimal Next.js interface for account management
 - **Security**: Open source codebase for transparency and community validation
+- **Account Management**: Secure mail account creation with encrypted password storage
+- **Mail Server Integration**: Support for various deployment options (Docker, direct, standard)
 
 ### Zero-Knowledge Architecture
 

@@ -55,25 +55,60 @@ export async function POST(request) {
       // The below is just an example assuming Docker and postfixadmin
       // It's a simulated call - not actually run in this test implementation
       
-      // Simulate running the command
-      console.log('[Account Test API] Simulating account creation command');
+      // Actually run the command to create mailbox
+      console.log('[Account Test API] Running account creation command');
       
-      /* 
-      // Example command format that we would use in a real implementation
-      const command = `docker exec mail_server /usr/bin/postfixadmin-cli mailbox add ${email} --password "${password}" --name "Test User" --quota 1024`;
+      // Determine which command to use based on mail server setup
+      let command = '';
       
-      // Execute the command
-      const { stdout, stderr } = await execAsync(command);
-      commandOutput = stdout;
-      if (stderr) {
-        console.warn('[Account Test API] Command stderr:', stderr);
+      // Option 1: Docker with postfixadmin-cli
+      if (process.env.MAIL_SERVER_TYPE === 'postfixadmin-docker') {
+        command = `docker exec ${process.env.MAIL_CONTAINER_NAME || 'mail_server'} /usr/bin/postfixadmin-cli mailbox add ${email} --password "${password}" --name "${username}" --quota 1024`;
+      } 
+      // Option 2: Direct postfixadmin-cli on host
+      else if (process.env.MAIL_SERVER_TYPE === 'postfixadmin-direct') {
+        command = `/usr/bin/postfixadmin-cli mailbox add ${email} --password "${password}" --name "${username}" --quota 1024`;
       }
-      */
+      // Option 3: Traditional postfix/dovecot with virtual users
+      else {
+        // Create virtual mailbox directories
+        const mailDir = process.env.MAIL_DIR || '/var/mail/vhosts';
+        const userDir = `${mailDir}/${domain}/${username}`;
+        
+        // Create user directory and required subdirectories
+        command = `mkdir -p ${userDir}/{cur,new,tmp} && \\
+          chmod -R 700 ${userDir} && \\
+          echo "${password}" | doveadm pw -s SHA512-CRYPT -p > /tmp/pw_${username} && \\
+          echo "${email} $(cat /tmp/pw_${username})" >> /etc/postfix/virtual_mailbox_passwd && \\
+          rm /tmp/pw_${username} && \\
+          postmap /etc/postfix/virtual_mailbox_passwd`;
+      }
       
-      // For testing, we simulate success without actually running the command
-      commandOutput = `Account ${email} created successfully`;
-      testResults.command = 'Simulated command execution';
-      testResults.stdout = commandOutput;
+      console.log(`[Account Test API] Using command type: ${process.env.MAIL_SERVER_TYPE || 'standard postfix/dovecot'}`);
+      
+      try {
+        // Execute the command
+        const { stdout, stderr } = await execAsync(command);
+        commandOutput = stdout;
+        if (stderr) {
+          console.warn('[Account Test API] Command stderr:', stderr);
+          commandOutput += `\nStderr: ${stderr}`;
+        }
+        
+        testResults.command = command.replace(/--password "[^"]*"/, '--password "******"'); // Mask password
+        testResults.stdout = commandOutput;
+      } catch (execError) {
+        console.error('[Account Test API] Command execution error:', execError);
+        return NextResponse.json({
+          success: false,
+          error: 'Failed to create mail account',
+          details: {
+            command: command.replace(/--password "[^"]*"/, '--password "******"'),
+            error: execError.message,
+            stderr: execError.stderr
+          }
+        }, { status: 500 });
+      }
       
       // Test if we can connect to the account we just created
       testResults.connectivity = await testMailboxConnectivity(email, password, host);
@@ -143,28 +178,30 @@ async function testMailboxConnectivity(email, password, host = null) {
     // Import nodemailer dynamically
     const nodemailer = (await import('nodemailer')).default;
     
-    // Create transporter (this would actually connect in a real implementation)
-    /*
+    // Actually create and test connection
     const smtpTransporter = nodemailer.createTransport({
-      host: host || '172.17.0.1',
-      port: 587,
-      secure: false,
+      host: host || process.env.MAIL_HOST || '172.17.0.1',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
       auth: {
         user: email,
         pass: password
       },
       tls: {
         rejectUnauthorized: false
-      }
+      },
+      connectionTimeout: 5000 // 5 seconds timeout
     });
+    
+    console.log(`[Mailbox Connectivity] Testing SMTP for ${email} at ${host || process.env.MAIL_HOST || '172.17.0.1'}`);
     
     // Verify connection
     await smtpTransporter.verify();
-    */
     
-    // Simulate success
     results.smtpTest.success = true;
   } catch (error) {
+    console.error('[Mailbox Connectivity] SMTP test failed:', error);
+    results.smtpTest.success = false;
     results.smtpTest.error = error.message;
   }
   
@@ -172,29 +209,41 @@ async function testMailboxConnectivity(email, password, host = null) {
     // Import imapflow dynamically
     const { ImapFlow } = await import('imapflow');
     
-    // Create IMAP client (this would actually connect in a real implementation)
-    /*
+    // Actually create and test connection
     const imapClient = new ImapFlow({
-      host: host || '172.17.0.1',
-      port: 993,
-      secure: true,
+      host: host || process.env.MAIL_HOST || '172.17.0.1',
+      port: parseInt(process.env.IMAP_PORT || '993'),
+      secure: process.env.IMAP_SECURE !== 'false', // Default to true
       auth: {
         user: email,
         pass: password
       },
       tls: {
         rejectUnauthorized: false
-      }
+      },
+      connectionTimeout: 5000 // 5 seconds timeout
     });
+    
+    console.log(`[Mailbox Connectivity] Testing IMAP for ${email} at ${host || process.env.MAIL_HOST || '172.17.0.1'}`);
     
     // Test connection
     await imapClient.connect();
-    await imapClient.logout();
-    */
+    console.log(`[Mailbox Connectivity] IMAP connected, capabilities:`, imapClient.capability);
     
-    // Simulate success
+    // Try to list mailboxes
+    try {
+      const mailboxes = await imapClient.list();
+      console.log(`[Mailbox Connectivity] Found ${mailboxes.length} mailboxes`);
+      results.imapTest.mailboxes = mailboxes.map(box => box.path);
+    } catch (listError) {
+      console.warn('[Mailbox Connectivity] Could not list mailboxes:', listError.message);
+    }
+    
+    await imapClient.logout();
     results.imapTest.success = true;
   } catch (error) {
+    console.error('[Mailbox Connectivity] IMAP test failed:', error);
+    results.imapTest.success = false;
     results.imapTest.error = error.message;
   }
   

@@ -197,6 +197,43 @@ export const users = {
   },
   
   /**
+   * Update mail account password for a user
+   * @param {string} id - User ID
+   * @param {string} password - Mail account password to store (will be encrypted)
+   * @returns {Promise<boolean>} - Success status
+   */
+  async updateMailPassword(id, password) {
+    try {
+      // Import crypto module
+      const crypto = await import('crypto');
+      
+      // Generate a random encryption key using the app secret as basis
+      const secret = process.env.APP_SECRET || 'keykeeper-default-secret';
+      const encKey = crypto.createHash('sha256').update(secret).digest();
+      
+      // Generate a random IV
+      const iv = crypto.randomBytes(16);
+      
+      // Create cipher and encrypt the password
+      const cipher = crypto.createCipheriv('aes-256-cbc', encKey, iv);
+      let encrypted = cipher.update(password, 'utf8', 'hex');
+      encrypted += cipher.final('hex');
+      
+      // Store the encrypted password with the IV
+      const encryptedData = `${iv.toString('hex')}:${encrypted}`;
+      
+      // Update the user record with the encrypted password
+      const sql = `UPDATE users SET mail_password = ? WHERE id = ?`;
+      const result = await query(sql, [encryptedData, id]);
+      
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error('Error updating mail password:', error);
+      throw new Error('Failed to update mail password');
+    }
+  },
+  
+  /**
    * Update last login timestamp
    * @param {string} id - User ID
    * @returns {Promise<boolean>} - Success status
@@ -422,7 +459,7 @@ const dbInterface = {
   activityLogs,
   isConnected: () => !!pool,
   test: {
-    version: '2.0.1',
+    version: '2.0.2',
     initialized: new Date().toISOString(),
     poolCreated: !!pool
   }
