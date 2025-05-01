@@ -204,7 +204,7 @@ export default function EmailSetupPage() {
       
       setFormData(prev => ({
         ...prev,
-        pgpKey: mockPGPKey
+        pgpKey: generatedKey
       }));
       
       // Move to success step
@@ -246,21 +246,23 @@ export default function EmailSetupPage() {
   };
   
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <LockClosedIcon className="h-16 w-16 text-primary-600 dark:text-primary-500" />
+          <div className="h-16 w-16 rounded-full bg-gradient-to-r from-primary-600 to-primary-500 flex items-center justify-center shadow-lg shadow-primary-500/20">
+            <LockClosedIcon className="h-9 w-9 text-white" />
+          </div>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
+        <h2 className="mt-6 text-center text-4xl font-extrabold text-white">
           Create Your Secure Email
         </h2>
-        <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
+        <p className="mt-2 text-center text-base text-primary-200">
           Your private communications, protected by end-to-end encryption
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-3xl md:max-w-4xl lg:max-w-5xl">
+        <div className="bg-white dark:bg-gray-800 py-8 px-6 shadow-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 sm:px-12">
           {/* Step progress indicator */}
           <div className="mb-8">
             <div className="flex items-center justify-between">
@@ -310,49 +312,52 @@ export default function EmailSetupPage() {
           {/* Step 1: Email Setup */}
           {step === 1 && (
             <form onSubmit={handleSubmit}>
-              <div className="space-y-6">
-                <div>
-                  <label htmlFor="localPart" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Choose your email address
-                  </label>
-                  <div className="mt-1 flex rounded-md shadow-sm">
-                    <input
-                      type="text"
-                      name="localPart"
-                      id="localPart"
-                      value={formData.localPart}
-                      onChange={handleInputChange}
-                      className="appearance-none flex-1 min-w-0 rounded-l-md focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 shadow-sm placeholder-gray-400 dark:bg-gray-700 dark:text-white focus:outline-none"
-                      placeholder="username"
-                      autoComplete="off"
-                      required
-                    />
-                    <span className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 sm:text-sm">
-                      @
-                      <select
-                        name="domain"
-                        id="domain"
-                        value={formData.domain}
-                        onChange={handleDomainChange}
-                        className="ml-1 border-0 bg-transparent focus:ring-0 focus:outline-none dark:text-white"
-                      >
-                        {domainOptions.map(domain => (
-                          <option key={domain.id} value={domain.name}>
-                            {domain.name}
-                          </option>
-                        ))}
-                      </select>
-                    </span>
-                  </div>
-                  
-                  {/* Availability indicator */}
-                  {formData.localPart.length > 2 && (
-                    <div className="mt-2 flex items-center">
-                      {isChecking ? (
-                        <div className="flex items-center">
-                          <div className="animate-spin h-4 w-4 border-t-2 border-primary-500 rounded-full mr-2" />
-                          <span className="text-xs text-gray-500 dark:text-gray-400">Checking availability...</span>
-                        </div>
+              <div className="max-w-3xl mx-auto">
+                <div className="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-6 mb-8">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Choose Your KeyKeeper Address</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="localPart" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Choose your username
+                      </label>
+                      <div className="mt-1 flex rounded-md shadow-sm">
+                        <input
+                          type="text"
+                          name="localPart"
+                          id="localPart"
+                          value={formData.localPart}
+                          onChange={handleInputChange}
+                          className="appearance-none flex-1 min-w-0 rounded-l-md focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 shadow-sm placeholder-gray-400 dark:bg-gray-700 dark:text-white focus:outline-none"
+                          placeholder="username"
+                          autoComplete="off"
+                          required
+                        />
+                        <span className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 sm:text-sm">
+                          @
+                          <select
+                            name="domain"
+                            id="domain"
+                            value={formData.domain}
+                            onChange={handleDomainChange}
+                            className="ml-1 border-0 bg-transparent focus:ring-0 focus:outline-none dark:text-white"
+                          >
+                            {domainOptions.map(domain => (
+                              <option key={domain.id} value={domain.name}>
+                                {domain.name}
+                              </option>
+                            ))}
+                          </select>
+                        </span>
+                      </div>
+                      
+                      {/* Availability indicator */}
+                      {formData.localPart.length > 2 && (
+                        <div className="mt-2 flex items-center">
+                          {isChecking ? (
+                            <div className="flex items-center">
+                              <div className="animate-spin h-4 w-4 border-t-2 border-primary-500 rounded-full mr-2" />
+                              <span className="text-xs text-gray-500 dark:text-gray-400">Checking availability...</span>
+                            </div>
                       ) : isAvailable ? (
                         <div className="flex items-center text-green-600 dark:text-green-500">
                           <CheckCircleIcon className="h-4 w-4 mr-2" />
@@ -372,31 +377,36 @@ export default function EmailSetupPage() {
                       Username must be at least 3 characters
                     </p>
                   )}
-                </div>
-                
-                <div>
-                  <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Display Name
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      type="text"
-                      name="displayName"
-                      id="displayName"
-                      value={formData.displayName}
-                      onChange={handleInputChange}
-                      className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm"
-                      placeholder="Your Name"
-                      required
-                    />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Display Name
+                      </label>
+                      <div className="mt-1">
+                        <input
+                          type="text"
+                          name="displayName"
+                          id="displayName"
+                          value={formData.displayName}
+                          onChange={handleInputChange}
+                          className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm"
+                          placeholder="Your Name"
+                          required
+                        />
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        This name will be shown to recipients of your emails
+                      </p>
+                    </div>
                   </div>
                 </div>
                 
-                <div>
+                <div className="mt-6 flex justify-end">
                   <button
                     type="submit"
                     disabled={!isAvailable || formData.localPart.length < 3 || !formData.displayName}
-                    className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
+                    className={`flex justify-center py-2 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
                       !isAvailable || formData.localPart.length < 3 || !formData.displayName
                         ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
                         : 'bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500'
@@ -411,28 +421,38 @@ export default function EmailSetupPage() {
           
           {/* Step 2: Key Generation */}
           {step === 2 && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Generate Your PGP Key</h3>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <div className="max-w-3xl mx-auto">
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">Generate Your PGP Key</h3>
+                <p className="mt-2 text-md text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
                   Your PGP key is required for secure communication. It will be generated on your device and never sent to our servers.
                 </p>
               </div>
               
-              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
-                <div className="flex items-center mb-2">
-                  <EnvelopeIcon className="h-5 w-5 text-primary-500 mr-2" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Email Address:</span>
+              <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600">
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Account Information</h4>
+                  
+                  <div className="flex items-center mb-4">
+                    <EnvelopeIcon className="h-5 w-5 text-primary-500 mr-3 flex-shrink-0" />
+                    <div>
+                      <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email Address:</span>
+                      <span className="block text-md font-semibold text-gray-900 dark:text-white">{`${formData.localPart}@${formData.domain}`}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary-500 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <div>
+                      <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">Display Name:</span>
+                      <span className="block text-md font-semibold text-gray-900 dark:text-white">{formData.displayName}</span>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-900 dark:text-white ml-7">{`${formData.localPart}@${formData.domain}`}</p>
                 
-                <div className="flex items-center mt-4 mb-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Display Name:</span>
-                </div>
-                <p className="text-sm text-gray-900 dark:text-white">{formData.displayName}</p>
-              </div>
-              
-              <div className="bg-primary-50 dark:bg-primary-900/20 p-4 rounded-md border border-primary-200 dark:border-primary-900">
+                <div className="bg-primary-50 dark:bg-primary-900/10 p-6 rounded-xl shadow-sm border border-primary-200 dark:border-primary-900">
                 <h4 className="text-sm font-medium text-primary-700 dark:text-primary-400">Security Information</h4>
                 <ul className="mt-2 space-y-1 text-xs text-primary-600 dark:text-primary-300">
                   <li>Your key will be generated using 4096-bit RSA encryption</li>
@@ -559,30 +579,39 @@ export default function EmailSetupPage() {
           
           {/* Step 3: Success */}
           {step === 3 && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <CheckCircleIcon className="h-12 w-12 text-green-600 dark:text-green-500 mx-auto" />
-                <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-white">Account Created Successfully!</h3>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <div className="max-w-3xl mx-auto">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center h-20 w-20 rounded-full bg-green-100 dark:bg-green-900 mb-6">
+                  <CheckCircleIcon className="h-12 w-12 text-green-600 dark:text-green-500" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Account Created Successfully!</h3>
+                <p className="mt-2 text-md text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
                   Your secure email account has been set up with end-to-end encryption.
                 </p>
               </div>
               
-              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
-                <div className="flex items-center mb-2">
-                  <EnvelopeIcon className="h-5 w-5 text-primary-500 mr-2" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Your New Email:</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Account Details</h4>
+                  
+                  <div className="flex items-center mb-4">
+                    <EnvelopeIcon className="h-5 w-5 text-primary-500 mr-3 flex-shrink-0" />
+                    <div>
+                      <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">Your New Email:</span>
+                      <span className="block text-md font-semibold text-gray-900 dark:text-white">{`${formData.localPart}@${formData.domain}`}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <KeyIcon className="h-5 w-5 text-primary-500 mr-3 flex-shrink-0" />
+                    <div>
+                      <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">PGP Key Fingerprint:</span>
+                      <span className="block text-sm font-mono text-gray-900 dark:text-white break-all">{formData.pgpKey?.fingerprint}</span>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-900 dark:text-white ml-7">{`${formData.localPart}@${formData.domain}`}</p>
                 
-                <div className="flex items-center mt-4 mb-2">
-                  <KeyIcon className="h-5 w-5 text-primary-500 mr-2" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">PGP Key Fingerprint:</span>
-                </div>
-                <p className="text-sm font-mono text-gray-900 dark:text-white ml-7">{formData.pgpKey?.fingerprint}</p>
-              </div>
-              
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-md border border-yellow-200 dark:border-yellow-900">
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 p-6 rounded-xl shadow-md border border-yellow-200 dark:border-yellow-900">
                 <h4 className="text-sm font-medium text-yellow-700 dark:text-yellow-400">Important Security Step</h4>
                 <p className="mt-1 text-xs text-yellow-600 dark:text-yellow-300">
                   Please back up your encryption key now. This is the only time you'll be able to download it directly.
@@ -615,17 +644,24 @@ export default function EmailSetupPage() {
                     URL.revokeObjectURL(url);
                     document.body.removeChild(a);
                   }}
-                  className="mt-2 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                  className="mt-4 w-full flex items-center justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-700 dark:hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
                 >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
                   Download Key Backup
                 </button>
               </div>
+              </div>
               
-              <div>
+              <div className="mt-6 flex justify-center">
                 <Link 
                   href="/dashboard"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                  className="flex items-center justify-center py-3 px-8 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200"
                 >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                   Go to Dashboard
                 </Link>
               </div>

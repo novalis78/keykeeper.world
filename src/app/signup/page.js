@@ -346,21 +346,21 @@ export default function SignupPage() {
   };
   
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-2xl">
         <Link href="/" className="flex justify-center">
           <span className="sr-only">KeyKeeper</span>
-          <div className="h-14 w-14 rounded-full bg-primary-600 flex items-center justify-center">
-            <LockClosedIcon className="h-8 w-8 text-white" />
+          <div className="h-16 w-16 rounded-full bg-gradient-to-r from-primary-600 to-primary-500 flex items-center justify-center shadow-lg shadow-primary-500/20 hover:shadow-primary-500/40 transition-all duration-300">
+            <LockClosedIcon className="h-9 w-9 text-white" />
           </div>
         </Link>
-        <h1 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-          KeyKeeper.world
+        <h1 className="mt-6 text-center text-4xl font-extrabold text-white">
+          KeyKeeper<span className="text-primary-400">.world</span>
         </h1>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl">
-        <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-3xl md:max-w-4xl lg:max-w-5xl">
+        <div className="bg-white dark:bg-gray-800 py-8 px-6 shadow-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 sm:px-12">
           <form onSubmit={handleSubmit}>
             {/* Step indicator */}
             <div className="mb-6">
