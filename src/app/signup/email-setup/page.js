@@ -78,9 +78,17 @@ export default function EmailSetupPage() {
     setError(null);
     
     try {
+      // Show some kind of loading state or indicator
+      const generatingEl = document.getElementById('generating-indicator');
+      if (generatingEl) {
+        generatingEl.classList.remove('hidden');
+      }
+      
       // In a real implementation, this would generate a PGP key pair
-      // For now, we'll simulate the process
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // For now, we'll simulate the process with a visible delay
+      console.log('Starting key generation...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log('Key generation complete');
       
       // Simulate a generated key
       const mockPGPKey = {
@@ -88,6 +96,11 @@ export default function EmailSetupPage() {
         publicKey: '-----BEGIN PGP PUBLIC KEY BLOCK-----\n(mock key data)\n-----END PGP PUBLIC KEY BLOCK-----',
         privateKey: '(encrypted private key data)'
       };
+      
+      // Hide loading indicator if it exists
+      if (generatingEl) {
+        generatingEl.classList.add('hidden');
+      }
       
       setFormData(prev => ({
         ...prev,
@@ -100,6 +113,12 @@ export default function EmailSetupPage() {
     } catch (err) {
       console.error('Error generating PGP key:', err);
       setError('Failed to generate PGP key. Please try again.');
+      
+      // Hide loading indicator on error too
+      const generatingEl = document.getElementById('generating-indicator');
+      if (generatingEl) {
+        generatingEl.classList.add('hidden');
+      }
     }
   };
   
@@ -322,6 +341,12 @@ export default function EmailSetupPage() {
                 </ul>
               </div>
               
+              <div id="generating-indicator" className="hidden bg-primary-50 dark:bg-primary-900/30 p-4 rounded-md text-center mb-4">
+                <div className="inline-block animate-spin h-8 w-8 border-4 border-primary-500 rounded-full border-t-transparent"></div>
+                <p className="mt-2 text-sm text-primary-700 dark:text-primary-300">Generating your PGP key pair...</p>
+                <p className="text-xs text-primary-600 dark:text-primary-400 mt-1">This may take a few moments</p>
+              </div>
+            
               <div>
                 <button
                   type="button"
