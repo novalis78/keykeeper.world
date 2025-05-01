@@ -26,7 +26,6 @@ export default function EmailSetupPage() {
     { id: 2, name: 'phoneshield.ai', isDefault: false }
   ];
   
-  // Simulate checking username availability
   // Load data from previous step if available
   useEffect(() => {
     try {
@@ -358,25 +357,25 @@ export default function EmailSetupPage() {
                               <div className="animate-spin h-4 w-4 border-t-2 border-primary-500 rounded-full mr-2" />
                               <span className="text-xs text-gray-500 dark:text-gray-400">Checking availability...</span>
                             </div>
-                      ) : isAvailable ? (
-                        <div className="flex items-center text-green-600 dark:text-green-500">
-                          <CheckCircleIcon className="h-4 w-4 mr-2" />
-                          <span className="text-xs">Available!</span>
+                          ) : isAvailable ? (
+                            <div className="flex items-center text-green-600 dark:text-green-500">
+                              <CheckCircleIcon className="h-4 w-4 mr-2" />
+                              <span className="text-xs">Available!</span>
+                            </div>
+                          ) : isAvailable === false ? (
+                            <div className="flex items-center text-red-600 dark:text-red-500">
+                              <XCircleIcon className="h-4 w-4 mr-2" />
+                              <span className="text-xs">This username is not available</span>
+                            </div>
+                          ) : null}
                         </div>
-                      ) : isAvailable === false ? (
-                        <div className="flex items-center text-red-600 dark:text-red-500">
-                          <XCircleIcon className="h-4 w-4 mr-2" />
-                          <span className="text-xs">This username is not available</span>
-                        </div>
-                      ) : null}
-                    </div>
-                  )}
+                      )}
                   
-                  {formData.localPart.length > 0 && formData.localPart.length < 3 && (
-                    <p className="mt-2 text-xs text-amber-500 dark:text-amber-400">
-                      Username must be at least 3 characters
-                    </p>
-                  )}
+                      {formData.localPart.length > 0 && formData.localPart.length < 3 && (
+                        <p className="mt-2 text-xs text-amber-500 dark:text-amber-400">
+                          Username must be at least 3 characters
+                        </p>
+                      )}
                     </div>
                     
                     <div>
@@ -460,6 +459,7 @@ export default function EmailSetupPage() {
                   <li>We'll help you securely back up your key afterward</li>
                   <li>Adding a passphrase provides an extra layer of security</li>
                 </ul>
+              </div>
               </div>
               
               <div className="bg-white dark:bg-gray-800 p-4 rounded-md border border-gray-200 dark:border-gray-700">
