@@ -9,6 +9,7 @@ import mysql from 'mysql2/promise';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import crypto from 'crypto';
+import db from '@/lib/db';
 
 // Promisify exec for test commands
 const execAsync = promisify(exec);
@@ -18,11 +19,43 @@ const execAsync = promisify(exec);
  * @returns {Promise<mysql.Connection>} MySQL connection
  */
 async function getMailDbConnection() {
+  // First try to use the main database connection if available
+  if (process.env.USE_MAIN_DB_FOR_MAIL === 'true') {
+    try {
+      // Just use the query function from the main db
+      console.log('[Account Manager] Using main database connection for mail operations');
+      return {
+        execute: async (sql, params) => {
+          try {
+            const results = await db.query(sql, params);
+            return [results];
+          } catch (error) {
+            throw error;
+          }
+        },
+        query: async (sql, params) => {
+          try {
+            const results = await db.query(sql, params);
+            return [results];
+          } catch (error) {
+            throw error;
+          }
+        },
+        ping: async () => true,
+        end: async () => {} // No-op since we're using the main connection pool
+      };
+    } catch (error) {
+      console.error('[Account Manager] Error using main database:', error);
+      console.log('[Account Manager] Falling back to dedicated mail database connection');
+    }
+  }
+
+  // Fall back to dedicated mail database connection
   // Configure MySQL connection from environment variables
   const dbConfig = {
     host: process.env.MAIL_DB_HOST || 'localhost',
-    user: process.env.MAIL_DB_USER || 'vmail',
-    password: process.env.MAIL_DB_PASSWORD,
+    user: process.env.MAIL_DB_USER || process.env.DATABASE_USER,
+    password: process.env.MAIL_DB_PASSWORD || process.env.DATABASE_PASSWORD,
     database: process.env.MAIL_DB_NAME || 'vmail'
   };
   
@@ -104,6 +137,38 @@ export async function createMailAccount(email, password, name = null, quota = 10
     
     // Get the table name from env or use default
     const tableName = process.env.MAIL_USERS_TABLE || 'virtual_users';
+    
+    // Check if the table exists, if not, try to create it (when using main DB)
+    if (process.env.USE_MAIN_DB_FOR_MAIL === 'true') {
+      try {
+        // Check if table exists
+        const [tables] = await connection.query(
+          `SHOW TABLES LIKE '${tableName}'`
+        );
+        
+        if (tables.length === 0) {
+          console.log(`[Account Manager] Table ${tableName} doesn't exist, creating it`);
+          
+          // Create the table if it doesn't exist
+          await connection.execute(`
+            CREATE TABLE IF NOT EXISTS ${tableName} (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              email VARCHAR(255) NOT NULL UNIQUE,
+              password VARCHAR(255) NOT NULL,
+              username VARCHAR(255) NOT NULL,
+              domain VARCHAR(255) NOT NULL,
+              created DATETIME DEFAULT CURRENT_TIMESTAMP,
+              quota BIGINT DEFAULT 1073741824,
+              active TINYINT(1) DEFAULT 1,
+              INDEX (domain),
+              INDEX (username)
+            )
+          `);
+        }
+      } catch (tableError) {
+        console.warn(`[Account Manager] Error checking/creating table: ${tableError.message}`);
+      }
+    }
     
     // Insert the new mail account
     // Note: Column names might need adjustment based on your schema
