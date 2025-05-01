@@ -138,30 +138,47 @@ export async function createMailAccount(email, password, name = null, quota = 10
     // Get the table name from env or use default
     const tableName = process.env.MAIL_USERS_TABLE || 'virtual_users';
     
-    // Check if the table exists, if not, try to create it (when using main DB)
+    // Check if needed tables exist, if not, try to create them (when using main DB)
     if (process.env.USE_MAIN_DB_FOR_MAIL === 'true') {
       try {
-        // Check if table exists
-        const [tables] = await connection.query(
+        // Check if virtual_users table exists
+        const [userTables] = await connection.query(
           `SHOW TABLES LIKE '${tableName}'`
         );
         
-        if (tables.length === 0) {
+        // Check if virtual_domains table exists
+        const domainTable = process.env.MAIL_DOMAINS_TABLE || 'virtual_domains';
+        const [domainTables] = await connection.query(
+          `SHOW TABLES LIKE '${domainTable}'`
+        );
+        
+        // Create domains table if needed
+        if (domainTables.length === 0) {
+          console.log(`[Account Manager] Table ${domainTable} doesn't exist, creating it`);
+          
+          await connection.execute(`
+            CREATE TABLE IF NOT EXISTS ${domainTable} (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              name VARCHAR(255) NOT NULL UNIQUE,
+              created DATETIME DEFAULT CURRENT_TIMESTAMP,
+              active TINYINT(1) DEFAULT 1
+            )
+          `);
+        }
+        
+        // Create virtual_users table if needed
+        if (userTables.length === 0) {
           console.log(`[Account Manager] Table ${tableName} doesn't exist, creating it`);
           
-          // Create the table if it doesn't exist
           await connection.execute(`
             CREATE TABLE IF NOT EXISTS ${tableName} (
               id INT AUTO_INCREMENT PRIMARY KEY,
+              domain_id INT NOT NULL,
               email VARCHAR(255) NOT NULL UNIQUE,
               password VARCHAR(255) NOT NULL,
-              username VARCHAR(255) NOT NULL,
-              domain VARCHAR(255) NOT NULL,
               created DATETIME DEFAULT CURRENT_TIMESTAMP,
-              quota BIGINT DEFAULT 1073741824,
               active TINYINT(1) DEFAULT 1,
-              INDEX (domain),
-              INDEX (username)
+              FOREIGN KEY (domain_id) REFERENCES ${domainTable}(id) ON DELETE CASCADE
             )
           `);
         }
@@ -170,12 +187,39 @@ export async function createMailAccount(email, password, name = null, quota = 10
       }
     }
     
+    // Make sure the domain exists in the domains table
+    const domainTable = process.env.MAIL_DOMAINS_TABLE || 'virtual_domains';
+    let domainId;
+    
+    try {
+      // Check if domain exists
+      const [domainResults] = await connection.execute(
+        `SELECT id FROM ${domainTable} WHERE name = ?`,
+        [domain]
+      );
+      
+      if (domainResults.length === 0) {
+        // Domain doesn't exist, create it
+        console.log(`[Account Manager] Domain ${domain} not found, creating it`);
+        const [insertResult] = await connection.execute(
+          `INSERT INTO ${domainTable} (name) VALUES (?)`,
+          [domain]
+        );
+        domainId = insertResult.insertId;
+      } else {
+        domainId = domainResults[0].id;
+      }
+    } catch (domainError) {
+      console.error(`[Account Manager] Error handling domain: ${domainError.message}`);
+      throw new Error(`Failed to manage domain: ${domainError.message}`);
+    }
+    
     // Insert the new mail account
-    // Note: Column names might need adjustment based on your schema
+    // Adjust field list to match actual schema
     const [results] = await connection.execute(
-      `INSERT INTO ${tableName} (email, password, username, domain, created, quota) 
-       VALUES (?, ?, ?, ?, NOW(), ?)`,
-      [email, passwordFormat, username, domain, quota * 1024 * 1024] // Convert quota to bytes
+      `INSERT INTO ${tableName} (domain_id, email, password) 
+       VALUES (?, ?, ?)`,
+      [domainId, email, passwordFormat]
     );
     
     console.log(`[Account Manager] Mail account created successfully in database: ${email}`);
@@ -347,21 +391,30 @@ export async function listMailDomains() {
     // Try to get domains from domains table if it exists
     try {
       const [rows] = await connection.execute(
-        `SELECT domain FROM ${domainTable}`
+        `SELECT name FROM ${domainTable}`
       );
       
-      return rows.map(row => row.domain);
+      return rows.map(row => row.name);
     } catch (tableError) {
       console.warn(`[Account Manager] Error accessing domains table: ${tableError.message}`);
       
-      // Fall back to getting unique domains from users table
+      // Fall back to getting unique domains from users table by parsing emails
       const usersTable = process.env.MAIL_USERS_TABLE || 'virtual_users';
       
       const [rows] = await connection.execute(
-        `SELECT DISTINCT domain FROM ${usersTable}`
+        `SELECT DISTINCT email FROM ${usersTable}`
       );
       
-      return rows.map(row => row.domain);
+      // Extract domains from email addresses
+      const domains = new Set();
+      rows.forEach(row => {
+        const parts = row.email.split('@');
+        if (parts.length === 2) {
+          domains.add(parts[1]);
+        }
+      });
+      
+      return Array.from(domains);
     }
   } catch (error) {
     console.error('[Account Manager] Database error listing domains:', error);
