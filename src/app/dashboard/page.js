@@ -5,6 +5,7 @@ import DashboardLayout from '../../components/dashboard/DashboardLayout';
 import EmailRow from '../../components/dashboard/EmailRow';
 import EmailDetail from '../../components/dashboard/EmailDetail';
 import { mockMessages } from '../../lib/email/mock-data';
+import { getCurrentUserId } from '../../lib/auth/getCurrentUser';
 import { 
   MagnifyingGlassIcon, 
   ArrowPathIcon,
@@ -22,20 +23,73 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentFolder, setCurrentFolder] = useState('inbox');
   const [refreshing, setRefreshing] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
-  const filteredMessages = mockMessages.filter(message => 
-    (message.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    message.from.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    message.from.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    message.snippet.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Fetch real messages from the inbox
+  useEffect(() => {
+    fetchInboxMessages();
+  }, []);
+  
+  const fetchInboxMessages = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Get the user ID from the current session
+      const userId = getCurrentUserId();
+      
+      if (!userId) {
+        throw new Error('User not logged in. Please sign in to view your inbox.');
+      }
+      
+      console.log('Fetching inbox for user ID:', userId);
+      
+      const response = await fetch('/api/mail/inbox', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch inbox');
+      }
+      
+      // If we got real messages, use them; otherwise fall back to mock data
+      if (data.messages && data.messages.length > 0) {
+        setMessages(data.messages);
+        console.log('Loaded real messages:', data.messages.length);
+      } else {
+        console.log('No real messages found, using mock data');
+        setMessages(mockMessages);
+      }
+    } catch (err) {
+      console.error('Error fetching inbox:', err);
+      setError(err.message);
+      // Fall back to mock data
+      setMessages(mockMessages);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
   
   const handleRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
+    fetchInboxMessages();
   };
+  
+  const filteredMessages = messages.filter(message => 
+    (message.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    message.from?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    message.from?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    message.snippet?.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
   
   return (
     <DashboardLayout>
@@ -145,6 +199,38 @@ export default function Dashboard() {
                 message={selectedEmail} 
                 onBack={() => setSelectedEmail(null)} 
               />
+            ) : loading ? (
+              <div className="py-20 flex flex-col items-center justify-center text-center px-4">
+                <div className="mb-4 bg-primary-600/20 p-4 rounded-full animate-pulse">
+                  <EnvelopeIcon className="h-8 w-8 text-primary-400 animate-bounce" />
+                </div>
+                <h3 className="mt-2 text-lg font-medium text-white">Loading your inbox...</h3>
+                <p className="mt-1 text-sm text-gray-400 max-w-md">
+                  Please wait while we securely connect to your mailbox.
+                </p>
+              </div>
+            ) : error ? (
+              <div className="py-20 flex flex-col items-center justify-center text-center px-4">
+                <div className="mb-4 bg-red-600/20 p-4 rounded-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <h3 className="mt-2 text-lg font-medium text-white">Error loading inbox</h3>
+                <p className="mt-1 text-sm text-gray-400 max-w-md">
+                  {error}
+                </p>
+                <div className="mt-6">
+                  <button
+                    type="button"
+                    onClick={fetchInboxMessages}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-500 transition-colors"
+                  >
+                    <ArrowPathIcon className="h-4 w-4 mr-2" />
+                    Try Again
+                  </button>
+                </div>
+              </div>
             ) : filteredMessages.length > 0 ? (
               <div>
                 {filteredMessages.map(message => (

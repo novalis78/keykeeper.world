@@ -248,6 +248,18 @@ export default function EmailSetupPage() {
         }
         
         console.log('Registration successful:', data);
+        
+        // Store the user ID and email in localStorage for session management
+        // (in a real app, you'd use a proper auth system)
+        if (data.userId) {
+          try {
+            localStorage.setItem('userId', data.userId);
+            localStorage.setItem('userEmail', email);
+            console.log('User session data saved:', { userId: data.userId, email });
+          } catch (err) {
+            console.error('Error saving user session data:', err);
+          }
+        }
       } catch (registrationError) {
         console.error('Error registering user:', registrationError);
         // We'll still show success, but log the error
