@@ -1,17 +1,48 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
-import { EnvelopeIcon, PaperAirplaneIcon, XMarkIcon, PaperClipIcon } from '@heroicons/react/24/outline';
+import { EnvelopeIcon, PaperAirplaneIcon, XMarkIcon, PaperClipIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { LockClosedIcon } from '@heroicons/react/24/solid';
 
 export default function ComposePage() {
+  const [userEmailAccounts, setUserEmailAccounts] = useState([]);
   const [emailData, setEmailData] = useState({
+    from: '',
     to: '',
     subject: '',
     message: '',
     attachments: []
   });
   const [sendingStatus, setSendingStatus] = useState('idle'); // idle, sending, success, error
+  const [encryptionStatus, setEncryptionStatus] = useState('unknown'); // unknown, available, unavailable
+  
+  // Fetch user's email accounts
+  useEffect(() => {
+    const fetchUserEmailAccounts = async () => {
+      try {
+        // In a real implementation, this would fetch from the API
+        // For now, we'll use mock data
+        const mockAccounts = [
+          { id: 1, email: 'user@keykeeper.world', name: 'Primary Account', isDefault: true },
+          { id: 2, email: 'admin@keykeeper.world', name: 'Admin Account', isDefault: false },
+          { id: 3, email: 'business@phoneshield.ai', name: 'Business Account', isDefault: false }
+        ];
+        
+        setUserEmailAccounts(mockAccounts);
+        
+        // Set default From address
+        const defaultAccount = mockAccounts.find(account => account.isDefault) || mockAccounts[0];
+        if (defaultAccount) {
+          setEmailData(prev => ({ ...prev, from: defaultAccount.id.toString() }));
+        }
+      } catch (error) {
+        console.error('Error fetching user email accounts:', error);
+      }
+    };
+    
+    fetchUserEmailAccounts();
+  }, []);
   
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -19,13 +50,31 @@ export default function ComposePage() {
       ...emailData,
       [name]: value
     });
+    
+    // Check encryption status when recipient email changes
+    if (name === 'to' && value) {
+      checkEncryptionStatus(value);
+    }
+  };
+  
+  // Simulate checking if the recipient has a public key available
+  const checkEncryptionStatus = (email) => {
+    // In a real implementation, this would query the server for available public keys
+    // For mock data, we'll pretend certain domains have keys available
+    setTimeout(() => {
+      if (email.endsWith('@keykeeper.world') || email.endsWith('@phoneshield.ai') || email.includes('secure')) {
+        setEncryptionStatus('available');
+      } else {
+        setEncryptionStatus('unavailable');
+      }
+    }, 500);
   };
   
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Validate form
-    if (!emailData.to || !emailData.subject || !emailData.message) {
+    if (!emailData.from || !emailData.to || !emailData.subject || !emailData.message) {
       alert('Please fill in all required fields');
       return;
     }
@@ -39,11 +88,14 @@ export default function ComposePage() {
       
       // Reset form after successful submission
       setEmailData({
+        from: emailData.from, // Keep the from address
         to: '',
         subject: '',
         message: '',
         attachments: []
       });
+      
+      setEncryptionStatus('unknown');
       
       setSendingStatus('success');
       
@@ -72,6 +124,32 @@ export default function ComposePage() {
           <form onSubmit={handleSubmit}>
             <div className="p-6 space-y-6">
               <div>
+                <label htmlFor="from" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  From
+                </label>
+                <div className="mt-1 relative rounded-md shadow-sm">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <EnvelopeIcon className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <select
+                    name="from"
+                    id="from"
+                    value={emailData.from}
+                    onChange={handleInputChange}
+                    className="focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                    required
+                  >
+                    <option value="">Select an email address</option>
+                    {userEmailAccounts.map(account => (
+                      <option key={account.id} value={account.id}>
+                        {account.email} {account.isDefault ? '(Default)' : ''} - {account.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              <div>
                 <label htmlFor="to" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   To
                 </label>
@@ -89,7 +167,29 @@ export default function ComposePage() {
                     placeholder="recipient@example.com"
                     required
                   />
+                  
+                  {/* Encryption status indicator */}
+                  {emailData.to && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                      {encryptionStatus === 'available' ? (
+                        <div className="flex items-center text-green-500 dark:text-green-400">
+                          <LockClosedIcon className="h-4 w-4 mr-1" />
+                          <span className="text-xs">Encrypted</span>
+                        </div>
+                      ) : encryptionStatus === 'unavailable' ? (
+                        <div className="flex items-center text-amber-500 dark:text-amber-400">
+                          <ShieldCheckIcon className="h-4 w-4 mr-1" />
+                          <span className="text-xs">Not encrypted</span>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
+                {encryptionStatus === 'unavailable' && (
+                  <p className="mt-1 text-xs text-amber-500 dark:text-amber-400">
+                    No PGP key found for this recipient. The message will not be end-to-end encrypted.
+                  </p>
+                )}
               </div>
               
               <div>
