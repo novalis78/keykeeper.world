@@ -203,12 +203,12 @@ export default function SignupPage() {
             
             <div className="space-y-6">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Your Existing Email Address
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary-500 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
@@ -219,19 +219,19 @@ export default function SignupPage() {
                     value={formData.email}
                     onChange={handleInputChange}
                     required
-                    className="pl-10 block w-full rounded-lg border-0 py-3 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-500 dark:focus:ring-primary-400 transition-all duration-200 bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm"
+                    className="pl-10 block w-full rounded-lg border-0 py-3.5 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-primary-500 dark:focus:ring-primary-400 transition-all duration-200 bg-white dark:bg-gray-800 dark:bg-opacity-80"
                     placeholder="you@example.com"
                   />
                 </div>
               </div>
               
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   Full Name (Optional)
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary-500 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
@@ -241,7 +241,7 @@ export default function SignupPage() {
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className="pl-10 block w-full rounded-lg border-0 py-3 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-500 dark:focus:ring-primary-400 transition-all duration-200 bg-white/50 dark:bg-gray-700/50 backdrop-blur-sm"
+                    className="pl-10 block w-full rounded-lg border-0 py-3.5 text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-primary-500 dark:focus:ring-primary-400 transition-all duration-200 bg-white dark:bg-gray-800 dark:bg-opacity-80"
                     placeholder="John Doe"
                   />
                 </div>
@@ -261,8 +261,8 @@ export default function SignupPage() {
                   className="h-5 w-5 text-primary-500 focus:ring-primary-400 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800 border-gray-300 dark:border-gray-600 rounded transition-all duration-200"
                 />
                 <div className="ml-3 text-sm">
-                  <label htmlFor="terms" className="font-medium text-gray-700 dark:text-gray-300">
-                    I agree to the <span className="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 cursor-pointer">Terms of Service</span> and <span className="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 cursor-pointer">Privacy Policy</span>
+                  <label htmlFor="terms" className="font-medium text-gray-700 dark:text-gray-200">
+                    I agree to the <span className="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 cursor-pointer underline underline-offset-2">Terms of Service</span> and <span className="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 cursor-pointer underline underline-offset-2">Privacy Policy</span>
                   </label>
                 </div>
               </div>
@@ -384,7 +384,7 @@ export default function SignupPage() {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-3xl md:max-w-4xl lg:max-w-5xl">
-        <div className="bg-white dark:bg-gray-800 py-8 px-6 shadow-lg sm:rounded-xl border border-gray-200 dark:border-gray-700 sm:px-12">
+        <div className="bg-white dark:bg-gray-800 py-10 px-6 shadow-xl sm:rounded-2xl border border-gray-100 dark:border-gray-700 sm:px-12 backdrop-blur-lg bg-opacity-95 dark:bg-opacity-90">
           <form onSubmit={handleSubmit}>
             {/* Step indicator */}
             <div className="mb-6">
