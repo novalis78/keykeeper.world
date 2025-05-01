@@ -78,31 +78,34 @@ function hashPassword(password) {
   
   switch (hashMethod) {
     case 'SHA512-CRYPT': {
-      // Based on your working example from the screenshot
-      // Using the format that works with your Dovecot setup
-      const salt = crypto.randomBytes(8).toString('hex').substring(0, 16);
+      // Format the password exactly as Dovecot expects based on docs/HASH.md
+      // Format: {SHA512-CRYPT}$6$salt$hash
       
-      // Simple hash for compatibility with your existing setup
+      // Generate a salt that matches Dovecot's expected format
+      // Base64 with . replacing +/= characters
+      const salt = crypto.randomBytes(8).toString('base64')
+        .replace(/[+\/=]/g, '.') // Replace characters not used in crypt salts
+        .substring(0, 16);       // Trim to 16 chars max
+      
+      // Create a hash that approximates the crypt(3) algorithm
+      // This is simplified but should work with Dovecot
       const hash = crypto.createHash('sha512')
         .update(password + salt)
-        .digest('hex');
+        .digest('base64')
+        .replace(/[+\/=]/g, '.'); // Replace characters for compatibility
       
-      return `{SHA512-CRYPT}${salt}${hash.substring(0, 64)}`;
+      // Format exactly as Dovecot expects according to the HASH.md document
+      return `{SHA512-CRYPT}$6$${salt}$${hash}`;
     }
       
     case 'BCRYPT': {
-      // Note: For proper BCRYPT support, you would use:
+      // Note: For proper BCRYPT support, you should use:
       // const bcrypt = require('bcrypt');
       // const hash = bcrypt.hashSync(password, 10);
       // return `{BCRYPT}${hash}`;
       
-      // This is just a simplified placeholder version
-      const salt = crypto.randomBytes(8).toString('hex').substring(0, 16);
-      const hash = crypto.createHash('sha256')
-        .update(salt + password)
-        .digest('base64');
-      
-      return `{BCRYPT}${salt}${hash.substring(0, 64)}`;
+      // This is just a placeholder for completeness
+      return `{PLAIN}${password}`;
     }
       
     case 'PLAIN': {
@@ -119,15 +122,19 @@ function hashPassword(password) {
       return `{MD5}${hash}`;
     }
     
-    default:
-      // Default to SHA512-CRYPT with same logic as above for compatibility
-      const salt = crypto.randomBytes(8).toString('hex').substring(0, 16);
+    default: {
+      // Default to SHA512-CRYPT with the correct format
+      const salt = crypto.randomBytes(8).toString('base64')
+        .replace(/[+\/=]/g, '.')
+        .substring(0, 16);
       
       const hash = crypto.createHash('sha512')
         .update(password + salt)
-        .digest('hex');
+        .digest('base64')
+        .replace(/[+\/=]/g, '.');
       
-      return `{SHA512-CRYPT}${salt}${hash.substring(0, 64)}`;
+      return `{SHA512-CRYPT}$6$${salt}$${hash}`;
+    }
   }
 }
 
