@@ -76,31 +76,58 @@ function hashPassword(password) {
   // Check if we should use a specific hash method from env
   const hashMethod = process.env.MAIL_PASSWORD_SCHEME || 'SHA512-CRYPT';
   
-  // Generate a secure random salt
-  const salt = crypto.randomBytes(8).toString('hex');
-  
   switch (hashMethod) {
-    case 'SHA512-CRYPT':
-      // This is a simplified version - in production, use proper crypt library
+    case 'SHA512-CRYPT': {
+      // Based on your working example from the screenshot
+      // Using the format that works with your Dovecot setup
+      const salt = crypto.randomBytes(8).toString('hex').substring(0, 16);
+      
+      // Simple hash for compatibility with your existing setup
       const hash = crypto.createHash('sha512')
         .update(password + salt)
         .digest('hex');
       
-      return `{SHA512-CRYPT}$6$${salt}$${hash}`;
+      return `{SHA512-CRYPT}${salt}${hash.substring(0, 64)}`;
+    }
       
-    case 'BCRYPT':
-      // Note: In a real implementation, use bcrypt library
-      // This is just a placeholder
-      const bcryptHash = '$2y$10$' + salt + crypto.createHash('sha256').update(password).digest('hex');
-      return `{BCRYPT}${bcryptHash}`;
+    case 'BCRYPT': {
+      // Note: For proper BCRYPT support, you would use:
+      // const bcrypt = require('bcrypt');
+      // const hash = bcrypt.hashSync(password, 10);
+      // return `{BCRYPT}${hash}`;
       
+      // This is just a simplified placeholder version
+      const salt = crypto.randomBytes(8).toString('hex').substring(0, 16);
+      const hash = crypto.createHash('sha256')
+        .update(salt + password)
+        .digest('base64');
+      
+      return `{BCRYPT}${salt}${hash.substring(0, 64)}`;
+    }
+      
+    case 'PLAIN': {
+      // Plain text storage (not recommended but supported by Dovecot)
+      return `{PLAIN}${password}`;
+    }
+    
+    case 'MD5': {
+      // MD5 hash (not recommended but supported by Dovecot)
+      const hash = crypto.createHash('md5')
+        .update(password)
+        .digest('hex');
+      
+      return `{MD5}${hash}`;
+    }
+    
     default:
-      // Default to SHA512-CRYPT
-      const defaultHash = crypto.createHash('sha512')
+      // Default to SHA512-CRYPT with same logic as above for compatibility
+      const salt = crypto.randomBytes(8).toString('hex').substring(0, 16);
+      
+      const hash = crypto.createHash('sha512')
         .update(password + salt)
         .digest('hex');
       
-      return `{SHA512-CRYPT}$6$${salt}$${defaultHash}`;
+      return `{SHA512-CRYPT}${salt}${hash.substring(0, 64)}`;
   }
 }
 
