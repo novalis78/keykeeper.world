@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CheckCircleIcon, XCircleIcon, LockClosedIcon, KeyIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { CheckCircleIcon, XCircleIcon, LockClosedIcon, KeyIcon, EnvelopeIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 
 export default function EmailSetupPage() {
@@ -10,11 +10,15 @@ export default function EmailSetupPage() {
     localPart: '',
     domain: 'keykeeper.world',
     displayName: '',
-    pgpKey: null
+    passphrase: '',
+    confirmPassphrase: '',
+    pgpKey: null,
+    usePassphrase: false
   });
   const [isChecking, setIsChecking] = useState(false);
   const [isAvailable, setIsAvailable] = useState(null);
   const [error, setError] = useState(null);
+  const [passphraseStrength, setPassphraseStrength] = useState(0);
   
   // Domain options - in a real implementation, these would come from an API
   const domainOptions = [
@@ -60,11 +64,49 @@ export default function EmailSetupPage() {
   };
   
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    const { name, value, type, checked } = e.target;
+    
+    if (type === 'checkbox') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: checked
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+      
+      // Calculate passphrase strength if applicable
+      if (name === 'passphrase') {
+        calculatePassphraseStrength(value);
+      }
+    }
+  };
+  
+  // Simple passphrase strength calculator
+  const calculatePassphraseStrength = (passphrase) => {
+    if (!passphrase) {
+      setPassphraseStrength(0);
+      return;
+    }
+    
+    let strength = 0;
+    
+    // Length check (up to 5 points)
+    strength += Math.min(5, Math.floor(passphrase.length / 2));
+    
+    // Character variety checks
+    if (/[A-Z]/.test(passphrase)) strength += 1; // uppercase
+    if (/[a-z]/.test(passphrase)) strength += 1; // lowercase
+    if (/[0-9]/.test(passphrase)) strength += 1; // numbers
+    if (/[^A-Za-z0-9]/.test(passphrase)) strength += 2; // special chars
+    
+    // Word count for passphrases (bonus points)
+    const words = passphrase.split(/\s+/).filter(Boolean).length;
+    strength += Math.min(2, words);
+    
+    setPassphraseStrength(Math.min(10, strength));
   };
   
   const handleDomainChange = (e) => {
@@ -76,6 +118,24 @@ export default function EmailSetupPage() {
   
   const handleGeneratePGPKey = async () => {
     setError(null);
+    
+    // Validate passphrase if using one
+    if (formData.usePassphrase) {
+      if (formData.passphrase.length < 8) {
+        setError('Your passphrase must be at least 8 characters long');
+        return;
+      }
+      
+      if (formData.passphrase !== formData.confirmPassphrase) {
+        setError('Passphrases do not match');
+        return;
+      }
+      
+      if (passphraseStrength < 4) {
+        setError('Please use a stronger passphrase for better security');
+        return;
+      }
+    }
     
     try {
       // Show some kind of loading state or indicator
@@ -90,11 +150,16 @@ export default function EmailSetupPage() {
       await new Promise(resolve => setTimeout(resolve, 2000));
       console.log('Key generation complete');
       
-      // Simulate a generated key
+      // Simulate a generated key - add passphrase info if used
+      const hasPassphrase = formData.usePassphrase && formData.passphrase;
       const mockPGPKey = {
         fingerprint: 'D4C3 A234 B56F 79E0 D123 C567 8901 2345 6789 ABCD',
         publicKey: '-----BEGIN PGP PUBLIC KEY BLOCK-----\n(mock key data)\n-----END PGP PUBLIC KEY BLOCK-----',
-        privateKey: '(encrypted private key data)'
+        privateKey: hasPassphrase 
+          ? '-----BEGIN PGP PRIVATE KEY BLOCK-----\nVersion: OpenPGP.js\nComment: https://openpgpjs.org\n\nxcLYBGRUFUMBACAC7FzR0JQ...(mock ENCRYPTED PRIVATE KEY data)\n-----END PGP PRIVATE KEY BLOCK-----' 
+          : '-----BEGIN PGP PRIVATE KEY BLOCK-----\n(mock unencrypted key data)\n-----END PGP PRIVATE KEY BLOCK-----',
+        hasPassphrase: hasPassphrase,
+        passphrase: hasPassphrase ? formData.passphrase : null
       };
       
       // Hide loading indicator if it exists
@@ -338,7 +403,98 @@ export default function EmailSetupPage() {
                   <li>Your key will be generated using 4096-bit RSA encryption</li>
                   <li>The private key will never leave your browser</li>
                   <li>We'll help you securely back up your key afterward</li>
+                  <li>Adding a passphrase provides an extra layer of security</li>
                 </ul>
+              </div>
+              
+              <div className="bg-white dark:bg-gray-800 p-4 rounded-md border border-gray-200 dark:border-gray-700">
+                <div className="flex items-start mb-4">
+                  <div className="flex items-center h-5">
+                    <input
+                      id="use-passphrase"
+                      name="usePassphrase"
+                      type="checkbox"
+                      checked={formData.usePassphrase}
+                      onChange={handleInputChange}
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                    />
+                  </div>
+                  <div className="ml-3">
+                    <label htmlFor="use-passphrase" className="font-medium text-gray-700 dark:text-gray-300 text-sm">
+                      Protect key with a passphrase
+                    </label>
+                    <p className="text-gray-500 dark:text-gray-400 text-xs">
+                      Adding a passphrase means you'll need to enter it when logging in, but provides stronger security.
+                    </p>
+                  </div>
+                </div>
+                
+                {formData.usePassphrase && (
+                  <div className="space-y-4 mt-4">
+                    <div>
+                      <label htmlFor="passphrase" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Key Passphrase
+                      </label>
+                      <input
+                        type="password"
+                        id="passphrase"
+                        name="passphrase"
+                        value={formData.passphrase}
+                        onChange={handleInputChange}
+                        className="mt-1 block w-full shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                        placeholder="Enter a strong passphrase"
+                      />
+                      
+                      {/* Passphrase strength indicator */}
+                      {formData.passphrase && (
+                        <div className="mt-2">
+                          <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full ${
+                                passphraseStrength < 4 ? 'bg-red-500' : 
+                                passphraseStrength < 7 ? 'bg-yellow-500' : 
+                                'bg-green-500'
+                              }`}
+                              style={{ width: `${passphraseStrength * 10}%` }}
+                            ></div>
+                          </div>
+                          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {passphraseStrength < 4 ? 'Weak' : 
+                             passphraseStrength < 7 ? 'Moderate' : 
+                             'Strong'} passphrase
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="confirmPassphrase" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Confirm Passphrase
+                      </label>
+                      <input
+                        type="password"
+                        id="confirmPassphrase"
+                        name="confirmPassphrase"
+                        value={formData.confirmPassphrase}
+                        onChange={handleInputChange}
+                        className="mt-1 block w-full shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                        placeholder="Confirm your passphrase"
+                      />
+                      
+                      {formData.passphrase && formData.confirmPassphrase && (
+                        <p className={`mt-1 text-xs ${
+                          formData.passphrase === formData.confirmPassphrase 
+                            ? 'text-green-500 dark:text-green-400' 
+                            : 'text-red-500 dark:text-red-400'
+                        }`}>
+                          {formData.passphrase === formData.confirmPassphrase 
+                            ? 'Passphrases match' 
+                            : 'Passphrases do not match'}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
               
               <div id="generating-indicator" className="hidden bg-primary-50 dark:bg-primary-900/30 p-4 rounded-md text-center mb-4">
@@ -396,6 +552,16 @@ export default function EmailSetupPage() {
                 <p className="mt-1 text-xs text-yellow-600 dark:text-yellow-300">
                   Please back up your encryption key now. This is the only time you'll be able to download it directly.
                 </p>
+                {formData.pgpKey?.hasPassphrase && (
+                  <div className="mt-2 bg-white dark:bg-gray-700 p-2 rounded-md">
+                    <div className="flex items-start">
+                      <ShieldCheckIcon className="h-4 w-4 text-green-500 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-gray-700 dark:text-gray-300 ml-2">
+                        Your key is protected with a passphrase. Remember this passphrase - you'll need it to log in.
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <button
                   type="button"
                   className="mt-2 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none"
