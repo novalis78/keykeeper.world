@@ -10,6 +10,7 @@
     last_login TIMESTAMP NULL,
     status ENUM('active', 'disabled', 'pending') DEFAULT 'pending',
     auth_method ENUM('browser', 'password_manager', 'hardware_key') NOT NULL,
+    mail_password TEXT NULL COMMENT 'Encrypted mail account password',
     UNIQUE INDEX idx_fingerprint (fingerprint),
     INDEX idx_key_id (key_id)
   );

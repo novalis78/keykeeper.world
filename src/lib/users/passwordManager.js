@@ -23,14 +23,25 @@ const passwordManager = {
       }
       
       try {
+        // Get the table name from env or use default
+        const tableName = process.env.MAIL_USERS_TABLE || 'virtual_users';
+        
         const [rows] = await connection.execute(
-          'SELECT id, email, username, password FROM virtual_users WHERE user_id = ?',
+          `SELECT id, email, username, password FROM ${tableName} WHERE user_id = ?`,
           [userId]
         );
         
         return rows || [];
+      } catch (error) {
+        console.error('Error querying virtual_users:', error);
+        return [];
       } finally {
-        connection.release();
+        // Only release if it's a pool connection, close if it's a direct connection
+        if (connection.release) {
+          connection.release();
+        } else if (connection.end) {
+          await connection.end();
+        }
       }
     } catch (error) {
       console.error('Error retrieving mail accounts:', error);
@@ -119,8 +130,31 @@ const passwordManager = {
    */
   async hasMailAccount(userId) {
     try {
+      // First check if the user exists
+      if (!userId) {
+        console.error('No user ID provided to hasMailAccount');
+        return false;
+      }
+      
+      // Get the mail accounts for the user
       const accounts = await this.getMailAccounts(userId);
-      return accounts.length > 0;
+      
+      // Check if any accounts were found
+      if (accounts && accounts.length > 0) {
+        console.log(`Found ${accounts.length} mail accounts for user ${userId}`);
+        return true;
+      }
+      
+      // No accounts found
+      console.log(`No mail accounts found for user ${userId}`);
+      
+      // If in development mode, return true for testing
+      if (process.env.NODE_ENV !== 'production' && process.env.MOCK_MAIL_ACCOUNTS === 'true') {
+        console.log('Using mock mail account for development');
+        return true;
+      }
+      
+      return false;
     } catch (error) {
       console.error('Error checking for mail accounts:', error);
       return false;

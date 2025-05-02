@@ -448,6 +448,32 @@ export const activityLogs = {
   }
 };
 
+/**
+ * Get connection to the mail database (for virtual_users table)
+ * @returns {Promise<Object>} MySQL connection
+ */
+export async function getMailDbConnection() {
+  // If we're using the main database for mail as well
+  if (!process.env.MAIL_DB_HOST && pool) {
+    return pool;
+  }
+  
+  // Otherwise, create a new connection to the mail database
+  try {
+    const dbConfig = {
+      host: process.env.MAIL_DB_HOST || 'localhost',
+      user: process.env.MAIL_DB_USER || process.env.DATABASE_USER,
+      password: process.env.MAIL_DB_PASSWORD || process.env.DATABASE_PASSWORD,
+      database: process.env.MAIL_DB_NAME || 'vmail'
+    };
+    
+    return await mysql.createConnection(dbConfig);
+  } catch (error) {
+    console.error('Error connecting to mail database:', error);
+    return null;
+  }
+}
+
 // Export the database library with a version marker
 // that can be used to verify which version of the code is running
 const dbInterface = {
@@ -457,6 +483,7 @@ const dbInterface = {
   challenges,
   sessions,
   activityLogs,
+  getMailDbConnection,
   isConnected: () => !!pool,
   test: {
     version: '2.0.2',
