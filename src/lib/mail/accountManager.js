@@ -159,7 +159,7 @@ function hashPassword(password) {
  * @param {number} quota Mailbox quota in MB (default: 1024)
  * @returns {Promise<Object>} Result of account creation
  */
-export async function createMailAccount(email, password, name = null, quota = 1024) {
+export async function createMailAccount(email, password, name = null, quota = 1024, userId = null) {
   console.log(`[Account Manager] Creating mail account for: ${email}`);
   
   if (!email || !password) {
@@ -212,12 +212,25 @@ export async function createMailAccount(email, password, name = null, quota = 10
     }
     
     // Insert the new mail account
-    // Adjust field list to match actual schema
-    const [results] = await connection.execute(
-      `INSERT INTO ${tableName} (domain_id, email, password) 
-       VALUES (?, ?, ?)`,
-      [domainId, email, passwordFormat]
-    );
+    // Include user_id if provided to link to our users table
+    let results;
+    
+    if (userId) {
+      const [insertResults] = await connection.execute(
+        `INSERT INTO ${tableName} (domain_id, email, password, username, user_id) 
+         VALUES (?, ?, ?, ?, ?)`,
+        [domainId, email, passwordFormat, username, userId]
+      );
+      results = insertResults;
+    } else {
+      // Legacy insertion without user_id
+      const [insertResults] = await connection.execute(
+        `INSERT INTO ${tableName} (domain_id, email, password, username) 
+         VALUES (?, ?, ?, ?)`,
+        [domainId, email, passwordFormat, username]
+      );
+      results = insertResults;
+    }
     
     console.log(`[Account Manager] Mail account created successfully in database: ${email}`);
     

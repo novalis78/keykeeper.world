@@ -34,7 +34,7 @@ export async function POST(request) {
       );
     }
     
-    // Check if user has a mail account
+    // Check if user has any mail accounts
     const hasMailAccount = await passwordManager.hasMailAccount(userId);
     if (!hasMailAccount) {
       return NextResponse.json(
@@ -43,7 +43,18 @@ export async function POST(request) {
       );
     }
     
+    // Get the primary mail account for the user
+    const mailAccount = await passwordManager.getPrimaryMailAccount(userId);
+    if (!mailAccount) {
+      return NextResponse.json(
+        { error: 'Could not retrieve mail account information' },
+        { status: 500 }
+      );
+    }
+    
     // Get the mail password for the user
+    // We use the plaintext password stored in the users table
+    // Dovecot stores passwords hashed with SHA512-CRYPT, which can't be decrypted
     const mailPassword = await passwordManager.getMailPassword(userId);
     if (!mailPassword) {
       return NextResponse.json(
@@ -52,13 +63,16 @@ export async function POST(request) {
       );
     }
     
+    // Log successful setup
+    console.log(`[Mail API] Successfully retrieved account information for ${mailAccount.email}`);
+    
     // Set up IMAP client
     const client = new ImapFlow({
       host: process.env.MAIL_HOST || 'localhost',
       port: parseInt(process.env.MAIL_IMAP_PORT || '993'),
       secure: process.env.MAIL_IMAP_SECURE !== 'false',
       auth: {
-        user: user.email,
+        user: mailAccount.email,
         pass: mailPassword
       },
       logger: false,

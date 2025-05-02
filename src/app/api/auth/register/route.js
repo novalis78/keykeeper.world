@@ -39,7 +39,7 @@ export async function POST(request) {
     console.log('[Register API] Request body parsed');
     
     // Extract required fields
-    const { email, name, publicKey, keyId, fingerprint, authMethod } = body;
+    const { email, name, publicKey, keyId, fingerprint, authMethod, mailPassword } = body;
     console.log(`[Register API] Processing registration for: ${email}`);
     
     // Validate required fields
@@ -206,34 +206,42 @@ export async function POST(request) {
       try {
         console.log(`[Register API] Creating mail account for: ${email}`);
         
-        // Generate a secure mail password from a portion of the fingerprint + random data
-        // This is more secure than just random bytes, as it's tied to the user's key
-        const crypto = await import('crypto');
+        // Use user-provided mail password if available, otherwise generate one
+        let accountPassword = mailPassword;
         
-        // Create a secure hash from fingerprint and key ID
-        const mailPasswordBase = crypto.createHash('sha256')
-          .update(fingerprint + keyId)
-          .digest('hex');
+        // If no password was provided, generate a secure one
+        if (!accountPassword) {
+          console.log(`[Register API] No mail password provided, generating one`);
+          const crypto = await import('crypto');
           
-        // Add some random bits for additional security
-        const randomBits = crypto.randomBytes(8).toString('hex');
-        const mailPassword = mailPasswordBase.substring(0, 24) + randomBits;
+          // Create a secure hash from fingerprint and key ID
+          const mailPasswordBase = crypto.createHash('sha256')
+            .update(fingerprint + keyId)
+            .digest('hex');
+            
+          // Add some random bits for additional security
+          const randomBits = crypto.randomBytes(8).toString('hex');
+          accountPassword = mailPasswordBase.substring(0, 24) + randomBits;
+          
+          console.log(`[Register API] Generated secure mail password for: ${email}`);
+        } else {
+          console.log(`[Register API] Using user-provided mail password`);
+        }
         
-        console.log(`[Register API] Generated secure mail password for: ${email}`);
-        
-        // Create the mail account
+        // Create the mail account with userId to link it
         const result = await accountManager.createMailAccount(
           email,
-          mailPassword,
+          accountPassword,
           name || email.split('@')[0],
-          parseInt(process.env.DEFAULT_MAIL_QUOTA || '1024')
+          parseInt(process.env.DEFAULT_MAIL_QUOTA || '1024'),
+          userId // Pass userId to link the accounts
         );
         
         console.log(`[Register API] Mail account created successfully: ${email}`);
         mailAccountCreated = true;
         
         // Store mail account password in user record (encrypted)
-        await db.users.updateMailPassword(userId, mailPassword);
+        await db.users.updateMailPassword(userId, accountPassword);
         
         // Log mail account creation
         await db.activityLogs.create(userId, 'mail_account_creation', {
