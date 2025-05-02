@@ -14,9 +14,9 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(request) {
   try {
-    // Get user from the request (in a real implementation, parse from session)
+    // Get user info and credentials from the request
     const body = await request.json();
-    const { userId } = body;
+    const { userId, credentials } = body;
     
     if (!userId) {
       return NextResponse.json(
@@ -34,46 +34,70 @@ export async function POST(request) {
       );
     }
     
-    // Check if user has any mail accounts
-    const hasMailAccount = await passwordManager.hasMailAccount(userId);
-    if (!hasMailAccount) {
-      return NextResponse.json(
-        { error: 'User does not have a mail account' },
-        { status: 404 }
-      );
+    // Check if credentials are provided directly
+    if (!credentials || !credentials.email || !credentials.password) {
+      // If no credentials provided, check if user has any mail accounts
+      // This is for backward compatibility and will be deprecated
+      const hasMailAccount = await passwordManager.hasMailAccount(userId);
+      if (!hasMailAccount) {
+        return NextResponse.json(
+          { error: 'User does not have a mail account' },
+          { status: 404 }
+        );
+      }
+      
+      // Get the primary mail account for the user
+      const mailAccount = await passwordManager.getPrimaryMailAccount(userId);
+      if (!mailAccount) {
+        return NextResponse.json(
+          { error: 'Could not retrieve mail account information' },
+          { status: 500 }
+        );
+      }
+      
+      // Get the mail password for the user (legacy method)
+      const mailPassword = await passwordManager.getMailPassword(userId);
+      if (!mailPassword) {
+        return NextResponse.json(
+          { error: 'Mail credentials required', requireCredentials: true },
+          { status: 401 }
+        );
+      }
     }
     
-    // Get the primary mail account for the user
-    const mailAccount = await passwordManager.getPrimaryMailAccount(userId);
-    if (!mailAccount) {
-      return NextResponse.json(
-        { error: 'Could not retrieve mail account information' },
-        { status: 500 }
-      );
-    }
+    // Determine which credentials to use
+    let mailAddress;
+    let mailPass;
+    let imapHost;
+    let imapPort;
+    let imapSecure;
     
-    // Get the mail password for the user
-    // We use the plaintext password stored in the users table
-    // Dovecot stores passwords hashed with SHA512-CRYPT, which can't be decrypted
-    const mailPassword = await passwordManager.getMailPassword(userId);
-    if (!mailPassword) {
-      return NextResponse.json(
-        { error: 'Could not retrieve mail account credentials' },
-        { status: 500 }
-      );
+    if (credentials) {
+      // Use provided credentials
+      mailAddress = credentials.email;
+      mailPass = credentials.password;
+      imapHost = credentials.imapServer || process.env.MAIL_HOST || 'localhost';
+      imapPort = credentials.imapPort || parseInt(process.env.MAIL_IMAP_PORT || '993');
+      imapSecure = credentials.imapSecure !== undefined ? credentials.imapSecure : process.env.MAIL_IMAP_SECURE !== 'false';
+      console.log(`[Mail API] Using user-provided credentials for ${mailAddress}`);
+    } else {
+      // Use legacy stored credentials (backward compatibility)
+      mailAddress = mailAccount.email;
+      mailPass = mailPassword;
+      imapHost = process.env.MAIL_HOST || 'localhost';
+      imapPort = parseInt(process.env.MAIL_IMAP_PORT || '993');
+      imapSecure = process.env.MAIL_IMAP_SECURE !== 'false';
+      console.log(`[Mail API] Using stored credentials for ${mailAddress}`);
     }
-    
-    // Log successful setup
-    console.log(`[Mail API] Successfully retrieved account information for ${mailAccount.email}`);
     
     // Set up IMAP client
     const client = new ImapFlow({
-      host: process.env.MAIL_HOST || 'localhost',
-      port: parseInt(process.env.MAIL_IMAP_PORT || '993'),
-      secure: process.env.MAIL_IMAP_SECURE !== 'false',
+      host: imapHost,
+      port: imapPort,
+      secure: imapSecure,
       auth: {
-        user: mailAccount.email,
-        pass: mailPassword
+        user: mailAddress,
+        pass: mailPass
       },
       logger: false,
       tls: {
@@ -83,7 +107,7 @@ export async function POST(request) {
     
     // Connect to the server
     await client.connect();
-    console.log(`[Mail API] Connected to IMAP server for ${user.email}`);
+    console.log(`[Mail API] Connected to IMAP server for ${mailAddress}`);
     
     // Select the mailbox to open
     const mailbox = await client.mailboxOpen('INBOX');

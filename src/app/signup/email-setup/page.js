@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { CheckCircleIcon, XCircleIcon, LockClosedIcon, KeyIcon, EnvelopeIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+import { storeCredentials, deriveSessionKey } from '@/lib/mail/mailCredentialManager';
+import { validatePassword } from '@/lib/mail/mailValidator';
 
 export default function EmailSetupPage() {
   const [step, setStep] = useState(1); // 1: Email setup, 2: Key confirmation, 3: Success
@@ -131,25 +133,15 @@ export default function EmailSetupPage() {
     setPassphraseStrength(Math.min(10, strength));
   };
   
-  // Password strength calculator for mail password
+  // Use the validation library to evaluate password strength
   const calculatePasswordStrength = (password) => {
     if (!password) {
       setMailPasswordStrength(0);
       return;
     }
     
-    let strength = 0;
-    
-    // Length check (up to 5 points)
-    strength += Math.min(5, Math.floor(password.length / 2));
-    
-    // Character variety checks
-    if (/[A-Z]/.test(password)) strength += 1; // uppercase
-    if (/[a-z]/.test(password)) strength += 1; // lowercase
-    if (/[0-9]/.test(password)) strength += 1; // numbers
-    if (/[^A-Za-z0-9]/.test(password)) strength += 2; // special chars
-    
-    setMailPasswordStrength(Math.min(10, strength));
+    const result = validatePassword(password);
+    setMailPasswordStrength(result.score * 2); // Convert 0-5 to 0-10 scale
   };
   
   const handleDomainChange = (e) => {
@@ -223,6 +215,39 @@ export default function EmailSetupPage() {
         };
       }
       
+      // Store mail credentials securely in browser storage
+      try {
+        // Create account ID from email
+        const accountId = `account_${email.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        
+        // Create mail account credentials
+        const credentials = {
+          email: email,
+          password: formData.mailPassword,
+          imapServer: `imap.${formData.domain}`,
+          imapPort: 993,
+          imapSecure: true,
+          smtpServer: `smtp.${formData.domain}`,
+          smtpPort: 587,
+          smtpSecure: false
+        };
+        
+        // Derive session key from fingerprint for initial security
+        // (This will be replaced by the real session key after login)
+        const tempSessionKey = await deriveSessionKey(
+          generatedKey.fingerprint, 
+          generatedKey.keyId
+        );
+        
+        // Store credentials securely
+        await storeCredentials(accountId, credentials, tempSessionKey, true);
+        console.log('Mail credentials stored securely');
+      } catch (credError) {
+        console.error('Error storing mail credentials:', credError);
+        // Continue with the process even if credential storage fails
+        // The user will be prompted for credentials later
+      }
+      
       // Hide loading indicator if it exists
       if (generatingEl) {
         generatingEl.classList.add('hidden');
@@ -263,8 +288,8 @@ export default function EmailSetupPage() {
             publicKey: generatedKey.publicKey,
             keyId: generatedKey.keyId,
             fingerprint: generatedKey.fingerprint,
-            authMethod: authMethod,
-            mailPassword: formData.mailPassword // Include user-provided mail password
+            authMethod: authMethod
+            // No longer sending mail password to the server
           }),
         });
         

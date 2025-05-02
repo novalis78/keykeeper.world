@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { initializeSessionKey, clearAllCredentials } from '@/lib/mail/mailCredentialManager';
 
 // Create context for authentication
 const AuthContext = createContext();
@@ -38,9 +39,20 @@ export function AuthProvider({ children }) {
         
         if (response.ok && data.authenticated) {
           setUser(data.user);
+          
+          // Initialize session key for secure credential storage
+          if (data.user && data.user.fingerprint) {
+            try {
+              await initializeSessionKey(token, data.user.fingerprint);
+              console.log('Session key initialized successfully');
+            } catch (sessionError) {
+              console.error('Failed to initialize session key:', sessionError);
+            }
+          }
         } else {
           // Token is invalid, remove it
           localStorage.removeItem('auth_token');
+          clearAllCredentials();
         }
       } catch (error) {
         console.error('Auth check error:', error);
@@ -72,6 +84,9 @@ export function AuthProvider({ children }) {
         // Remove token from localStorage
         localStorage.removeItem('auth_token');
       }
+      
+      // Clear all stored credentials
+      clearAllCredentials();
       
       // Clear user state
       setUser(null);

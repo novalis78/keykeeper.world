@@ -1,5 +1,178 @@
 # KeyKeeper.world Development Plan
 
+
+ Implementation Plan: Secure Client-Side Mail Credential Management
+
+  Current State Assessment
+
+  - PGP authentication is properly implemented for platform access
+  - Mail passwords are currently stored server-side (encrypted in users table)
+  - No client-side encryption for mail credentials exists
+  - The codebase has solid PGP utilities that can be leveraged
+
+  Work Packages
+
+  Package 1: Client-Side Credential Storage Framework
+
+  Objective: Create a secure framework for client-side credential encryption and storage
+
+  Tasks:
+  1. Create a mailCredentialManager.js utility in src/lib/mail/
+    - Functions for encrypting/decrypting mail credentials using session key
+    - Secure localStorage wrapper with encryption
+    - Session key derivation from auth token
+  2. Update authentication flow to establish secure session
+    - Derive encryption key from successful PGP authentication
+    - Manage session lifecycle securely
+  3. Add credential validation functions
+    - IMAP/SMTP credential validation
+    - Password strength verification
+
+  Time Estimate: 2-3 days
+
+  Package 2: Mail Account Setup & Credential UI
+
+  Objective: Create UI components for secure credential management
+
+  Tasks:
+  1. Create a MailCredentialsModal.js component
+    - Input fields for mail server, username, password
+    - "Remember credential" toggle
+    - Connection test functionality
+  2. Update mail account setup flow during registration
+    - Remove server-side password storage
+    - Add clear explanation about credential management
+    - Implement secure credential storage
+  3. Add credential management UI in dashboard settings
+    - View/edit saved mail accounts
+    - Add/remove accounts
+    - Update credentials
+
+  Time Estimate: 3-4 days
+
+  Package 3: Mail API & Backend Updates
+
+  Objective: Modify backend to stop storing mail passwords
+
+  Tasks:
+  1. Update virtual_users table schema and related code
+    - Remove mail_password from users table
+    - Ensure user_id foreign key in virtual_users
+  2. Update mail account creation during registration
+    - Keep creating virtual_users entries with hashed passwords
+    - Remove storing plaintext/encrypted passwords
+  3. Update mail API endpoints
+    - Modify endpoints to accept credentials in requests
+    - Implement credentials validation
+    - Update error handling for credential issues
+
+  Time Estimate: 2-3 days
+
+  Package 4: Mail Access Integration
+
+  Objective: Integrate secure credential management with mail access
+
+  Tasks:
+  1. Update inbox and email fetching to use client-side credentials
+    - Modify API calls to include credentials when needed
+    - Implement credential caching during session
+    - Add credential prompt when accessing mail features
+  2. Update email sending functionality
+    - Use client-side credentials for SMTP
+    - Implement PGP signing/encryption options
+  3. Create persistent mail sessions
+    - Allow "remember me" for mail credentials (encrypted)
+    - Implement automatic credential retrieval from storage
+
+  Time Estimate: 3-4 days
+
+  Package 5: Testing & Security Audit
+
+  Objective: Ensure security and functionality of the implementation
+
+  Tasks:
+  1. Unit testing for credential management
+    - Test encryption/decryption functionality
+    - Test storage mechanisms
+    - Test password validation
+  2. Integration testing
+    - End-to-end mail flow testing
+    - Authentication flow testing
+    - Credential management UI testing
+  3. Security audit
+    - Review client-side encryption implementation
+    - Check for any credential leakage
+    - Verify proper cleanup of sensitive data
+
+  Time Estimate: 2-3 days
+
+  Implementation Details
+
+  Client-Side Encryption Approach
+
+  1. Session Key Derivation:
+  // After successful PGP authentication
+  const sessionKey = await deriveSessionKey(authToken, userFingerprint);
+  sessionStorage.setItem('session_key', sessionKey);
+  2. Credential Encryption:
+  // Encrypt mail credentials before storage
+  const encryptedCredentials = await encryptWithSessionKey(
+    sessionKey,
+    JSON.stringify({
+      email: email,
+      password: password,
+      server: server,
+      timestamp: Date.now()
+    })
+  );
+  localStorage.setItem(`mail_cred_${accountId}`, encryptedCredentials);
+  3. Credential Retrieval:
+  // When accessing mail
+  const sessionKey = sessionStorage.getItem('session_key');
+  const encryptedCredentials = localStorage.getItem(`mail_cred_${accountId}`);
+  const credentials = JSON.parse(await decryptWithSessionKey(sessionKey, encryptedCredentials));
+
+  // Check if expired
+  if (Date.now() - credentials.timestamp > CREDENTIAL_EXPIRY) {
+    // Prompt for re-entry
+  }
+
+  Database Updates
+
+  Remove the mail_password column from the users table while keeping the virtual_users table intact. Mail passwords will still be stored in hashed form in
+   virtual_users for Dovecot, but we will not store the plaintext version anywhere.
+
+  UI Flow for Mail Access
+
+  1. User logs in with PGP authentication
+  2. When accessing mail features for the first time in a session:
+    - Prompt for mail password
+    - Offer "Remember for this session" or "Remember on this device" options
+  3. If remembered, encrypt and store credentials
+  4. Use stored credentials for subsequent mail operations
+
+  Timeline and Dependencies
+
+  - Total Estimated Time: 2-3 weeks
+  - Critical Path: Packages 1 → 2 → 4
+  - Parallel Development: Package 3 can be developed alongside Package 2
+
+  Security Considerations
+
+  - Ensure proper encryption of all stored credentials
+  - Implement proper session management and timeout
+  - Never send plaintext credentials to server except for initial account setup
+  - Clear credentials on logout
+  - Implement rate limiting for credential validation attempts
+
+
+
+
+
+==============
+
+Original plan: 
+
 ## Phase 1: Foundation & Frontend
 - **1.1 Landing Page** ✅
   - Modern, responsive landing page
