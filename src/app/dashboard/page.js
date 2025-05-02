@@ -18,7 +18,8 @@ import {
   TrashIcon,
   StarIcon,
   ArchiveBoxIcon,
-  TagIcon
+  TagIcon,
+  KeyIcon
 } from '@heroicons/react/24/outline';
 
 export default function Dashboard() {

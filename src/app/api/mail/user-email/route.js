@@ -25,7 +25,11 @@ export async function POST(request) {
 
     if (!email) {
       return NextResponse.json(
-        { success: false, message: 'No email found for user' },
+        { 
+          success: false, 
+          message: 'No email found for user',
+          requiresSetup: true 
+        },
         { status: 404 }
       );
     }
