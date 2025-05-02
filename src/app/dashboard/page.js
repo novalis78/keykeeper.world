@@ -36,6 +36,14 @@ export default function Dashboard() {
   // Fetch real messages from the inbox
   useEffect(() => {
     fetchInboxMessages();
+    
+    // If the URL contains a 'new_account' parameter, show the credentials modal
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('new_account')) {
+        setShowCredentialsModal(true);
+      }
+    }
   }, []);
   
   const fetchInboxMessages = async (userCredentials = null) => {

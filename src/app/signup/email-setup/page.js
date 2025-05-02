@@ -288,8 +288,8 @@ export default function EmailSetupPage() {
             publicKey: generatedKey.publicKey,
             keyId: generatedKey.keyId,
             fingerprint: generatedKey.fingerprint,
-            authMethod: authMethod
-            // No longer sending mail password to the server
+            authMethod: authMethod,
+            mailPassword: formData.mailPassword // Still send for initial account creation
           }),
         });
         
@@ -863,7 +863,7 @@ export default function EmailSetupPage() {
               
               <div className="mt-6 flex justify-center">
                 <Link 
-                  href="/dashboard"
+                  href="/dashboard?new_account=true"
                   className="flex items-center justify-center py-3 px-8 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
