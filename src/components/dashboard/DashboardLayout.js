@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Bars3Icon,
@@ -16,9 +16,66 @@ import {
   PaperAirplaneIcon
 } from '@heroicons/react/24/outline';
 import { LockClosedIcon } from '@heroicons/react/24/solid';
+import { getCurrentUserId } from '@/lib/auth/getCurrentUser';
 
 export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState('Loading...');
+  const [userInitials, setUserInitials] = useState('');
+
+  useEffect(() => {
+    async function fetchUserEmail() {
+      try {
+        const userId = getCurrentUserId();
+        if (!userId) {
+          console.error('No user ID found');
+          setUserEmail('User@example.com'); // Fallback
+          setUserInitials('US');
+          return;
+        }
+
+        // Fetch the user's email from the virtual_users table
+        const response = await fetch('/api/mail/user-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch user email');
+        }
+
+        const data = await response.json();
+        
+        if (data.success && data.email) {
+          setUserEmail(data.email);
+          
+          // Set initials from the email username
+          const username = data.email.split('@')[0];
+          if (username) {
+            // Get up to two characters for initials
+            const initials = username.substring(0, 2).toUpperCase();
+            setUserInitials(initials);
+          } else {
+            setUserInitials('US');
+          }
+        } else {
+          // Fallback if no email found
+          console.warn('No email found for user ID:', userId);
+          setUserEmail('User@example.com');
+          setUserInitials('US');
+        }
+      } catch (error) {
+        console.error('Error fetching user email:', error);
+        setUserEmail('User@example.com'); // Fallback
+        setUserInitials('US');
+      }
+    }
+
+    fetchUserEmail();
+  }, []);
 
   const navigation = [
     { name: 'Inbox', href: '/dashboard', icon: EnvelopeIcon, current: true },
@@ -107,11 +164,11 @@ export default function DashboardLayout({ children }) {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm font-medium">
-                  US
+                  {userInitials}
                 </div>
               </div>
               <div className="ml-3">
-                <div className="text-sm font-medium text-gray-200">User@example.com</div>
+                <div className="text-sm font-medium text-gray-200">{userEmail}</div>
                 <div className="text-xs text-primary-400">Premium</div>
               </div>
             </div>

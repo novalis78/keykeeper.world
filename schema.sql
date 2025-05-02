@@ -102,6 +102,45 @@
     INDEX idx_user_activity (user_id, activity_type)
   );
 
+  CREATE TABLE `virtual_users` (
+	`id` INT(10) NOT NULL AUTO_INCREMENT,
+	`domain_id` INT(10) NOT NULL,
+	`password` VARCHAR(106) NOT NULL COLLATE 'utf8mb3_general_ci',
+	`email` VARCHAR(100) NOT NULL COLLATE 'utf8mb3_general_ci',
+	`user_id` VARCHAR(36) NULL COMMENT 'Link to users table',
+	`username` VARCHAR(100) NULL COLLATE 'utf8mb3_general_ci',
+	PRIMARY KEY (`id`) USING BTREE,
+	UNIQUE INDEX `email` (`email`) USING BTREE,
+	INDEX `idx_user_id` (`user_id`) USING BTREE
+)
+COLLATE='utf8mb3_general_ci'
+ENGINE=InnoDB
+;
+
+
+CREATE TABLE `virtual_domains` (
+	`id` INT(10) NOT NULL AUTO_INCREMENT,
+	`name` VARCHAR(50) NOT NULL COLLATE 'utf8mb3_general_ci',
+	PRIMARY KEY (`id`) USING BTREE
+)
+COLLATE='utf8mb3_general_ci'
+ENGINE=InnoDB
+AUTO_INCREMENT=2
+;
+
+
+CREATE TABLE `virtual_aliases` (
+	`id` INT(10) NOT NULL AUTO_INCREMENT,
+	`domain_id` INT(10) NOT NULL,
+	`source` VARCHAR(100) NOT NULL COLLATE 'utf8mb3_general_ci',
+	`destination` VARCHAR(100) NOT NULL COLLATE 'utf8mb3_general_ci',
+	PRIMARY KEY (`id`) USING BTREE
+)
+COLLATE='utf8mb3_general_ci'
+ENGINE=InnoDB
+;
+
+
   This schema includes:
 
   1. Users table - Stores user accounts with public keys (no passwords!)

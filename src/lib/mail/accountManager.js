@@ -515,11 +515,54 @@ export async function testMailConnection() {
   return results;
 }
 
+/**
+ * Get user's email from virtual_users table by user_id
+ * 
+ * @param {string} userId The user's ID to look up
+ * @returns {Promise<string|null>} The user's email or null if not found
+ */
+export async function getUserEmailByUserId(userId) {
+  console.log(`[Account Manager] Getting email for user: ${userId}`);
+  
+  if (!userId) {
+    throw new Error('User ID is required');
+  }
+  
+  // Get database connection
+  const connection = await getMailDbConnection();
+  
+  try {
+    // Get the table name from env or use default
+    const tableName = process.env.MAIL_USERS_TABLE || 'virtual_users';
+    
+    // Query the virtual_users table for the user's email
+    const [rows] = await connection.execute(
+      `SELECT email FROM ${tableName} WHERE user_id = ?`,
+      [userId]
+    );
+    
+    if (rows.length === 0) {
+      console.log(`[Account Manager] No email found for user: ${userId}`);
+      return null;
+    }
+    
+    console.log(`[Account Manager] Found email for user: ${userId}`);
+    return rows[0].email;
+  } catch (error) {
+    console.error('[Account Manager] Database error getting user email:', error);
+    throw new Error(`Failed to get user email: ${error.message}`);
+  } finally {
+    // Close the connection
+    await connection.end();
+  }
+}
+
 export default {
   createMailAccount,
   deleteMailAccount,
   checkMailAccount,
   updateMailAccountPassword,
   listMailDomains,
-  testMailConnection
+  testMailConnection,
+  getUserEmailByUserId
 };
