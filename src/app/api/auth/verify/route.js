@@ -4,6 +4,7 @@ import db from '@/lib/db';
 import validation from '@/lib/utils/validation';
 import jwt from '@/lib/auth/jwt';
 import crypto from 'crypto';
+import pgpUtils from '@/lib/auth/pgp';
 
 // Fix for static export by setting dynamic mode
 export const dynamic = 'force-dynamic';
@@ -57,8 +58,7 @@ export async function POST(request) {
       );
     }
     
-    // In production, we would verify the signature using the user's public key
-    // For now, we will verify that the challenge exists for the user
+    // Verify that the challenge exists for the user
     const isValidChallenge = await db.challenges.verify(challenge, user.id);
     
     if (!isValidChallenge) {
@@ -68,13 +68,30 @@ export async function POST(request) {
       );
     }
     
-    // Mock signature verification for development
-    // In production, we would use OpenPGP.js to verify the signature
-    const signatureVerified = mockVerifySignature(challenge, signature, user.public_key);
+    // Verify the signature using the user's public key
+    console.log('Verifying signature with user public key...');
+    let signatureVerified = false;
     
-    if (!signatureVerified) {
+    try {
+      // Use pgpUtils to verify the signature against the user's public key
+      signatureVerified = await pgpUtils.verifySignature(challenge, signature, user.public_key);
+      console.log('Signature verification result:', signatureVerified);
+      
+      if (!signatureVerified) {
+        console.error('Signature verification failed for user:', user.email);
+        console.log('Challenge:', challenge);
+        console.log('Signature format valid:', validation.isValidSignature(signature));
+        
+        return NextResponse.json(
+          { error: 'Signature verification failed - invalid signature for this public key' },
+          { status: 401 }
+        );
+      }
+    } catch (verifyError) {
+      console.error('Error during signature verification:', verifyError);
+      
       return NextResponse.json(
-        { error: 'Signature verification failed' },
+        { error: 'Signature verification error: ' + verifyError.message },
         { status: 401 }
       );
     }
@@ -196,24 +213,4 @@ export async function GET(request) {
   }
 }
 
-/**
- * Mock function to verify a signature against a challenge
- * In production, we would use OpenPGP.js for actual verification
- * 
- * @param {string} challenge - Challenge string
- * @param {string} signature - PGP signature
- * @param {string} publicKey - User's public key
- * @returns {boolean} - Whether signature is valid
- */
-function mockVerifySignature(challenge, signature, publicKey) {
-  // In development, always return true for testing
-  // In production, we would use OpenPGP.js to verify the signature
-  
-  // Simple check to make sure the signature contains expected patterns
-  const hasValidFormat = validation.isValidSignature(signature);
-  
-  // Random chance of failure for testing (5%)
-  const randomSuccess = Math.random() > 0.05;
-  
-  return hasValidFormat && randomSuccess;
-}
+// This function has been replaced with direct OpenPGP.js signature verification

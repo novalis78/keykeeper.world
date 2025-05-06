@@ -145,29 +145,67 @@ const pgpUtils = {
     
     try {
       // Parse the public key
-      const publicKeyObj = await openpgp.readKey({ armoredKey: publicKey });
+      let publicKeyObj;
+      try {
+        // OpenPGP.js v5.x syntax
+        publicKeyObj = await openpgp.readKey({ armoredKey: publicKey });
+      } catch (keyError) {
+        console.log('Error with modern OpenPGP key format, trying legacy format:', keyError);
+        // OpenPGP.js v4.x syntax
+        const { keys: [pgpPublicKey] } = await openpgp.key.readArmored(publicKey);
+        publicKeyObj = pgpPublicKey;
+      }
       
       // Parse the signature
-      const signatureObj = await openpgp.readSignature({
-        armoredSignature: signature
-      });
+      let signatureObj;
+      try {
+        // OpenPGP.js v5.x syntax
+        signatureObj = await openpgp.readSignature({
+          armoredSignature: signature
+        });
+      } catch (sigError) {
+        console.log('Error with modern OpenPGP signature format, trying legacy format:', sigError);
+        // OpenPGP.js v4.x syntax
+        signatureObj = await openpgp.signature.readArmored(signature);
+      }
       
       // Create a message from the challenge
-      const message = await openpgp.createMessage({ text: challenge });
+      let message;
+      try {
+        // OpenPGP.js v5.x syntax
+        message = await openpgp.createMessage({ text: challenge });
+      } catch (msgError) {
+        console.log('Error with modern OpenPGP message creation, trying legacy format:', msgError);
+        // OpenPGP.js v4.x syntax
+        message = openpgp.message.fromText(challenge);
+      }
       
       // Verify the signature
-      const verificationResult = await openpgp.verify({
-        message,
-        signature: signatureObj,
-        verificationKeys: publicKeyObj
-      });
+      let verificationResult;
+      try {
+        // OpenPGP.js v5.x syntax
+        verificationResult = await openpgp.verify({
+          message,
+          signature: signatureObj,
+          verificationKeys: publicKeyObj
+        });
+      } catch (verifyError) {
+        console.log('Error with modern OpenPGP verification, trying legacy format:', verifyError);
+        // OpenPGP.js v4.x syntax
+        verificationResult = await openpgp.verify({
+          message,
+          signature: signatureObj,
+          publicKeys: [publicKeyObj]
+        });
+      }
       
       // Check the verification result
       const { valid } = verificationResult.signatures[0];
+      console.log('Signature verification result:', valid);
       return valid;
     } catch (error) {
       console.error('Error verifying signature:', error);
-      return false;
+      throw new Error('Signature verification failed: ' + error.message);
     }
   },
   
