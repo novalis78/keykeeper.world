@@ -89,18 +89,23 @@ function generateDovecotPassword(password) {
   
   switch (hashMethod) {
     case 'SHA512-CRYPT': {
+      // IMPORTANT: This is a simplified version that doesn't work correctly with Dovecot
+      // For production, use the crypt3 method below
+      
       // Generate an 8-16 character salt
       const salt = crypto.randomBytes(8).toString('base64')
         .replace(/[+\/=]/g, '.') // Replace characters not used in crypt salts
         .substring(0, 16);       // Trim to 16 chars max
       
-      // Use crypto.createHash to generate the hash
+      // NOTE: This is NOT the correct implementation for SHA512-CRYPT
+      // SHA512-CRYPT uses a complex algorithm that can't be reproduced with a simple hash
+      // Simple crypto.createHash doesn't implement the full crypt algorithm
       const hash = crypto.createHash('sha512')
         .update(password + salt)
         .digest('base64')
         .replace(/[+\/=]/g, '.'); // Replace characters for compatibility
       
-      // Format exactly as Dovecot expects
+      // This format is incorrect for Dovecot and won't work properly
       return `{SHA512-CRYPT}$6$${salt}$${hash}`;
     }
     

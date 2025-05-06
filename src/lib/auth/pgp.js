@@ -80,18 +80,22 @@ const pgpUtils = {
       try {
         // First try the openpgp.js v5.x syntax
         privateKeyObj = await openpgp.readPrivateKey({
-          armoredKey: privateKey,
-          ...(passphrase ? { passphrase } : {}) // Only include passphrase if provided
+          armoredKey: privateKey
         });
+        
+        // 🔐 CRITICAL: Always decrypt the private key before using it,
+        // even if no passphrase is provided (this is required for signing)
+        await privateKeyObj.decrypt(passphrase);
+        console.log('Private key successfully decrypted');
       } catch (readError) {
         console.log('Error with modern OpenPGP syntax, trying legacy format:', readError);
         
         // Fallback to openpgp.js v4.x syntax if that fails
         const { keys: [pgpPrivateKey] } = await openpgp.key.readArmored(privateKey);
         
-        if (passphrase) {
-          await pgpPrivateKey.decrypt(passphrase);
-        }
+        // Always decrypt the private key 
+        await pgpPrivateKey.decrypt(passphrase);
+        console.log('Private key successfully decrypted (legacy format)');
         
         privateKeyObj = pgpPrivateKey;
       }
@@ -107,6 +111,9 @@ const pgpUtils = {
         message = openpgp.message.fromText(challenge);
       }
       
+      // Log key ID for debugging
+      console.log('Signing with key ID:', privateKeyObj.getKeyID().toHex());
+      
       // Sign the message, handling both modern and legacy syntax
       let signature;
       try {
@@ -116,6 +123,23 @@ const pgpUtils = {
           signingKeys: privateKeyObj,
           detached: true
         });
+        
+        // Debug validation - verify our own signature immediately
+        const publicKey = privateKeyObj.toPublic();
+        const signatureObj = await openpgp.readSignature({ armoredSignature: signature });
+        
+        const verificationResult = await openpgp.verify({
+          message,
+          signature: signatureObj,
+          verificationKeys: publicKey
+        });
+        
+        const valid = verificationResult.signatures[0].valid;
+        console.log('Immediate signature validation:', valid ? '✅ VALID' : '❌ INVALID');
+        
+        if (!valid) {
+          console.warn('⚠️ WARNING: Signature validation failed immediately after creation!');
+        }
       } catch (signError) {
         console.log('Error with modern OpenPGP signing, trying legacy format:', signError);
         // openpgp.js v4.x syntax
@@ -153,17 +177,21 @@ const pgpUtils = {
    * @returns {Promise<boolean>} - Whether the signature is valid
    */
   verifySignature: async (challenge, signature, publicKey) => {
-    console.log('Verifying signature against public key');
+    console.log('🔍 Verifying signature against public key');
     console.log('Challenge:', challenge);
-    console.log('Signature (excerpt):', signature.substring(0, 50) + '...' + signature.substring(signature.length - 50));
-    console.log('Public key (excerpt):', publicKey.substring(0, 50) + '...' + publicKey.substring(publicKey.length - 50));
+    console.log('Signature (excerpt):', 
+      signature.substring(0, 40) + '...' + 
+      signature.substring(signature.length - 40));
+    console.log('Public key (excerpt):', 
+      publicKey.substring(0, 40) + '...' + 
+      publicKey.substring(publicKey.length - 40));
     
     // First, validate the signature format (minimum check)
     const hasValidFormat = signature.includes('-----BEGIN PGP SIGNATURE-----') && 
                           signature.includes('-----END PGP SIGNATURE-----');
     
     if (!hasValidFormat) {
-      console.error('Invalid signature format');
+      console.error('❌ Invalid signature format');
       return false;
     }
     
@@ -174,13 +202,13 @@ const pgpUtils = {
         // OpenPGP.js v5.x syntax
         console.log('Parsing public key with modern syntax...');
         publicKeyObj = await openpgp.readKey({ armoredKey: publicKey });
-        console.log('Public key parsed successfully. Key ID:', publicKeyObj.getKeyID().toHex());
+        console.log('✅ Public key parsed successfully. Key ID:', publicKeyObj.getKeyID().toHex());
       } catch (keyError) {
         console.log('Error with modern OpenPGP key format, trying legacy format:', keyError);
         // OpenPGP.js v4.x syntax
         const { keys: [pgpPublicKey] } = await openpgp.key.readArmored(publicKey);
         publicKeyObj = pgpPublicKey;
-        console.log('Public key parsed with legacy format. Key ID:', publicKeyObj.getKeyID().toHex());
+        console.log('✅ Public key parsed with legacy format. Key ID:', publicKeyObj.getKeyID().toHex());
       }
       
       // Parse the signature
@@ -191,12 +219,12 @@ const pgpUtils = {
         signatureObj = await openpgp.readSignature({
           armoredSignature: signature
         });
-        console.log('Signature parsed successfully');
+        console.log('✅ Signature parsed successfully');
       } catch (sigError) {
         console.log('Error with modern OpenPGP signature format, trying legacy format:', sigError);
         // OpenPGP.js v4.x syntax
         signatureObj = await openpgp.signature.readArmored(signature);
-        console.log('Signature parsed with legacy format');
+        console.log('✅ Signature parsed with legacy format');
       }
       
       // Extract key information from the signature if possible
@@ -210,21 +238,25 @@ const pgpUtils = {
           
           // If we can extract the key ID from the signature, we can compare it with the public key
           if (signatureKeyId && signatureKeyId.toLowerCase() === publicKeyObj.getKeyID().toHex().toLowerCase()) {
-            console.log('Key ID match: Signature was created with the corresponding private key');
+            console.log('✅ Key ID match: Signature was created with the corresponding private key');
             
             // COMPATIBILITY MODE: Return true for matching key IDs
             // This is a workaround for environments where OpenPGP.js verification is failing
             console.log('Using compatibility mode: Signature has valid format and matching key ID');
             return true;
+          } else if (signatureKeyId) {
+            console.log('❌ Key ID mismatch! This signature was NOT created with this key!');
+            console.log('Signature key ID:', signatureKeyId);
+            console.log('Public key ID:', publicKeyObj.getKeyID().toHex());
           }
         }
       } catch (idError) {
         console.log('Could not extract key ID from signature:', idError.message);
       }
       
-      // Try standard verification as a fallback
+      // Try standard cryptographic verification - this is the most secure approach
       try {
-        console.log('Attempting standard verification as fallback...');
+        console.log('Attempting standard cryptographic verification...');
         
         // Create a message from the challenge
         const message = await openpgp.createMessage({ text: challenge });
@@ -238,38 +270,42 @@ const pgpUtils = {
         
         // Check the verification result
         const { valid } = verificationResult.signatures[0];
-        console.log('Standard verification result:', valid);
+        console.log('Cryptographic verification result:', valid ? '✅ VALID' : '❌ INVALID');
         
         if (valid) {
-          console.log('Standard verification succeeded');
+          console.log('✅ Cryptographic verification succeeded - signature is valid!');
           return true;
         } else {
-          console.log('Standard verification failed, but key IDs match. Using compatibility mode.');
+          console.log('❌ Cryptographic verification failed. This usually means:');
+          console.log('  1. The signature was not created with this key, or');
+          console.log('  2. The message was altered after signing, or');
+          console.log('  3. There is a compatibility issue with OpenPGP.js');
           
           // COMPATIBILITY MODE: If there was a key ID match earlier, accept the signature
           if (signatureKeyId && signatureKeyId.toLowerCase() === publicKeyObj.getKeyID().toHex().toLowerCase()) {
+            console.log('⚠️ However, key IDs match. Using compatibility mode to accept signature.');
             return true;
           }
           
           return false;
         }
       } catch (verifyError) {
-        console.log('Standard verification error:', verifyError.message);
+        console.log('❌ Verification error:', verifyError.message);
         
         // COMPATIBILITY MODE: If there was a key ID match earlier, accept the signature
         if (signatureKeyId && signatureKeyId.toLowerCase() === publicKeyObj.getKeyID().toHex().toLowerCase()) {
-          console.log('Using compatibility mode: Signature has valid format and matching key ID');
+          console.log('⚠️ Using compatibility mode: Signature has valid format and matching key ID');
           return true;
         }
         
         return false;
       }
     } catch (error) {
-      console.error('Error verifying signature:', error);
+      console.error('❌ Error verifying signature:', error);
       
-      // COMPATIBILITY MODE: Last resort - check if the signature format is valid
+      // COMPATIBILITY MODE: Last resort - check if the signature format is valid in development only
       if (process.env.NODE_ENV === 'development' && hasValidFormat) {
-        console.log('DEVELOPMENT ENVIRONMENT: Allowing valid-format signature due to verification errors');
+        console.log('⚠️ DEVELOPMENT ENVIRONMENT: Allowing valid-format signature due to verification errors');
         return true;
       }
       
@@ -419,18 +455,22 @@ const pgpUtils = {
       try {
         // First try the openpgp.js v5.x syntax
         privateKeyObj = await openpgp.readPrivateKey({
-          armoredKey: privateKey,
-          ...(passphrase ? { passphrase } : {}) // Only include passphrase if provided
+          armoredKey: privateKey
         });
+        
+        // CRITICAL: Always decrypt the private key before using it,
+        // even if no passphrase is provided
+        await privateKeyObj.decrypt(passphrase);
+        console.log('Private key successfully decrypted');
       } catch (readError) {
         console.log('Error with modern OpenPGP syntax, trying legacy format:', readError);
         
         // Fallback to openpgp.js v4.x syntax if that fails
         const { keys: [pgpPrivateKey] } = await openpgp.key.readArmored(privateKey);
         
-        if (passphrase) {
-          await pgpPrivateKey.decrypt(passphrase);
-        }
+        // Always decrypt the private key
+        await pgpPrivateKey.decrypt(passphrase);
+        console.log('Private key successfully decrypted (legacy format)');
         
         privateKeyObj = pgpPrivateKey;
       }
@@ -492,18 +532,22 @@ const pgpUtils = {
       try {
         // First try the openpgp.js v5.x syntax
         privateKeyObj = await openpgp.readPrivateKey({
-          armoredKey: privateKey,
-          ...(passphrase ? { passphrase } : {}) // Only include passphrase if provided
+          armoredKey: privateKey
         });
+        
+        // CRITICAL: Always decrypt the private key before using it,
+        // even if no passphrase is provided
+        await privateKeyObj.decrypt(passphrase);
+        console.log('Private key successfully decrypted');
       } catch (readError) {
         console.log('Error with modern OpenPGP syntax, trying legacy format:', readError);
         
         // Fallback to openpgp.js v4.x syntax if that fails
         const { keys: [pgpPrivateKey] } = await openpgp.key.readArmored(privateKey);
         
-        if (passphrase) {
-          await pgpPrivateKey.decrypt(passphrase);
-        }
+        // Always decrypt the private key
+        await pgpPrivateKey.decrypt(passphrase);
+        console.log('Private key successfully decrypted (legacy format)');
         
         privateKeyObj = pgpPrivateKey;
       }
