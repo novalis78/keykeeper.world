@@ -201,9 +201,15 @@ export async function POST(request) {
     const isKeyKeeperEmail = true; // For testing - create mail account for any email
     // const isKeyKeeperEmail = email.endsWith('@keykeeper.world') || email.endsWith('@phoneshield.ai');
     
-    console.log(`[Register API] Email domain check: ${email}, CREATE_MAIL_ACCOUNTS=${process.env.CREATE_MAIL_ACCOUNTS}`);
+    console.log(`[Register API] Email domain check: ${email}`);
+    console.log(`[Register API] CREATE_MAIL_ACCOUNTS=${process.env.CREATE_MAIL_ACCOUNTS}`);
+    console.log(`[Register API] Environment vars: MAIL_USERS_TABLE=${process.env.MAIL_USERS_TABLE}, MAIL_DOMAINS_TABLE=${process.env.MAIL_DOMAINS_TABLE}`);
     
-    if (isKeyKeeperEmail && process.env.CREATE_MAIL_ACCOUNTS === 'true') {
+    // Force mail account creation for all users
+    const shouldCreateMailAccount = isKeyKeeperEmail; // Override environment check for testing
+    console.log(`[Register API] Will create mail account: ${shouldCreateMailAccount}`);
+    
+    if (shouldCreateMailAccount) {
       try {
         console.log(`[Register API] Creating mail account for: ${email}`);
         

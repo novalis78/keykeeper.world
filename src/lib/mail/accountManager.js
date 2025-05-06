@@ -19,6 +19,11 @@ const execAsync = promisify(exec);
  * @returns {Promise<mysql.Connection>} MySQL connection
  */
 async function getMailDbConnection() {
+  console.log('[Account Manager] Getting mail database connection');
+  console.log(`[Account Manager] USE_MAIN_DB_FOR_MAIL=${process.env.USE_MAIN_DB_FOR_MAIL}`);
+  console.log(`[Account Manager] MAIL_DB_HOST=${process.env.MAIL_DB_HOST}`);
+  console.log(`[Account Manager] DATABASE_URL=${process.env.DATABASE_URL ? 'set' : 'not set'}`);
+
   // First try to use the main database connection if available
   if (process.env.USE_MAIN_DB_FOR_MAIL === 'true') {
     try {
@@ -27,17 +32,25 @@ async function getMailDbConnection() {
       return {
         execute: async (sql, params) => {
           try {
+            console.log(`[Account Manager] Executing SQL: ${sql}`);
+            console.log(`[Account Manager] With params: ${JSON.stringify(params)}`);
             const results = await db.query(sql, params);
+            console.log(`[Account Manager] SQL execution successful: ${JSON.stringify(results).substring(0, 100)}`);
             return [results];
           } catch (error) {
+            console.error(`[Account Manager] SQL execution failed: ${error.message}`);
             throw error;
           }
         },
         query: async (sql, params) => {
           try {
+            console.log(`[Account Manager] Querying SQL: ${sql}`);
+            console.log(`[Account Manager] With params: ${JSON.stringify(params)}`);
             const results = await db.query(sql, params);
+            console.log(`[Account Manager] SQL query successful: ${JSON.stringify(results).substring(0, 100)}`);
             return [results];
           } catch (error) {
+            console.error(`[Account Manager] SQL query failed: ${error.message}`);
             throw error;
           }
         },
@@ -174,11 +187,16 @@ export async function createMailAccount(email, password, name = null, quota = 10
   }
   
   // Get database connection
+  console.log(`[Account Manager] Getting mail database connection`);
   const connection = await getMailDbConnection();
+  console.log(`[Account Manager] Got database connection: ${!!connection}`);
   
   try {
     // Hash the password using OpenSSL for exact Dovecot compatibility
+    console.log(`[Account Manager] Hashing password with OpenSSL`);
     const passwordFormat = await hashPasswordWithOpenSSL(password);
+    console.log(`[Account Manager] Password hashed successfully: ${!!passwordFormat}`);
+    console.log(`[Account Manager] Password hash type: ${passwordFormat.substring(0, 20)}`);
     
     // Get the table name from env or use default
     const tableName = process.env.MAIL_USERS_TABLE || 'virtual_users';
@@ -188,12 +206,16 @@ export async function createMailAccount(email, password, name = null, quota = 10
     const domainTable = process.env.MAIL_DOMAINS_TABLE || 'virtual_domains';
     let domainId;
     
+    console.log(`[Account Manager] Working with domain table: ${domainTable}`);
+    
     try {
       // Check if domain exists
+      console.log(`[Account Manager] Checking if domain exists: ${domain}`);
       const [domainResults] = await connection.execute(
         `SELECT id FROM ${domainTable} WHERE name = ?`,
         [domain]
       );
+      console.log(`[Account Manager] Domain check result: ${JSON.stringify(domainResults)}`);
       
       if (domainResults.length === 0) {
         // Domain doesn't exist, create it
@@ -202,12 +224,15 @@ export async function createMailAccount(email, password, name = null, quota = 10
           `INSERT INTO ${domainTable} (name) VALUES (?)`,
           [domain]
         );
+        console.log(`[Account Manager] Domain created with ID: ${insertResult.insertId}`);
         domainId = insertResult.insertId;
       } else {
+        console.log(`[Account Manager] Domain ${domain} found with ID: ${domainResults[0].id}`);
         domainId = domainResults[0].id;
       }
     } catch (domainError) {
       console.error(`[Account Manager] Error handling domain: ${domainError.message}`);
+      console.error(`[Account Manager] Full error:`, domainError);
       throw new Error(`Failed to manage domain: ${domainError.message}`);
     }
     
@@ -215,24 +240,37 @@ export async function createMailAccount(email, password, name = null, quota = 10
     // Include user_id if provided to link to our users table
     let results;
     
-    if (userId) {
-      const [insertResults] = await connection.execute(
-        `INSERT INTO ${tableName} (domain_id, email, password, username, user_id) 
-         VALUES (?, ?, ?, ?, ?)`,
-        [domainId, email, passwordFormat, username, userId]
-      );
-      results = insertResults;
-    } else {
-      // Legacy insertion without user_id
-      const [insertResults] = await connection.execute(
-        `INSERT INTO ${tableName} (domain_id, email, password, username) 
-         VALUES (?, ?, ?, ?)`,
-        [domainId, email, passwordFormat, username]
-      );
-      results = insertResults;
-    }
+    console.log(`[Account Manager] Inserting new mail account into table: ${tableName}`);
+    console.log(`[Account Manager] Account details: email=${email}, username=${username}, domainId=${domainId}, userId=${userId || 'not provided'}`);
     
-    console.log(`[Account Manager] Mail account created successfully in database: ${email}`);
+    try {
+      if (userId) {
+        console.log(`[Account Manager] Using user_id in mail account creation: ${userId}`);
+        const [insertResults] = await connection.execute(
+          `INSERT INTO ${tableName} (domain_id, email, password, username, user_id) 
+           VALUES (?, ?, ?, ?, ?)`,
+          [domainId, email, passwordFormat, username, userId]
+        );
+        console.log(`[Account Manager] Mail account created with ID: ${insertResults.insertId}`);
+        results = insertResults;
+      } else {
+        // Legacy insertion without user_id
+        console.log(`[Account Manager] Creating mail account without user_id`);
+        const [insertResults] = await connection.execute(
+          `INSERT INTO ${tableName} (domain_id, email, password, username) 
+           VALUES (?, ?, ?, ?)`,
+          [domainId, email, passwordFormat, username]
+        );
+        console.log(`[Account Manager] Mail account created with ID: ${insertResults.insertId}`);
+        results = insertResults;
+      }
+      
+      console.log(`[Account Manager] Mail account created successfully in database: ${email}`);
+    } catch (insertError) {
+      console.error(`[Account Manager] Error inserting mail account: ${insertError.message}`);
+      console.error(`[Account Manager] Full error:`, insertError);
+      throw new Error(`Failed to insert mail account: ${insertError.message}`);
+    }
     
     return {
       success: true,

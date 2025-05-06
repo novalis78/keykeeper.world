@@ -22,9 +22,8 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   
-  // Domain options - in a real implementation, these would come from an API
-  const domainOptions = ['keykeeper.world', 'phoneshield.ai'];
-  const [selectedDomain, setSelectedDomain] = useState(domainOptions[0]);
+  // Fixed domain for signup
+  const domain = 'keykeeper.world';
   
   // Check username availability with debounce
   useEffect(() => {
@@ -34,11 +33,11 @@ export default function SignupPage() {
     }
     
     const timeoutId = setTimeout(() => {
-      checkUsernameAvailability(username, selectedDomain);
+      checkUsernameAvailability(username, domain);
     }, 500);
     
     return () => clearTimeout(timeoutId);
-  }, [username, selectedDomain]);
+  }, [username]);
   
   const checkUsernameAvailability = async (username, domain) => {
     setIsChecking(true);
@@ -67,9 +66,7 @@ export default function SignupPage() {
     setUsername(sanitizedValue);
   };
   
-  const handleDomainChange = (e) => {
-    setSelectedDomain(e.target.value);
-  };
+  // Domain is fixed to keykeeper.world
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -83,7 +80,7 @@ export default function SignupPage() {
     try {
       // Store the email choice in localStorage for the next step
       localStorage.setItem('signup_data', JSON.stringify({
-        email: `${username}@${selectedDomain}`,
+        email: `${username}@${domain}`,
         step: 'email_selected'
       }));
       
@@ -158,24 +155,9 @@ export default function SignupPage() {
                       autoFocus
                     />
                   </div>
-                  <div className="relative -ml-px block">
-                    <span className="inline-flex items-center px-4 py-4 text-lg font-medium text-gray-700 dark:text-gray-300 rounded-none bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
-                      @
-                    </span>
+                  <div className="flex items-center px-4 py-4 text-lg font-medium text-gray-700 dark:text-gray-300 rounded-r-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 whitespace-nowrap">
+                    @keykeeper.world
                   </div>
-                  <select
-                    id="domain"
-                    name="domain"
-                    value={selectedDomain}
-                    onChange={handleDomainChange}
-                    className="relative -ml-px block w-auto rounded-r-lg border-0 py-4 pl-3 pr-10 text-lg text-gray-900 dark:text-white ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-primary-500 dark:focus:ring-primary-400 bg-white dark:bg-gray-800 dark:bg-opacity-80"
-                  >
-                    {domainOptions.map(domain => (
-                      <option key={domain} value={domain}>
-                        {domain}
-                      </option>
-                    ))}
-                  </select>
                 </div>
                 
                 {/* Availability indicator */}
