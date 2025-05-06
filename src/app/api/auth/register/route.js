@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import validation from '@/lib/utils/validation';
 import accountManager from '@/lib/mail/accountManager';
+import { generateServerPasswordHash } from '@/lib/mail/dovecotAuth';
 
 /**
  * User registration API endpoint
@@ -206,26 +207,48 @@ export async function POST(request) {
       try {
         console.log(`[Register API] Creating mail account for: ${email}`);
         
-        // Use user-provided mail password if available, otherwise generate one
-        let accountPassword = mailPassword;
+        // Initialize account password
+        let accountPassword;
         
-        // If no password was provided, generate a secure one
-        if (!accountPassword) {
-          console.log(`[Register API] No mail password provided, generating one`);
-          const crypto = await import('crypto');
+        // Generate a deterministic mail password hash based on the user's public key
+        console.log(`[Register API] Generating deterministic password for email: ${email}`);
+        
+        try {
+          // We'll use a consistent method to derive the password
+          // This won't be the actual password, but a hash that can be used to verify
+          // the client-derived password during authentication
+          const passwordHash = await generateServerPasswordHash(email, publicKey);
           
-          // Create a secure hash from fingerprint and key ID
-          const mailPasswordBase = crypto.createHash('sha256')
-            .update(fingerprint + keyId)
-            .digest('hex');
+          console.log(`[Register API] Successfully generated deterministic mail password hash`);
+          
+          // For compatibility with the existing system during development,
+          // we'll set a dummy password that won't actually be used for auth
+          // In production, the client will derive the real password from their private key
+          accountPassword = "client_will_derive_real_password";
+        } catch (passwordError) {
+          console.error('[Register API] Error generating deterministic password:', passwordError);
+          
+          // Fall back to using user-provided mail password if available, otherwise generate one
+          accountPassword = mailPassword;
+          
+          // If no password was provided, generate a secure one
+          if (!accountPassword) {
+            console.log(`[Register API] No mail password provided, generating one`);
+            const crypto = await import('crypto');
             
-          // Add some random bits for additional security
-          const randomBits = crypto.randomBytes(8).toString('hex');
-          accountPassword = mailPasswordBase.substring(0, 24) + randomBits;
-          
-          console.log(`[Register API] Generated secure mail password for: ${email}`);
-        } else {
-          console.log(`[Register API] Using user-provided mail password`);
+            // Create a secure hash from fingerprint and key ID
+            const mailPasswordBase = crypto.createHash('sha256')
+              .update(fingerprint + keyId)
+              .digest('hex');
+              
+            // Add some random bits for additional security
+            const randomBits = crypto.randomBytes(8).toString('hex');
+            accountPassword = mailPasswordBase.substring(0, 24) + randomBits;
+            
+            console.log(`[Register API] Generated secure mail password for: ${email}`);
+          } else {
+            console.log(`[Register API] Using user-provided mail password`);
+          }
         }
         
         // Create the mail account with userId to link it

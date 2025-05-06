@@ -3,7 +3,7 @@
 import { Fragment, useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon, KeyIcon, LockClosedIcon, ServerIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
-import { storeCredentials, getSessionKey } from '@/lib/mail/mailCredentialManager';
+import { storeCredentials, getSessionKey, getDovecotPassword } from '@/lib/mail/mailCredentialManager';
 import { validateCredentials, testMailConnection } from '@/lib/mail/mailValidator';
 import { useAuth } from '@/lib/auth/useAuth';
 

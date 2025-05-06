@@ -291,7 +291,44 @@ const pgpUtils = {
       console.error('Error decrypting message:', error);
       throw new Error('Failed to decrypt message: ' + error.message);
     }
+  },
+  
+  /**
+   * Sign a message with a private key
+   * @param {string} message - Message to sign
+   * @param {string} privateKey - User's private key
+   * @param {string} passphrase - Optional passphrase for private key
+   * @returns {Promise<string>} - Signed message (cleartext with embedded signature)
+   */
+  signMessage: async (message, privateKey, passphrase = '') => {
+    console.log('Signing message with private key');
+    
+    try {
+      // Parse the private key
+      const privateKeyObj = await openpgp.readPrivateKey({
+        armoredKey: privateKey,
+        passphrase
+      });
+      
+      // Create a message object from the text
+      const messageObj = await openpgp.createMessage({ text: message });
+      
+      // Sign the message
+      const signedMessage = await openpgp.sign({
+        message: messageObj,
+        signingKeys: privateKeyObj,
+        detached: false // We want the full signed message, not just the signature
+      });
+      
+      return signedMessage;
+    } catch (error) {
+      console.error('Error signing message:', error);
+      throw new Error('Failed to sign message: ' + error.message);
+    }
   }
 };
 
-export default pgpUtils;
+export default {
+  ...pgpUtils,
+  signMessage: pgpUtils.signMessage
+};

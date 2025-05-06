@@ -10,6 +10,7 @@
 
 import pgpUtils from '@/lib/auth/pgp';
 import * as openpgp from 'openpgp';
+import { deriveDovecotPassword } from '@/lib/mail/dovecotAuth';
 
 // Constants for storage
 const STORAGE_PREFIX = 'kk_mail_';
@@ -305,6 +306,31 @@ export async function getSessionKey(authToken, keyFingerprint) {
   return await initializeSessionKey(authToken, keyFingerprint);
 }
 
+/**
+ * Derive the user's mail password from their private key
+ * This password is used for IMAP/SMTP authentication
+ * 
+ * @param {string} email - User's email address
+ * @param {string} privateKey - User's private PGP key
+ * @param {string} passphrase - Optional passphrase for private key
+ * @returns {Promise<string>} - Derived password for mail server
+ */
+export async function getDovecotPassword(email, privateKey, passphrase = '') {
+  try {
+    if (!email || !privateKey) {
+      throw new Error('Email and private key are required for mail password derivation');
+    }
+    
+    // Use the dovecotAuth utility to derive the password
+    const mailPassword = await deriveDovecotPassword(email, privateKey, passphrase);
+    
+    return mailPassword;
+  } catch (error) {
+    console.error('Error deriving mail password:', error);
+    throw new Error('Failed to derive mail password');
+  }
+}
+
 export default {
   deriveSessionKey,
   encryptWithSessionKey,
@@ -315,5 +341,6 @@ export default {
   getCredentials,
   clearAllCredentials,
   initializeSessionKey,
-  getSessionKey
+  getSessionKey,
+  getDovecotPassword
 };
