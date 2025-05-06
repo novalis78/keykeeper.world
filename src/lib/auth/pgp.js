@@ -74,20 +74,57 @@ const pgpUtils = {
     
     try {
       // Parse the private key
-      const privateKeyObj = await openpgp.readPrivateKey({
-        armoredKey: privateKey,
-        passphrase
-      });
+      // Check the version of OpenPGP.js being used and adapt accordingly
+      let privateKeyObj;
+      
+      try {
+        // First try the openpgp.js v5.x syntax
+        privateKeyObj = await openpgp.readPrivateKey({
+          armoredKey: privateKey,
+          ...(passphrase ? { passphrase } : {}) // Only include passphrase if provided
+        });
+      } catch (readError) {
+        console.log('Error with modern OpenPGP syntax, trying legacy format:', readError);
+        
+        // Fallback to openpgp.js v4.x syntax if that fails
+        const { keys: [pgpPrivateKey] } = await openpgp.key.readArmored(privateKey);
+        
+        if (passphrase) {
+          await pgpPrivateKey.decrypt(passphrase);
+        }
+        
+        privateKeyObj = pgpPrivateKey;
+      }
       
       // Create a message from the challenge
-      const message = await openpgp.createMessage({ text: challenge });
+      let message;
+      try {
+        // openpgp.js v5.x syntax
+        message = await openpgp.createMessage({ text: challenge });
+      } catch (msgError) {
+        console.log('Error with modern OpenPGP message creation, trying legacy format:', msgError);
+        // openpgp.js v4.x syntax
+        message = openpgp.message.fromText(challenge);
+      }
       
-      // Sign the message
-      const signature = await openpgp.sign({
-        message,
-        signingKeys: privateKeyObj,
-        detached: true
-      });
+      // Sign the message, handling both modern and legacy syntax
+      let signature;
+      try {
+        // openpgp.js v5.x syntax
+        signature = await openpgp.sign({
+          message,
+          signingKeys: privateKeyObj,
+          detached: true
+        });
+      } catch (signError) {
+        console.log('Error with modern OpenPGP signing, trying legacy format:', signError);
+        // openpgp.js v4.x syntax
+        signature = await openpgp.sign({
+          message,
+          privateKeys: [privateKeyObj],
+          detached: true
+        });
+      }
       
       return signature;
     } catch (error) {
@@ -270,21 +307,59 @@ const pgpUtils = {
     
     try {
       // Parse the private key
-      const privateKeyObj = await openpgp.readPrivateKey({
-        armoredKey: privateKey,
-        passphrase
-      });
+      // Check the version of OpenPGP.js being used and adapt accordingly
+      let privateKeyObj;
+      
+      try {
+        // First try the openpgp.js v5.x syntax
+        privateKeyObj = await openpgp.readPrivateKey({
+          armoredKey: privateKey,
+          ...(passphrase ? { passphrase } : {}) // Only include passphrase if provided
+        });
+      } catch (readError) {
+        console.log('Error with modern OpenPGP syntax, trying legacy format:', readError);
+        
+        // Fallback to openpgp.js v4.x syntax if that fails
+        const { keys: [pgpPrivateKey] } = await openpgp.key.readArmored(privateKey);
+        
+        if (passphrase) {
+          await pgpPrivateKey.decrypt(passphrase);
+        }
+        
+        privateKeyObj = pgpPrivateKey;
+      }
       
       // Parse the encrypted message
-      const message = await openpgp.readMessage({
-        armoredMessage: encryptedMessage
-      });
+      let message;
+      try {
+        // openpgp.js v5.x syntax
+        message = await openpgp.readMessage({
+          armoredMessage: encryptedMessage
+        });
+      } catch (msgError) {
+        console.log('Error with modern OpenPGP message reading, trying legacy format:', msgError);
+        // openpgp.js v4.x syntax
+        message = await openpgp.message.readArmored(encryptedMessage);
+      }
       
-      // Decrypt the message
-      const { data: decrypted } = await openpgp.decrypt({
-        message,
-        decryptionKeys: privateKeyObj
-      });
+      // Decrypt the message, handling both modern and legacy syntax
+      let decrypted;
+      try {
+        // openpgp.js v5.x syntax
+        const result = await openpgp.decrypt({
+          message,
+          decryptionKeys: privateKeyObj
+        });
+        decrypted = result.data;
+      } catch (decryptError) {
+        console.log('Error with modern OpenPGP decryption, trying legacy format:', decryptError);
+        // openpgp.js v4.x syntax
+        const result = await openpgp.decrypt({
+          message,
+          privateKeys: [privateKeyObj]
+        });
+        decrypted = result.data;
+      }
       
       return decrypted;
     } catch (error) {
@@ -305,20 +380,57 @@ const pgpUtils = {
     
     try {
       // Parse the private key
-      const privateKeyObj = await openpgp.readPrivateKey({
-        armoredKey: privateKey,
-        passphrase
-      });
+      // Check the version of OpenPGP.js being used and adapt accordingly
+      let privateKeyObj;
+      
+      try {
+        // First try the openpgp.js v5.x syntax
+        privateKeyObj = await openpgp.readPrivateKey({
+          armoredKey: privateKey,
+          ...(passphrase ? { passphrase } : {}) // Only include passphrase if provided
+        });
+      } catch (readError) {
+        console.log('Error with modern OpenPGP syntax, trying legacy format:', readError);
+        
+        // Fallback to openpgp.js v4.x syntax if that fails
+        const { keys: [pgpPrivateKey] } = await openpgp.key.readArmored(privateKey);
+        
+        if (passphrase) {
+          await pgpPrivateKey.decrypt(passphrase);
+        }
+        
+        privateKeyObj = pgpPrivateKey;
+      }
       
       // Create a message object from the text
-      const messageObj = await openpgp.createMessage({ text: message });
+      let messageObj;
+      try {
+        // openpgp.js v5.x syntax
+        messageObj = await openpgp.createMessage({ text: message });
+      } catch (msgError) {
+        console.log('Error with modern OpenPGP message creation, trying legacy format:', msgError);
+        // openpgp.js v4.x syntax
+        messageObj = openpgp.message.fromText(message);
+      }
       
-      // Sign the message
-      const signedMessage = await openpgp.sign({
-        message: messageObj,
-        signingKeys: privateKeyObj,
-        detached: false // We want the full signed message, not just the signature
-      });
+      // Sign the message, handling both modern and legacy syntax
+      let signedMessage;
+      try {
+        // openpgp.js v5.x syntax
+        signedMessage = await openpgp.sign({
+          message: messageObj,
+          signingKeys: privateKeyObj,
+          detached: false // We want the full signed message, not just the signature
+        });
+      } catch (signError) {
+        console.log('Error with modern OpenPGP signing, trying legacy format:', signError);
+        // openpgp.js v4.x syntax
+        signedMessage = await openpgp.sign({
+          message: messageObj,
+          privateKeys: [privateKeyObj],
+          detached: false
+        });
+      }
       
       return signedMessage;
     } catch (error) {
