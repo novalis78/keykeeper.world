@@ -3,6 +3,17 @@
  * 
  * This module provides utilities for PGP-based authentication in KeyKeeper.world,
  * including key generation, challenge signing, and verification.
+ * 
+ * IMPORTANT COMPATIBILITY NOTES:
+ * 
+ * OpenPGP.js v6.x changed the signature verification API significantly:
+ * - Previously you could check verificationResult.signatures[0].valid (boolean)
+ * - Now you must await verificationResult.signatures[0].verified (Promise)
+ * 
+ * This code handles both approaches with proper error handling and
+ * provides a compatibility mode (key ID matching) as a fallback.
+ * 
+ * For details, see: docs/OPENPGP_NOTES.md
  */
 
 import * as openpgp from 'openpgp';
