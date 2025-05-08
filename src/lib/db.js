@@ -453,13 +453,22 @@ export const activityLogs = {
  * @returns {Promise<Object>} MySQL connection
  */
 export async function getMailDbConnection() {
-  // If we're using the main database for mail as well
+  // IMPORTANT: First check if USE_MAIN_DB_FOR_MAIL is true
+  // This takes precedence over MAIL_DB_HOST setting
+  if (process.env.USE_MAIN_DB_FOR_MAIL === 'true' && pool) {
+    console.log('Using main database connection for mail (USE_MAIN_DB_FOR_MAIL=true)');
+    return pool;
+  }
+  
+  // If we're using the main database for mail as well (legacy check)
   if (!process.env.MAIL_DB_HOST && pool) {
+    console.log('Using main database connection for mail (MAIL_DB_HOST not set)');
     return pool;
   }
   
   // Otherwise, create a new connection to the mail database
   try {
+    console.log(`Creating new mail database connection to ${process.env.MAIL_DB_HOST || 'localhost'}`);
     const dbConfig = {
       host: process.env.MAIL_DB_HOST || 'localhost',
       user: process.env.MAIL_DB_USER || process.env.DATABASE_USER,
