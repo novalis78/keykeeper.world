@@ -106,7 +106,7 @@ const passwordManager = {
           console.error(`Error querying ${fullTableName}:`, queryError);
           
           // Try alternative queries if standard one fails
-          if (queryError.message.includes('Unknown column') || rows?.length === 0) {
+          if (queryError.message.includes('Unknown column')) {
             console.log('Trying alternative query formats...');
             
             // Try case insensitive query
@@ -195,16 +195,59 @@ const passwordManager = {
    * @returns {Promise<boolean>} - True if the user has at least one mail account
    */
   async hasMailAccount(userId) {
+    console.log(`Checking if user ${userId} has a mail account`);
+    
+    // First try using getMailAccounts
     try {
-      // Get mail accounts for the user
       const accounts = await this.getMailAccounts(userId);
-      
-      // Return true if at least one account exists
-      return accounts && accounts.length > 0;
-    } catch (error) {
-      console.error('Error checking mail account:', error);
-      return false;
+      if (accounts && accounts.length > 0) {
+        console.log(`Found ${accounts.length} mail accounts for user ${userId}`);
+        return true;
+      }
+    } catch (firstError) {
+      console.error(`Error checking mail accounts through standard method:`, firstError);
+      // Continue to fallback
     }
+    
+    // Second try using direct query
+    if (process.env.USE_MAIN_DB_FOR_MAIL === 'true') {
+      try {
+        const tableName = process.env.MAIL_USERS_TABLE || 'virtual_users';
+        const rows = await db.query(
+          `SELECT COUNT(*) as count FROM ${tableName} WHERE user_id = ?`,
+          [userId]
+        );
+        
+        const count = rows[0]?.count || 0;
+        if (count > 0) {
+          console.log(`Found ${count} mail accounts through direct count query`);
+          return true;
+        }
+      } catch (secondError) {
+        console.error('Error checking mail account through direct query:', secondError);
+        // Continue to more fallbacks
+      }
+      
+      // Try getting single account as fallback
+      try {
+        const tableName = process.env.MAIL_USERS_TABLE || 'virtual_users';
+        const rows = await db.query(
+          `SELECT id FROM ${tableName} WHERE user_id = ? LIMIT 1`,
+          [userId]
+        );
+        
+        if (rows && rows.length > 0) {
+          console.log(`Found mail account through direct id query`);
+          return true;
+        }
+      } catch (thirdError) {
+        console.error('Error in third attempt to check mail account:', thirdError);
+      }
+    }
+    
+    // All methods failed or no account found
+    console.log(`No mail account found for user ${userId}`);
+    return false;
   },
   
   /**
@@ -213,17 +256,77 @@ const passwordManager = {
    * @returns {Promise<Object|null>} - The primary mail account or null if not found
    */
   async getPrimaryMailAccount(userId) {
+    console.log(`Attempting to get primary mail account for user ${userId}`);
+    
+    // First try: Use getMailAccounts method
     try {
-      // Get mail accounts for the user
       const accounts = await this.getMailAccounts(userId);
       
-      // Return the first account as the primary account
-      // In the future, we could add a 'is_primary' field to the table
-      return accounts && accounts.length > 0 ? accounts[0] : null;
-    } catch (error) {
-      console.error('Error getting primary mail account:', error);
-      return null;
+      if (accounts && accounts.length > 0) {
+        console.log(`Found ${accounts.length} mail accounts through standard method for user ${userId}`);
+        return accounts[0];
+      }
+    } catch (firstError) {
+      console.error(`Error in first attempt to get mail accounts for ${userId}:`, firstError);
+      // Continue to fallback methods
     }
+    
+    // Second try: Direct database query 
+    if (process.env.USE_MAIN_DB_FOR_MAIL === 'true') {
+      console.log(`Attempting direct database query for mail account (user ${userId})`);
+      try {
+        const tableName = process.env.MAIL_USERS_TABLE || 'virtual_users';
+        const directRows = await db.query(
+          `SELECT id, email, username, password FROM ${tableName} WHERE user_id = ?`,
+          [userId]
+        );
+        
+        if (directRows && directRows.length > 0) {
+          console.log(`Found mail account via direct query for user ${userId}`);
+          return directRows[0];
+        }
+      } catch (secondError) {
+        console.error('Error in direct database query:', secondError);
+        // Continue to next fallback
+      }
+    }
+    
+    // Third try: Try with alternative query format
+    if (process.env.USE_MAIN_DB_FOR_MAIL === 'true') {
+      console.log(`Attempting alternative query formats for user ${userId}`);
+      try {
+        const tableName = process.env.MAIL_USERS_TABLE || 'virtual_users';
+        
+        // Try with case insensitive query
+        const ciRows = await db.query(
+          `SELECT id, email, username, password FROM ${tableName} WHERE LOWER(user_id) = LOWER(?)`,
+          [userId]
+        );
+        
+        if (ciRows && ciRows.length > 0) {
+          console.log(`Found mail account with case-insensitive query for user ${userId}`);
+          return ciRows[0];
+        }
+        
+        // Try without dashes
+        const cleanId = userId.replace(/-/g, '');
+        const cleanRows = await db.query(
+          `SELECT id, email, username, password FROM ${tableName} WHERE REPLACE(user_id, '-', '') = ?`,
+          [cleanId]
+        );
+        
+        if (cleanRows && cleanRows.length > 0) {
+          console.log(`Found mail account with no-dashes query for user ${userId}`);
+          return cleanRows[0];
+        }
+      } catch (thirdError) {
+        console.error('Error in alternative query formats:', thirdError);
+      }
+    }
+    
+    // No mail account found through any method
+    console.log(`No mail account found for user ${userId} through any method`);
+    return null;
   },
   
   /**
