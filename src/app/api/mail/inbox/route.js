@@ -37,7 +37,6 @@ export async function POST(request) {
     // Check if credentials are provided directly
     if (!credentials || !credentials.email || !credentials.password) {
       // If no credentials provided, check if user has any mail accounts
-      // This is for backward compatibility and will be deprecated
       const hasMailAccount = await passwordManager.hasMailAccount(userId);
       if (!hasMailAccount) {
         return NextResponse.json(
@@ -55,14 +54,27 @@ export async function POST(request) {
         );
       }
       
-      // Get the mail password for the user (legacy method)
-      const mailPassword = await passwordManager.getMailPassword(userId);
-      if (!mailPassword) {
-        return NextResponse.json(
-          { error: 'Mail credentials required', requireCredentials: true },
-          { status: 401 }
-        );
-      }
+      // Client must provide deterministically derived password
+      // This is part of the passwordless approach where the password
+      // is derived from the private key on the client side
+      return NextResponse.json(
+        { 
+          error: 'Mail credentials required',
+          requireCredentials: true,
+          mailAccount: {
+            email: mailAccount.email,
+            username: mailAccount.username,
+            server: process.env.MAIL_HOST || 'mail.keykeeper.world',
+            port: parseInt(process.env.MAIL_IMAP_PORT || '993'),
+            secure: process.env.MAIL_IMAP_SECURE !== 'false'
+          },
+          authInfo: {
+            saltValue: process.env.DOVECOT_AUTH_SALT || 'keykeeper-dovecot-auth',
+            version: process.env.DOVECOT_AUTH_VERSION || 'v1'
+          }
+        },
+        { status: 401 }
+      );
     }
     
     // Determine which credentials to use
@@ -81,13 +93,11 @@ export async function POST(request) {
       imapSecure = credentials.imapSecure !== undefined ? credentials.imapSecure : process.env.MAIL_IMAP_SECURE !== 'false';
       console.log(`[Mail API] Using user-provided credentials for ${mailAddress}`);
     } else {
-      // Use legacy stored credentials (backward compatibility)
-      mailAddress = mailAccount.email;
-      mailPass = mailPassword;
-      imapHost = process.env.MAIL_HOST || 'localhost';
-      imapPort = parseInt(process.env.MAIL_IMAP_PORT || '993');
-      imapSecure = process.env.MAIL_IMAP_SECURE !== 'false';
-      console.log(`[Mail API] Using stored credentials for ${mailAddress}`);
+      // This branch shouldn't be reached due to the check above, but keeping it for safety
+      return NextResponse.json(
+        { error: 'Mail credentials required', requireCredentials: true },
+        { status: 401 }
+      );
     }
     
     // Set up IMAP client
@@ -189,7 +199,42 @@ export async function POST(request) {
     // Logout from the server
     await client.logout();
     
-    return NextResponse.json({ messages });
+    // Safely serialize the messages to avoid circular references
+    try {
+      // Convert to a plain object to avoid circular references 
+      const safeMessages = JSON.parse(JSON.stringify(messages));
+      return NextResponse.json({ messages: safeMessages });
+    } catch (serializeError) {
+      console.error('[Mail API] Error serializing messages:', serializeError);
+      
+      // Create a manually sanitized version of the messages if JSON.stringify fails
+      const sanitizedMessages = messages.map(msg => ({
+        id: msg.id,
+        subject: msg.subject,
+        from: {
+          name: msg.from?.name || 'Unknown',
+          email: msg.from?.email || ''
+        },
+        to: {
+          name: msg.to?.name || '',
+          email: msg.to?.email || ''
+        },
+        read: !!msg.read,
+        flagged: !!msg.flagged,
+        answered: !!msg.answered,
+        labels: Array.isArray(msg.labels) ? [...msg.labels] : [],
+        timestamp: msg.timestamp,
+        snippet: msg.snippet || '',
+        encryptedBody: !!msg.encryptedBody,
+        attachments: (msg.attachments || []).map(att => ({
+          name: att.name || 'attachment',
+          size: att.size || 0,
+          contentType: att.contentType || 'application/octet-stream'
+        }))
+      }));
+      
+      return NextResponse.json({ messages: sanitizedMessages });
+    }
     
   } catch (error) {
     console.error('[Mail API] Error fetching inbox:', error);
