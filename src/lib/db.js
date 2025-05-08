@@ -80,14 +80,82 @@ try {
 export async function query(sql, params) {
   // Check if pool exists
   if (!pool) {
-    throw new Error('Database connection not available. Make sure DATABASE_URL is properly configured.');
+    console.log('Recreating database pool since it does not exist');
+    // Attempt to recreate the pool if DATABASE_URL is available
+    if (process.env.DATABASE_URL) {
+      try {
+        const config = parseConnectionString(process.env.DATABASE_URL);
+        pool = mysql.createPool({
+          host: config.host,
+          port: config.port,
+          user: config.user,
+          password: config.password,
+          database: config.database,
+          waitForConnections: true,
+          connectionLimit: 10,
+          queueLimit: 0,
+          connectTimeout: 10000 // 10 seconds timeout
+        });
+        console.log(`Recreated MySQL connection pool for ${config.host}:${config.port}/${config.database}`);
+      } catch (poolError) {
+        console.error('Error recreating MySQL connection pool:', poolError.message);
+        throw new Error('Database connection not available. Make sure DATABASE_URL is properly configured.');
+      }
+    } else {
+      throw new Error('Database connection not available. Make sure DATABASE_URL is properly configured.');
+    }
   }
   
   try {
+    // Check if pool is closed and try to recreate
+    if (pool._closed) {
+      console.log('Detected closed pool, recreating...');
+      // Recreate the pool
+      const config = parseConnectionString(process.env.DATABASE_URL);
+      pool = mysql.createPool({
+        host: config.host,
+        port: config.port,
+        user: config.user,
+        password: config.password,
+        database: config.database,
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0,
+        connectTimeout: 10000 // 10 seconds timeout
+      });
+      console.log(`Recreated MySQL connection pool after closed state`);
+    }
+    
     const [results] = await pool.execute(sql, params);
     return results;
   } catch (error) {
     console.error('Database error:', error);
+    // If pool is closed error, try one more time with a new connection
+    if (error.message.includes('Pool is closed') || error.message.includes('Connection lost')) {
+      console.log('Caught pool closed error, attempting one retry with new connection');
+      try {
+        // Recreate the pool
+        const config = parseConnectionString(process.env.DATABASE_URL);
+        pool = mysql.createPool({
+          host: config.host,
+          port: config.port,
+          user: config.user,
+          password: config.password,
+          database: config.database,
+          waitForConnections: true,
+          connectionLimit: 10,
+          queueLimit: 0,
+          connectTimeout: 10000 // 10 seconds timeout
+        });
+        
+        // Try the query again
+        const [retryResults] = await pool.execute(sql, params);
+        return retryResults;
+      } catch (retryError) {
+        console.error('Retry also failed:', retryError);
+        throw retryError;
+      }
+    }
     throw error;
   }
 }
@@ -455,13 +523,44 @@ export const activityLogs = {
 export async function getMailDbConnection() {
   // IMPORTANT: First check if USE_MAIN_DB_FOR_MAIL is true
   // This takes precedence over MAIL_DB_HOST setting
-  if (process.env.USE_MAIN_DB_FOR_MAIL === 'true' && pool) {
+  if (process.env.USE_MAIN_DB_FOR_MAIL === 'true') {
     console.log('Using main database connection for mail (USE_MAIN_DB_FOR_MAIL=true)');
-    return pool;
+    
+    // Check if pool exists or is closed
+    if (!pool || (pool && pool._closed)) {
+      console.log('Main pool is missing or closed, recreating...');
+      
+      // Recreate the pool if it's closed or doesn't exist
+      if (process.env.DATABASE_URL) {
+        try {
+          const config = parseConnectionString(process.env.DATABASE_URL);
+          pool = mysql.createPool({
+            host: config.host,
+            port: config.port,
+            user: config.user,
+            password: config.password,
+            database: config.database,
+            waitForConnections: true,
+            connectionLimit: 10,
+            queueLimit: 0,
+            connectTimeout: 10000 // 10 seconds timeout
+          });
+          console.log(`Recreated MySQL connection pool for mail use: ${config.host}:${config.port}/${config.database}`);
+        } catch (poolError) {
+          console.error('Error recreating MySQL connection pool for mail:', poolError.message);
+        }
+      }
+    }
+    
+    if (pool && !pool._closed) {
+      return pool;
+    } else {
+      console.warn('Failed to use main database pool for mail, will try alternative');
+    }
   }
   
   // If we're using the main database for mail as well (legacy check)
-  if (!process.env.MAIL_DB_HOST && pool) {
+  if (!process.env.MAIL_DB_HOST && pool && !pool._closed) {
     console.log('Using main database connection for mail (MAIL_DB_HOST not set)');
     return pool;
   }
@@ -479,6 +578,22 @@ export async function getMailDbConnection() {
     return await mysql.createConnection(dbConfig);
   } catch (error) {
     console.error('Error connecting to mail database:', error);
+    // As a last resort, try to create a direct connection from DATABASE_URL
+    if (process.env.USE_MAIN_DB_FOR_MAIL === 'true' && process.env.DATABASE_URL) {
+      try {
+        console.log('Attempting to create direct mail connection from DATABASE_URL as last resort');
+        const config = parseConnectionString(process.env.DATABASE_URL);
+        return await mysql.createConnection({
+          host: config.host,
+          port: config.port,
+          user: config.user,
+          password: config.password,
+          database: config.database
+        });
+      } catch (lastError) {
+        console.error('Last resort connection also failed:', lastError);
+      }
+    }
     return null;
   }
 }
@@ -493,11 +608,13 @@ const dbInterface = {
   sessions,
   activityLogs,
   getMailDbConnection,
-  isConnected: () => !!pool,
+  isConnected: () => !!pool && !pool._closed,
   test: {
-    version: '2.0.2',
+    version: '2.0.3',
     initialized: new Date().toISOString(),
-    poolCreated: !!pool
+    poolCreated: !!pool,
+    poolState: pool ? (pool._closed ? 'closed' : 'open') : 'not created',
+    useMainDbForMail: process.env.USE_MAIN_DB_FOR_MAIL
   }
 };
 
