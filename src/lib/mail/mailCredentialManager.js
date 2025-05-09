@@ -174,6 +174,10 @@ export async function decryptWithPrivateKey(encryptedCredentials, privateKey, pa
  */
 export async function storeCredentials(accountId, credentials, sessionKey, rememberDevice = false) {
   try {
+    console.log('=== KEYKEEPER: Storing credentials ===');
+    console.log(`Account ID: ${accountId}`);
+    console.log(`Email: ${credentials.email}`);
+    
     // Add metadata to credentials
     const credentialsWithMeta = {
       ...credentials,
@@ -181,19 +185,34 @@ export async function storeCredentials(accountId, credentials, sessionKey, remem
       expiry: rememberDevice ? Date.now() + CREDENTIAL_EXPIRY : null
     };
     
+    // Log the session key (first few chars)
+    console.log(`Using session key: ${sessionKey.substring(0, 8)}...`);
+    
     // Encrypt credentials
     const encrypted = await encryptWithSessionKey(sessionKey, JSON.stringify(credentialsWithMeta));
+    console.log(`Credentials encrypted successfully (length: ${encrypted.length})`);
     
     // Store in the appropriate storage
     const storageKey = `${STORAGE_PREFIX}${accountId}`;
     
-    if (rememberDevice) {
-      localStorage.setItem(storageKey, encrypted);
-    } else {
+    // Always store in localStorage for persistence
+    localStorage.setItem(storageKey, encrypted);
+    console.log(`Credentials stored in localStorage with key: ${storageKey}`);
+    
+    // Optionally also store in sessionStorage for faster access
+    if (!rememberDevice) {
       sessionStorage.setItem(storageKey, encrypted);
+      console.log(`Credentials also stored in sessionStorage`);
     }
+    
+    // Store the session key too since it's needed for decryption
+    localStorage.setItem(SESSION_KEY, sessionKey);
+    
+    console.log('=== KEYKEEPER: Credentials stored successfully ===');
   } catch (error) {
-    console.error('Error storing credentials:', error);
+    console.error('=== KEYKEEPER ERROR: Failed to store credentials ===');
+    console.error('Error details:', error);
+    console.error('Stack trace:', error.stack);
     throw new Error('Failed to store credentials securely');
   }
 }
@@ -206,7 +225,17 @@ export async function storeCredentials(accountId, credentials, sessionKey, remem
  */
 export async function getCredentials(accountId, sessionKey) {
   try {
+    console.log('=== KEYKEEPER: Retrieving credentials ===');
+    console.log(`Account ID: ${accountId}`);
+    console.log(`Session key available: ${sessionKey ? 'YES (first chars: ' + sessionKey.substring(0, 8) + '...)' : 'NO'}`);
+    
+    if (!sessionKey) {
+      console.error('No session key provided - cannot decrypt credentials');
+      return null;
+    }
+    
     const storageKey = `${STORAGE_PREFIX}${accountId}`;
+    console.log(`Looking for storage key: ${storageKey}`);
     
     // Try session storage first
     let encrypted = sessionStorage.getItem(storageKey);
@@ -214,33 +243,75 @@ export async function getCredentials(accountId, sessionKey) {
     
     // If not in session storage, try local storage
     if (!encrypted) {
+      console.log('Not found in sessionStorage, checking localStorage');
       encrypted = localStorage.getItem(storageKey);
       storage = 'local';
+    } else {
+      console.log('Found encrypted credentials in sessionStorage');
     }
     
     // If not found in either storage, return null
     if (!encrypted) {
+      console.log('Credentials not found in any storage');
       return null;
     }
+    
+    console.log(`Found encrypted credentials in ${storage}Storage (length: ${encrypted.length})`);
     
     // Decrypt the credentials
-    const decrypted = await decryptWithSessionKey(sessionKey, encrypted);
-    const credentials = JSON.parse(decrypted);
-    
-    // Check if credentials have expired
-    if (credentials.expiry && Date.now() > credentials.expiry) {
-      // Remove expired credentials
-      if (storage === 'local') {
-        localStorage.removeItem(storageKey);
-      } else {
-        sessionStorage.removeItem(storageKey);
+    try {
+      console.log('Attempting to decrypt credentials');
+      const decrypted = await decryptWithSessionKey(sessionKey, encrypted);
+      const credentials = JSON.parse(decrypted);
+      
+      // Check if credentials have expired
+      if (credentials.expiry && Date.now() > credentials.expiry) {
+        console.log('Credentials have expired, removing them');
+        // Remove expired credentials
+        if (storage === 'local') {
+          localStorage.removeItem(storageKey);
+        } else {
+          sessionStorage.removeItem(storageKey);
+        }
+        return null;
       }
+      
+      console.log('=== KEYKEEPER: Successfully retrieved credentials ===');
+      console.log(`Email: ${credentials.email}`);
+      console.log(`Created: ${new Date(credentials.timestamp).toISOString()}`);
+      
+      return credentials;
+    } catch (decryptError) {
+      console.error('=== KEYKEEPER ERROR: Failed to decrypt credentials ===');
+      console.error('Error details:', decryptError);
+      
+      // If decryption fails, the session key might have changed
+      // Try deriving a new session key before giving up
+      console.log('Trying to use localStorage session key as fallback');
+      const fallbackKey = localStorage.getItem(SESSION_KEY);
+      
+      if (fallbackKey && fallbackKey !== sessionKey) {
+        try {
+          console.log('Found different session key in localStorage, trying it');
+          const decrypted = await decryptWithSessionKey(fallbackKey, encrypted);
+          const credentials = JSON.parse(decrypted);
+          
+          console.log('=== KEYKEEPER: Successfully retrieved credentials with fallback key ===');
+          // Save this key in sessionStorage for future use
+          sessionStorage.setItem(SESSION_KEY, fallbackKey);
+          
+          return credentials;
+        } catch (fallbackError) {
+          console.error('Fallback decryption also failed:', fallbackError);
+        }
+      }
+      
       return null;
     }
-    
-    return credentials;
   } catch (error) {
-    console.error('Error retrieving credentials:', error);
+    console.error('=== KEYKEEPER ERROR: Failed to retrieve credentials ===');
+    console.error('Error details:', error);
+    console.error('Stack trace:', error.stack);
     return null;
   }
 }
@@ -281,11 +352,24 @@ export function clearAllCredentials() {
  */
 export async function initializeSessionKey(authToken, keyFingerprint) {
   try {
+    console.log('=== KEYKEEPER: Initializing session key ===');
+    console.log(`Using fingerprint: ${keyFingerprint.substring(0, 8)}...`);
+    console.log(`Token available: ${authToken ? 'YES' : 'NO'}`);
+    
     const sessionKey = await deriveSessionKey(authToken, keyFingerprint);
+    
+    // Store in BOTH localStorage and sessionStorage for reliability
+    localStorage.setItem(SESSION_KEY, sessionKey);
     sessionStorage.setItem(SESSION_KEY, sessionKey);
+    
+    console.log(`Session key derived and stored (length: ${sessionKey.length})`);
+    console.log(`First few chars: ${sessionKey.substring(0, 8)}...`);
+    
     return sessionKey;
   } catch (error) {
-    console.error('Error initializing session key:', error);
+    console.error('=== KEYKEEPER ERROR: Failed to initialize session key ===');
+    console.error('Error details:', error);
+    console.error('Stack trace:', error.stack);
     throw new Error('Failed to initialize session key');
   }
 }
@@ -297,12 +381,28 @@ export async function initializeSessionKey(authToken, keyFingerprint) {
  * @returns {Promise<string>} - The session key
  */
 export async function getSessionKey(authToken, keyFingerprint) {
-  const existingKey = sessionStorage.getItem(SESSION_KEY);
+  console.log('=== KEYKEEPER: Getting session key ===');
   
-  if (existingKey) {
-    return existingKey;
+  // Try to get from both storage types
+  const sessionStorageKey = sessionStorage.getItem(SESSION_KEY);
+  const localStorageKey = localStorage.getItem(SESSION_KEY);
+  
+  // Use session storage key if available (higher priority)
+  if (sessionStorageKey) {
+    console.log('Found session key in sessionStorage');
+    return sessionStorageKey;
   }
   
+  // Fall back to localStorage key if available
+  if (localStorageKey) {
+    console.log('Found session key in localStorage');
+    // Also update sessionStorage for future use
+    sessionStorage.setItem(SESSION_KEY, localStorageKey);
+    return localStorageKey;
+  }
+  
+  // If no key is found, generate a new one
+  console.log('No existing session key found, deriving new one');
   return await initializeSessionKey(authToken, keyFingerprint);
 }
 
