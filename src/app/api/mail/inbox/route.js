@@ -18,6 +18,21 @@ export async function POST(request) {
     const body = await request.json();
     const { userId, credentials } = body;
     
+    console.log(`[Mail API] Got request for user ID: ${userId}`);
+    console.log(`[Mail API] Credentials provided: ${credentials ? 'YES' : 'NO'}`);
+    
+    if (credentials) {
+      // Log credential info without exposing the password
+      const credInfo = {
+        email: credentials.email,
+        hasPassword: !!credentials.password,
+        server: credentials.imapServer,
+        port: credentials.imapPort,
+        secure: credentials.imapSecure
+      };
+      console.log(`[Mail API] Credential details:`, credInfo);
+    }
+    
     if (!userId) {
       return NextResponse.json(
         { error: 'User ID is required' },
@@ -36,23 +51,32 @@ export async function POST(request) {
     
     // Check if credentials are provided directly
     if (!credentials || !credentials.email || !credentials.password) {
+      console.log(`[Mail API] No credentials provided for user ${userId}, checking mail account status...`);
+      
       // If no credentials provided, check if user has any mail accounts
       const hasMailAccount = await passwordManager.hasMailAccount(userId);
       if (!hasMailAccount) {
+        console.log(`[Mail API] User ${userId} does not have a mail account in virtual_users table`);
         return NextResponse.json(
           { error: 'User does not have a mail account' },
           { status: 404 }
         );
       }
       
+      console.log(`[Mail API] User ${userId} has a mail account, retrieving details...`);
+      
       // Get the primary mail account for the user
       const mailAccount = await passwordManager.getPrimaryMailAccount(userId);
       if (!mailAccount) {
+        console.log(`[Mail API] Could not retrieve mail account info for user ${userId}`);
         return NextResponse.json(
           { error: 'Could not retrieve mail account information' },
           { status: 500 }
         );
       }
+      
+      console.log(`[Mail API] Found mail account: ${mailAccount.email} for user ${userId}`);
+      console.log(`[Mail API] Need client-side derived password - returning 401 with account info`);
       
       // Client must provide deterministically derived password
       // This is part of the passwordless approach where the password
@@ -76,6 +100,8 @@ export async function POST(request) {
         { status: 401 }
       );
     }
+    
+    console.log(`[Mail API] Credentials provided for mail access: ${credentials.email}`);
     
     // Determine which credentials to use
     let mailAddress;

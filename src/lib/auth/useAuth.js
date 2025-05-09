@@ -38,6 +38,16 @@ export function AuthProvider({ children }) {
         const data = await response.json();
         
         if (response.ok && data.authenticated) {
+          // Make sure fingerprint is included
+          // If response doesn't have fingerprint but we have it stored, add it
+          if (!data.user?.fingerprint) {
+            const storedFingerprint = localStorage.getItem('user_fingerprint');
+            if (storedFingerprint) {
+              console.log('Adding stored fingerprint to user data');
+              data.user.fingerprint = storedFingerprint;
+            }
+          }
+          
           setUser(data.user);
           
           // Initialize session key for secure credential storage
@@ -48,10 +58,14 @@ export function AuthProvider({ children }) {
             } catch (sessionError) {
               console.error('Failed to initialize session key:', sessionError);
             }
+          } else {
+            console.warn('Missing user fingerprint - mail credentials may not work');
           }
         } else {
           // Token is invalid, remove it
           localStorage.removeItem('auth_token');
+          localStorage.removeItem('user_fingerprint'); // Clear fingerprint too
+          localStorage.removeItem('user_key_id'); // Clear key ID too
           clearAllCredentials();
         }
       } catch (error) {

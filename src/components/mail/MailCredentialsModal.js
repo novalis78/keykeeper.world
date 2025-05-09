@@ -152,6 +152,14 @@ export default function MailCredentialsModal({
       setLoading(true);
       setError(null);
       
+      // If email is not set but available as a prop, use that
+      if (!credentials.email && email) {
+        setCredentials({
+          ...credentials,
+          email: email
+        });
+      }
+      
       // Validate credentials before saving
       const validation = validateCredentials(credentials);
       if (!validation.valid) {
@@ -173,19 +181,47 @@ export default function MailCredentialsModal({
       // Get session key
       const sessionKey = await getSessionKey(token, fingerprint);
       
+      // If PGP key is available, use the deterministic password
+      let updatedCredentials = { ...credentials };
+      
+      // Try to access the PGP key object from localStorage (this is set during login)
+      const pgpKeyData = localStorage.getItem('pgp_key_data');
+      if (pgpKeyData) {
+        try {
+          const keyData = JSON.parse(pgpKeyData);
+          
+          // If we have a private key available, derive the Dovecot password
+          if (keyData.privateKey) {
+            console.log('Deriving deterministic password from PGP key');
+            
+            // Get the salt and version from environment or defaults
+            const authSalt = window.env?.DOVECOT_AUTH_SALT || 'keykeeper-dovecot-auth';
+            const authVersion = window.env?.DOVECOT_AUTH_VERSION || 'v1';
+            
+            // Derive the password
+            const derivedPassword = await getDovecotPassword(
+              credentials.email,
+              keyData.privateKey,
+              '' // No passphrase for now
+            );
+            
+            console.log('Successfully derived deterministic password');
+            
+            // Use the derived password instead of the one entered by user
+            updatedCredentials.password = derivedPassword;
+          }
+        } catch (keyError) {
+          console.error('Error with PGP key:', keyError);
+          // Continue with user-provided password
+        }
+      }
+      
       // Store credentials
-      await storeCredentials(accountId, credentials, sessionKey, rememberDevice);
+      await storeCredentials(accountId, updatedCredentials, sessionKey, rememberDevice);
       
       // Call success callback
       if (onSuccess) {
-        onSuccess({
-          accountId,
-          email: credentials.email,
-          servers: {
-            imap: credentials.imapServer,
-            smtp: credentials.smtpServer
-          }
-        });
+        onSuccess(updatedCredentials);
       }
       
       // Close modal
@@ -244,7 +280,8 @@ export default function MailCredentialsModal({
                 
                 <div className="mt-4">
                   <p className="text-sm text-gray-300 mb-4">
-                    Enter your mail account credentials to access your emails. These credentials are stored securely and encrypted on your device only.
+                    Your mail password is derived from your PGP private key, creating a secure and consistent password without storing it anywhere. 
+                    Server details are saved securely and encrypted on your device only.
                   </p>
                   
                   {error && (
@@ -287,9 +324,12 @@ export default function MailCredentialsModal({
                     
                     {/* Password field */}
                     <div>
-                      <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
-                        Password
-                      </label>
+                      <div className="flex justify-between items-baseline mb-1">
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+                          Password
+                        </label>
+                        <span className="text-xs text-primary-400">Will use PGP-derived password</span>
+                      </div>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <LockClosedIcon className="h-5 w-5 text-gray-400" />
@@ -299,7 +339,7 @@ export default function MailCredentialsModal({
                           name="password"
                           id="password"
                           className={`block w-full pl-10 pr-3 py-2 border ${validationErrors.password ? 'border-red-500' : 'border-gray-700'} bg-gray-900 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 text-white text-sm`}
-                          placeholder="Mail account password"
+                          placeholder="Password (derived from your PGP key)"
                           value={credentials.password}
                           onChange={handleChange}
                           disabled={loading}
@@ -308,6 +348,10 @@ export default function MailCredentialsModal({
                       {validationErrors.password && (
                         <p className="mt-1 text-sm text-red-500">{validationErrors.password}</p>
                       )}
+                      <p className="mt-1 text-xs text-gray-400">
+                        Your mail password will be automatically derived from your PGP private key.
+                        You can still enter a password manually if needed.
+                      </p>
                     </div>
                     
                     {/* Advanced settings toggle */}

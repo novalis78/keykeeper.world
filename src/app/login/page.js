@@ -5,6 +5,8 @@ import { LockClosedIcon, KeyIcon, EnvelopeIcon, ShieldCheckIcon } from '@heroico
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import pgpUtils from '@/lib/auth/pgp';
+import { getDovecotPassword, storeCredentials, deriveSessionKey } from '@/lib/mail/mailCredentialManager';
+import { deriveDovecotPassword } from '@/lib/mail/dovecotAuth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -103,6 +105,49 @@ export default function LoginPage() {
       // Store the token in localStorage for future API requests
       if (data.token) {
         localStorage.setItem('auth_token', data.token);
+      }
+      
+      try {
+        console.log('Deriving deterministic mail password from PGP key...');
+        
+        // Derive the deterministic mail password from the private key
+        const derivedPassword = await getDovecotPassword(email, privateKey, passphrase);
+        console.log('Successfully derived mail password');
+        
+        // Generate account ID from email
+        const accountId = `account_${email.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        
+        // Prepare the mail credentials
+        const credentials = {
+          email: email,
+          password: derivedPassword,
+          imapServer: process.env.MAIL_HOST || 'mail.keykeeper.world',
+          imapPort: parseInt(process.env.MAIL_IMAP_PORT || '993'),
+          imapSecure: process.env.MAIL_IMAP_SECURE !== 'false',
+          smtpServer: process.env.MAIL_HOST || 'mail.keykeeper.world',
+          smtpPort: parseInt(process.env.MAIL_SMTP_PORT || '587'),
+          smtpSecure: process.env.MAIL_SMTP_SECURE === 'true',
+          timestamp: Date.now()
+        };
+        
+        // Get session key for secure storage
+        const sessionKey = await deriveSessionKey(data.token, data.user.fingerprint);
+        
+        // Store the credentials securely
+        await storeCredentials(accountId, credentials, sessionKey, true);
+        console.log('Stored mail credentials successfully');
+        
+        // Save fingerprint and key ID for future reference
+        if (data.user.fingerprint) {
+          localStorage.setItem('user_fingerprint', data.user.fingerprint);
+        }
+        if (data.user.keyId) {
+          localStorage.setItem('user_key_id', data.user.keyId);
+        }
+        
+      } catch (credError) {
+        // Log the error but continue - we'll fall back to the credentials modal if needed
+        console.error('Error storing mail credentials:', credError);
       }
       
       // Redirect to dashboard

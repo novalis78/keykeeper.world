@@ -64,22 +64,38 @@ export default function Dashboard() {
       let credentials = userCredentials;
       if (!credentials && user?.fingerprint) {
         try {
+          console.log('Attempting to retrieve stored mail credentials...');
+          
           // Get the session key
           const token = getToken();
+          console.log('Got auth token, deriving session key...');
+          
           const sessionKey = await getSessionKey(token, user.fingerprint);
+          console.log('Session key derived successfully');
           
           // Generate account ID from email
           const accountId = `account_${user.email.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          console.log(`Using account ID: ${accountId}`);
           
           // Try to get credentials from secure storage
           credentials = await getCredentials(accountId, sessionKey);
           
           if (credentials) {
-            console.log('Retrieved mail credentials from secure storage');
+            console.log('Successfully retrieved mail credentials from secure storage');
+            console.log(`Using credentials for: ${credentials.email}`);
+          } else {
+            console.warn('No stored credentials found - user may need to enter manually');
           }
         } catch (credError) {
           console.error('Error retrieving credentials:', credError);
+          console.error('Error details:', credError.message);
           // Continue without credentials, the server will prompt if needed
+        }
+      } else {
+        if (userCredentials) {
+          console.log('Using explicitly provided credentials');
+        } else if (!user?.fingerprint) {
+          console.warn('User fingerprint not available - cannot retrieve credentials');
         }
       }
       
@@ -88,7 +104,21 @@ export default function Dashboard() {
       // Add credentials to request if available
       const requestBody = { userId };
       if (credentials) {
-        requestBody.credentials = credentials;
+        console.log('Including stored credentials in API request');
+        // Only include necessary credential fields for security
+        requestBody.credentials = {
+          email: credentials.email,
+          password: credentials.password,
+          imapServer: credentials.imapServer,
+          imapPort: credentials.imapPort,
+          imapSecure: credentials.imapSecure
+        };
+        // Debug log - mask the password
+        const debugCreds = {...requestBody.credentials};
+        debugCreds.password = debugCreds.password ? '****' : null;
+        console.log('Credential details:', debugCreds);
+      } else {
+        console.warn('No credentials available for mail request');
       }
       
       const response = await fetch('/api/mail/inbox', {

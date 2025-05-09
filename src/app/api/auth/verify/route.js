@@ -99,11 +99,12 @@ export async function POST(request) {
     // Update last login timestamp
     await db.users.updateLastLogin(user.id);
     
-    // Generate token
+    // Generate token - include fingerprint for mail credential derivation
     const accessToken = await jwt.generateToken({
       userId: user.id,
       email: user.email,
-      keyId: user.key_id
+      keyId: user.key_id,
+      fingerprint: user.fingerprint
     });
     
     // Generate refresh token
@@ -155,7 +156,8 @@ export async function POST(request) {
           id: user.id,
           email: user.email,
           name: user.name,
-          keyId: user.key_id
+          keyId: user.key_id,
+          fingerprint: user.fingerprint
         }
       },
       { status: 200 }
@@ -190,14 +192,32 @@ export async function GET(request) {
     // Verify the token
     const payload = await jwt.verifyToken(token);
     
+    // Get full user info, including fingerprint
+    let userInfo = {
+      userId: payload.userId,
+      email: payload.email,
+      keyId: payload.keyId,
+    };
+    
+    // If fingerprint isn't in token, try to get it from the database
+    if (!payload.fingerprint && payload.userId) {
+      try {
+        const user = await db.users.findById(payload.userId);
+        if (user && user.fingerprint) {
+          userInfo.fingerprint = user.fingerprint;
+        }
+      } catch (dbError) {
+        console.warn('Error fetching user fingerprint:', dbError);
+        // Continue without fingerprint
+      }
+    } else if (payload.fingerprint) {
+      userInfo.fingerprint = payload.fingerprint;
+    }
+    
     // Return the decoded payload (without sensitive info)
     return NextResponse.json({
       authenticated: true,
-      user: {
-        userId: payload.userId,
-        email: payload.email,
-        keyId: payload.keyId,
-      },
+      user: userInfo,
     });
     
   } catch (error) {
