@@ -243,13 +243,24 @@ export default function Dashboard() {
         throw new Error(data.error || 'Failed to fetch inbox');
       }
       
-      // If we got real messages, use them; otherwise fall back to mock data
-      if (data.messages && data.messages.length > 0) {
+      // Always use the real messages array from the server, even if empty
+      if (data.messages) {
         setMessages(data.messages);
         console.log('Loaded real messages:', data.messages.length);
+        
+        // If inbox is empty, show a more helpful message
+        if (data.messages.length === 0) {
+          console.log('Inbox is empty. Send an email to see it here!');
+        }
       } else {
-        console.log('No real messages found, using mock data');
-        setMessages(mockMessages);
+        console.log('No messages array returned, something went wrong');
+        // Only use mock data in development for troubleshooting
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Using mock data for development');
+          setMessages(mockMessages);
+        } else {
+          setMessages([]);
+        }
       }
     } catch (err) {
       console.error('Error fetching inbox:', err);
