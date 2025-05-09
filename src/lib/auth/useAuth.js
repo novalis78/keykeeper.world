@@ -41,10 +41,30 @@ export function AuthProvider({ children }) {
           // Make sure fingerprint is included
           // If response doesn't have fingerprint but we have it stored, add it
           if (!data.user?.fingerprint) {
+            console.log('Fingerprint missing from user data, looking in storage');
             const storedFingerprint = localStorage.getItem('user_fingerprint');
             if (storedFingerprint) {
-              console.log('Adding stored fingerprint to user data');
+              console.log(`Adding stored fingerprint to user data: ${storedFingerprint}`);
               data.user.fingerprint = storedFingerprint;
+            } else {
+              console.warn('No fingerprint found in localStorage');
+              // Try to extract from token payload directly
+              try {
+                const token = localStorage.getItem('auth_token');
+                if (token) {
+                  // Parse JWT without verification
+                  const base64Url = token.split('.')[1];
+                  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                  const payload = JSON.parse(atob(base64));
+                  if (payload.fingerprint) {
+                    console.log(`Extracted fingerprint from token: ${payload.fingerprint}`);
+                    data.user.fingerprint = payload.fingerprint;
+                    localStorage.setItem('user_fingerprint', payload.fingerprint);
+                  }
+                }
+              } catch (tokenError) {
+                console.error('Error extracting fingerprint from token:', tokenError);
+              }
             }
           }
           
