@@ -13,6 +13,9 @@ export const dynamic = 'force-dynamic';
  * @returns {Promise<NextResponse>} JSON response with inbox messages
  */
 export async function POST(request) {
+  // Reference for client that needs to be closed in finally block
+  let client = null;
+  
   try {
     // Get user info and credentials from the request
     const body = await request.json();
@@ -133,7 +136,7 @@ export async function POST(request) {
     // Set up IMAP client
     console.log(`[Mail API] Setting up IMAP client with rejectUnauthorized: ${process.env.NODE_ENV === 'production'}`);
     
-    const client = new ImapFlow({
+    client = new ImapFlow({
       host: imapHost,
       port: imapPort,
       secure: imapSecure,
@@ -205,9 +208,19 @@ export async function POST(request) {
         bodyParts: ['TEXT', 'HEADER']
       })) {
         try {
-          // Get message header and body
-          const headerPart = message.bodyParts.get('HEADER');
-          const textPart = message.bodyParts.get('TEXT');
+          // Debug log the message object structure without exposing sensitive data
+          console.log(`[Mail API] Processing message ${message.uid}, has flags: ${!!message.flags}, flags type: ${typeof message.flags}`);
+          if (message.flags) {
+            console.log(`[Mail API] Flags: ${JSON.stringify(Array.isArray(message.flags) ? message.flags : Object.keys(message.flags))}`);
+          }
+          
+          // Get message header and body with proper null checks
+          const headerPart = message.bodyParts?.get('HEADER') || '';
+          const textPart = message.bodyParts?.get('TEXT') || '';
+          
+          if (!headerPart && !textPart) {
+            console.log(`[Mail API] Warning: Message ${message.uid} has no content parts`);
+          }
           
           // Parse the complete message
           const parsedMessage = await simpleParser(headerPart + '\r\n\r\n' + textPart);
@@ -224,9 +237,9 @@ export async function POST(request) {
               name: parsedMessage.to?.value[0]?.name || user.email,
               email: user.email
             },
-            read: message.flags.includes('\\Seen'),
-            flagged: message.flags.includes('\\Flagged'),
-            answered: message.flags.includes('\\Answered'),
+            read: Array.isArray(message.flags) ? message.flags.includes('\\Seen') : false,
+            flagged: Array.isArray(message.flags) ? message.flags.includes('\\Flagged') : false,
+            answered: Array.isArray(message.flags) ? message.flags.includes('\\Answered') : false,
             labels: [],
             timestamp: parsedMessage.date?.toISOString() || new Date().toISOString(),
             snippet: parsedMessage.text?.substring(0, 120) + '...' || '',
@@ -260,8 +273,7 @@ export async function POST(request) {
       messages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     }
     
-    // Logout from the server
-    await client.logout();
+    // Connection will be closed in finally block
     
     // Safely serialize the messages to avoid circular references
     try {
@@ -318,5 +330,20 @@ export async function POST(request) {
       { error: 'Error fetching inbox', details: error.message },
       { status: 500 }
     );
+  } finally {
+    // Always ensure the IMAP client is properly closed to avoid connection issues
+    if (client) {
+      try {
+        if (client.authenticated) {
+          await client.logout();
+          console.log('[Mail API] Successfully logged out and closed IMAP connection');
+        } else if (client.socket && client.socket.readable) {
+          await client.close();
+          console.log('[Mail API] Successfully closed IMAP connection');
+        }
+      } catch (closeError) {
+        console.error('[Mail API] Error closing IMAP connection:', closeError.message);
+      }
+    }
   }
 }
