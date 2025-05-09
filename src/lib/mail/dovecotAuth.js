@@ -28,18 +28,29 @@ const DOVECOT_AUTH_VERSION = 'v1';
  */
 export async function deriveDovecotPassword(email, privateKey, passphrase = '') {
   try {
+    console.log('=== KEYKEEPER: Starting Dovecot password derivation ===');
+    
     if (!email || !privateKey) {
+      console.error('Missing required parameters for password derivation');
       throw new Error('Email and private key are required for Dovecot password derivation');
     }
     
+    console.log(`Deriving password for email: ${email}`);
+    console.log(`Private key provided: ${privateKey ? 'YES (length: ' + privateKey.length + ')' : 'NO'}`);
+    console.log(`Passphrase provided: ${passphrase ? 'YES' : 'NO'}`);
+    
     // Create a stable input for signing
     const input = `${DOVECOT_AUTH_SALT}:${email}:${DOVECOT_AUTH_VERSION}`;
+    console.log(`Input string for signing: "${input}"`);
     
     // Sign the input with the private key
+    console.log('Calling pgpUtils.signMessage to sign the input...');
     const signature = await pgpUtils.signMessage(input, privateKey, passphrase);
+    console.log(`Signature generated successfully (length: ${signature.length})`);
     
     // Hash the signature to create a password of appropriate length
     // We use SHA-256 and then take a subset of the resulting hash
+    console.log('Hashing the signature with SHA-256...');
     const encoder = new TextEncoder();
     const data = encoder.encode(signature);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -48,6 +59,7 @@ export async function deriveDovecotPassword(email, privateKey, passphrase = '') 
     // We'll use base64 encoding for better compatibility with mail servers
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hashBase64 = btoa(String.fromCharCode.apply(null, hashArray));
+    console.log(`Base64 hash generated (length: ${hashBase64.length})`);
     
     // Create a password of reasonable length (32 chars) that meets complexity requirements
     // Replace any chars that might cause issues with mail servers
@@ -57,10 +69,15 @@ export async function deriveDovecotPassword(email, privateKey, passphrase = '') 
       .replace(/\//g, 'B')  // Replace '/' with 'B'
       .replace(/=/g, 'C');  // Replace '=' with 'C'
     
+    console.log(`Clean password generated (length: ${cleanPassword.length})`);
+    console.log('=== KEYKEEPER: Dovecot password derivation completed successfully ===');
+    
     return cleanPassword;
   } catch (error) {
-    console.error('Error deriving Dovecot password:', error);
-    throw new Error('Failed to derive Dovecot password');
+    console.error('=== KEYKEEPER ERROR: Failed to derive Dovecot password ===');
+    console.error('Error details:', error);
+    console.error('Stack trace:', error.stack);
+    throw new Error('Failed to derive Dovecot password: ' + error.message);
   }
 }
 

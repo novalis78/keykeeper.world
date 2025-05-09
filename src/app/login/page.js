@@ -100,79 +100,89 @@ export default function LoginPage() {
         throw new Error(data.error || 'Authentication failed');
       }
       
-      console.log('Login successful:', data);
+      console.log('=== KEYKEEPER: Login successful ===');
+      console.log('User ID:', data.user?.id);
+      console.log('Email:', data.user?.email);
+      console.log('Key ID:', data.user?.keyId);
+      console.log('Fingerprint:', data.user?.fingerprint);
       
       // Store the token in localStorage for future API requests
       if (data.token) {
         localStorage.setItem('auth_token', data.token);
+        console.log('JWT token stored in localStorage');
       }
       
       try {
-        console.log('Deriving deterministic mail password from PGP key...');
+        console.log('=== KEYKEEPER: Deriving deterministic mail password from PGP key ===');
+        console.log(`Email: ${email}`);
+        console.log(`PGP Key Fingerprint: ${data.user.fingerprint}`);
         
-        // Generate a simple deterministic password as fallback
-        // This is a backup approach if the PGP signature method fails
-        console.log(`Deriving deterministic mail password for ${email} from PGP key with fingerprint: ${data.user.fingerprint}`);
+        // Generate the deterministic password using the SAME method as signup
+        // This uses the deriveDovecotPassword function from dovecotAuth.js
+        console.log('Using the same deterministic password generation method as signup process');
         
         let derivedPassword;
         try {
-          // Try the normal method first
-          derivedPassword = await getDovecotPassword(email, privateKey, passphrase);
-        } catch (signError) {
-          console.warn('Regular derivation failed, using fallback method for deterministic password');
-          
-          // Fallback method - generates deterministic hash from key fingerprint and email
-          const encoder = new TextEncoder();
-          const data = encoder.encode(`keykeeper-auth:${email}:${data.user.fingerprint || 'no-fingerprint'}`);
-          const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-          const hashArray = Array.from(new Uint8Array(hashBuffer));
-          const hashBase64 = btoa(String.fromCharCode.apply(null, hashArray));
-          
-          // Create a password of reasonable length (32 chars) that meets complexity requirements
-          derivedPassword = hashBase64
-            .substring(0, 32)
-            .replace(/\+/g, 'A')  // Replace '+' with 'A'
-            .replace(/\//g, 'B')  // Replace '/' with 'B'
-            .replace(/=/g, 'C');  // Replace '=' with 'C'
+          // Use the stable method that signup uses
+          console.log('Calling deriveDovecotPassword to generate deterministic password');
+          derivedPassword = await deriveDovecotPassword(email, privateKey, passphrase);
+          console.log('Successfully derived deterministic password');
+        } catch (error) {
+          console.error('ERROR: Failed to derive deterministic password:', error);
+          throw new Error('Failed to derive mail password. Please try again.');
         }
         
-        console.log(`Generated deterministic password (length: ${derivedPassword?.length || 0}): ${derivedPassword ? derivedPassword.substring(0, 5) + '...' : 'NULL'}`);
+        console.log(`=== KEYKEEPER: Successfully derived deterministic password ===`);
+        console.log(`Password length: ${derivedPassword?.length || 0}`);
+        console.log(`First few chars: ${derivedPassword ? derivedPassword.substring(0, 5) + '...' : 'NULL'}`);
         
         // Generate account ID from email
         const accountId = `account_${email.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        console.log(`=== KEYKEEPER: Storing mail credentials ===`);
+        console.log(`Account ID: ${accountId}`);
         
-        // Prepare the mail credentials
+        // Prepare the mail credentials - the same structure used during signup
+        const mailServer = process.env.MAIL_HOST || 'mail.keykeeper.world';
+        console.log(`Mail server: ${mailServer}`);
+        
         const credentials = {
           email: email,
           password: derivedPassword,
-          imapServer: process.env.MAIL_HOST || 'mail.keykeeper.world',
+          imapServer: mailServer,
           imapPort: parseInt(process.env.MAIL_IMAP_PORT || '993'),
           imapSecure: process.env.MAIL_IMAP_SECURE !== 'false',
-          smtpServer: process.env.MAIL_HOST || 'mail.keykeeper.world',
+          smtpServer: mailServer,
           smtpPort: parseInt(process.env.MAIL_SMTP_PORT || '587'),
           smtpSecure: process.env.MAIL_SMTP_SECURE === 'true',
           timestamp: Date.now()
         };
         
         // Get session key for secure storage
+        console.log('Deriving session key for secure credential storage');
         const sessionKey = await deriveSessionKey(data.token, data.user.fingerprint);
         
-        // Store the credentials securely
-        console.log(`Storing mail credentials with account ID: ${accountId}`);
+        // Store the credentials securely in localStorage (same as signup)
+        console.log(`Storing mail credentials in localStorage`);
         await storeCredentials(accountId, credentials, sessionKey, true);
-        console.log(`Stored mail credentials successfully for ${email} in localStorage`);
+        console.log(`=== KEYKEEPER: Mail credentials stored successfully ===`);
         
         // Save fingerprint and key ID for future reference
+        console.log(`Storing fingerprint and key ID in localStorage`);
         if (data.user.fingerprint) {
           localStorage.setItem('user_fingerprint', data.user.fingerprint);
+          console.log(`Stored fingerprint: ${data.user.fingerprint.substring(0, 8)}...`);
         }
         if (data.user.keyId) {
           localStorage.setItem('user_key_id', data.user.keyId);
+          console.log(`Stored key ID: ${data.user.keyId}`);
         }
         
       } catch (credError) {
-        // Log the error but continue - we'll fall back to the credentials modal if needed
-        console.error('Error storing mail credentials:', credError);
+        // Log a detailed error but continue with login - we won't use the modal approach now
+        console.error('=== KEYKEEPER ERROR: Failed during mail credential handling ===');
+        console.error('Error details:', credError);
+        console.error('Stack trace:', credError.stack);
+        console.error('=== KEYKEEPER: Continuing with login despite error ===');
       }
       
       // Redirect to dashboard

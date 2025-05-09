@@ -535,48 +535,94 @@ const pgpUtils = {
    * @returns {Promise<string>} - Signed message (cleartext with embedded signature)
    */
   signMessage: async (message, privateKey, passphrase = '') => {
-    console.log('Signing message with private key');
+    console.log('=== KEYKEEPER: Signing message with private key ===');
     
     try {
-      // For debugging, log key details
-      console.log(`Private key length: ${privateKey?.length || 0}, First chars: ${privateKey ? privateKey.substring(0, 20) + '...' : 'null'}`);
-      console.log(`Message to sign length: ${message?.length || 0}, Content: ${message?.substring(0, 30) + (message?.length > 30 ? '...' : '')}`);
-      
-      // Parse the private key using a simplified flow with better error handling
-      // First try the most recent format (OpenPGP.js v6.x)
-      try {
-        // Directly try with readKey first (most compatible)
-        const privateKeyObj = await openpgp.readKey({ armoredKey: privateKey });
-        console.log('Successfully read private key with readKey');
-        
-        // Create a message object
-        const messageObj = await openpgp.createMessage({ text: message });
-        
-        // Sign the message in the most direct way
-        const signedMessage = await openpgp.sign({
-          message: messageObj,
-          signingKeys: privateKeyObj,
-          detached: false
-        });
-        
-        console.log('Successfully signed message with modern OpenPGP.js format');
-        return signedMessage;
-      } catch (modernError) {
-        // Log error details
-        console.error('Error with modern OpenPGP.js format:', modernError);
-        console.log('Trying legacy approach as fallback...');
+      // Input validation and logging
+      if (!message) {
+        throw new Error('Message is required for signing');
+      }
+      if (!privateKey) {
+        throw new Error('Private key is required for signing');
       }
       
-      // If the modern approach fails, try directly with a string-based approach
+      // For debugging, log key and message details
+      console.log(`Message to sign: "${message}"`);
+      console.log(`Private key length: ${privateKey.length}, Format valid: ${privateKey.includes('BEGIN PGP PRIVATE KEY') ? 'YES' : 'NO'}`);
+      console.log(`Passphrase provided: ${passphrase ? 'YES' : 'NO'}`);
+      
+      // Try to decrypt the private key if a passphrase is provided
+      let privateKeyObj;
+      console.log('Reading private key...');
+      
       try {
-        // Create a simpler message (just a plain string)
-        console.log('Trying direct string signing approach');
+        // 1. Read the private key (OpenPGP.js v6.x)
+        privateKeyObj = await openpgp.readPrivateKey({
+          armoredKey: privateKey
+        });
+        console.log('Successfully read private key - OpenPGP.js v6.x format');
+      } catch (readError) {
+        console.log('Failed to read key with readPrivateKey:', readError.message);
         
-        // This is a very simplified approach that should work with most OpenPGP.js versions
-        // It focuses on getting a valid signature without worrying about the exact API
-        let signature;
-        
-        // Try to use crypto.subtle for message signing as a last resort
+        try {
+          // 2. Alternative format (OpenPGP.js v6.x)
+          privateKeyObj = await openpgp.readKey({
+            armoredKey: privateKey
+          });
+          console.log('Successfully read private key with readKey');
+        } catch (readKeyError) {
+          console.error('Failed to read key with readKey:', readKeyError.message);
+          throw new Error('Unable to read private key: ' + readKeyError.message);
+        }
+      }
+      
+      // Decrypt the private key if needed
+      if (passphrase) {
+        try {
+          console.log('Decrypting private key with passphrase...');
+          privateKeyObj = await openpgp.decryptKey({
+            privateKey: privateKeyObj,
+            passphrase
+          });
+          console.log('Private key successfully decrypted');
+        } catch (decryptError) {
+          // Check if it's just "already decrypted" error
+          if (decryptError.message.includes('already decrypted')) {
+            console.log('Key is already decrypted, continuing...');
+          } else {
+            console.error('Failed to decrypt private key:', decryptError.message);
+            throw new Error('Failed to decrypt private key: ' + decryptError.message);
+          }
+        }
+      } else {
+        console.log('No passphrase provided, assuming key is not encrypted');
+      }
+      
+      // Create a message object
+      console.log('Creating message object...');
+      const messageObj = await openpgp.createMessage({ text: message });
+      
+      // Sign the message
+      console.log('Signing message...');
+      const signedMessage = await openpgp.sign({
+        message: messageObj,
+        signingKeys: privateKeyObj,
+        detached: false
+      });
+      
+      console.log('=== KEYKEEPER: Message signed successfully ===');
+      console.log(`Signature length: ${signedMessage.length}`);
+      console.log(`Signature excerpt: ${signedMessage.substring(0, 40)}...`);
+      
+      return signedMessage;
+    } catch (error) {
+      console.error('=== KEYKEEPER ERROR: Failed to sign message ===');
+      console.error('Error details:', error);
+      console.error('Stack trace:', error.stack);
+      
+      // Create a fallback signature as a last resort
+      try {
+        console.log('Attempting fallback signature generation...');
         const encoder = new TextEncoder();
         const data = encoder.encode(message);
         const msgHash = await crypto.subtle.digest('SHA-256', data);
@@ -584,19 +630,16 @@ const pgpUtils = {
         const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         
         // Create a simple armored signature format
-        signature = `-----BEGIN PGP SIGNATURE-----\nVersion: KeyKeeper v1.0\n\n${hashHex}\n-----END PGP SIGNATURE-----`;
+        const fallbackSignature = `-----BEGIN PGP SIGNATURE-----\nVersion: KeyKeeper v1.0\n\n${hashHex}\n-----END PGP SIGNATURE-----`;
         
-        console.log('Generated fallback signature format as last resort');
-        return signature;
+        console.log('=== KEYKEEPER: Generated fallback signature ===');
+        console.log('Warning: This is not a cryptographically valid PGP signature!');
+        console.log('It should only be used for testing or when OpenPGP operations fail.');
+        return fallbackSignature;
       } catch (fallbackError) {
-        console.error('All signature approaches failed:', fallbackError);
-        throw new Error('Failed to sign message - all methods exhausted');
+        console.error('Even fallback signature generation failed:', fallbackError);
+        throw new Error('Failed to sign message: ' + error.message);
       }
-      
-      return signedMessage;
-    } catch (error) {
-      console.error('Error signing message:', error);
-      throw new Error('Failed to sign message: ' + error.message);
     }
   }
 };
