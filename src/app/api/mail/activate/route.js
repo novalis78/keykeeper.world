@@ -72,7 +72,16 @@ export async function POST(request) {
     // Debug current password in database
     console.log(`[Mail Activation API] Current password in database: ${mailAccount.password?.substring(0, 20)}...`);
     
-    // Check if activation is needed
+    // Always update the password to match what the client has provided
+    // This ensures consistency even if the derivation algorithm changes
+    console.log(`[Mail Activation API] Updating password even though account is already activated`);
+    console.log(`[Mail Activation API] Previous password: ${mailAccount.password?.substring(0, 20)}...`);
+    console.log(`[Mail Activation API] New password: {PLAIN}${derivedPassword.substring(0, 20)}...`);
+    
+    // If already activated, still update the password to ensure consistency
+    // This ensures the database always matches what the client is using
+    // REMOVE THIS CODE AFTER FIXING AUTHENTICATION ISSUES - THIS IS TEMPORARY FOR MIGRATION
+    /*
     if (mailAccount.pending_activation !== 1) {
       console.log(`[Mail Activation API] Mail account already activated for ${userEmail}`);
       return NextResponse.json({ 
@@ -81,6 +90,7 @@ export async function POST(request) {
         alreadyActive: true
       });
     }
+    */
     
     // Update the password hash with the derived password
     console.log(`[Mail Activation API] Updating password hash for ${userEmail}`);
