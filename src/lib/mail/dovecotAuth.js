@@ -173,28 +173,41 @@ export async function generateServerPasswordHash(email, publicKey) {
       return `{PLAIN}${deterministicPassword}`;
     }
     
-    // For production, use the crypto module to generate a proper hash
-    console.log(`[DovecotAuth] Calling OpenSSL to hash password for Dovecot`);
-    const { execSync } = require('child_process');
+    // IMPORTANT: This function should only be called server-side
+    // For production, in a server context we can use OpenSSL, but in the browser,
+    // we'll use a fake hash format that will be replaced during account activation
     
-    try {
-      // Generate a salt for hashing
-      const crypto = require('crypto');
-      const salt = crypto.randomBytes(8).toString('base64')
-        .replace(/[+\/=]/g, '.')
-        .substring(0, 16);
-      
-      // Use OpenSSL to generate the proper SHA512-CRYPT hash
-      // This produces the exact format Dovecot expects
-      const hash = execSync(`openssl passwd -6 -salt "${salt}" "${deterministicPassword}"`).toString().trim();
-      console.log(`[DovecotAuth] Password hash generated successfully: {SHA512-CRYPT}${hash.substring(0, 15)}...`);
-      
-      return `{SHA512-CRYPT}${hash}`;
-    } catch (opensslError) {
-      console.error('OpenSSL command failed:', opensslError);
-      
-      // As a fallback, return a PLAIN hash that will definitely work
-      console.log(`[DovecotAuth] Falling back to PLAIN scheme due to OpenSSL error`);
+    // Since this is a browser/Node.js compatible file, we need to be careful
+    console.log(`[DovecotAuth] Generating password hash for Dovecot`);
+    
+    // Check if we're in a Node.js environment where we can use child_process
+    if (typeof window === 'undefined') {
+      try {
+        // Server-side code (Node.js)
+        console.log(`[DovecotAuth] Using OpenSSL on server`);
+        // Dynamic imports to avoid issues in browser
+        const { execSync } = require('child_process');
+        const crypto = require('crypto');
+        
+        // Generate a salt for hashing
+        const salt = crypto.randomBytes(8).toString('base64')
+          .replace(/[+\/=]/g, '.')
+          .substring(0, 16);
+        
+        // Use OpenSSL to generate the proper SHA512-CRYPT hash
+        const hash = execSync(`openssl passwd -6 -salt "${salt}" "${deterministicPassword}"`).toString().trim();
+        console.log(`[DovecotAuth] Password hash: {SHA512-CRYPT}${hash.substring(0, 15)}...`);
+        
+        return `{SHA512-CRYPT}${hash}`;
+      } catch (serverError) {
+        console.error('Server-side hashing failed:', serverError);
+        // Fall back to plain text in development
+        return `{PLAIN}${deterministicPassword}`;
+      }
+    } else {
+      // Browser code
+      console.log(`[DovecotAuth] Using browser-compatible hash format`);
+      // In browser, return a placeholder that will be replaced during activation
       return `{PLAIN}${deterministicPassword}`;
     }
   } catch (error) {

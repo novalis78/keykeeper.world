@@ -176,7 +176,8 @@ export default function Dashboard() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              derivedPassword: credentials.password
+              derivedPassword: credentials.password,
+              email: credentials.email
             }),
           });
           
