@@ -311,23 +311,16 @@ export default function Dashboard() {
         }
       } else {
         console.log('No messages array returned, something went wrong');
-        // Only use mock data in development for troubleshooting
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Using mock data for development');
-          setMessages(mockMessages);
-        } else {
-          setMessages([]);
-        }
+        // Always show empty inbox, never use mock data
+        console.log('No messages returned, showing empty inbox');
+        setMessages([]);
       }
     } catch (err) {
       console.error('Error fetching inbox:', err);
       setError(err.message);
       
-      // Don't fall back to mock data if credentials are required
-      if (!credentialsRequired) {
-        // Fall back to mock data
-        setMessages(mockMessages);
-      }
+      // Just use empty array, never fall back to mock data
+      setMessages([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
