@@ -148,6 +148,11 @@ export async function POST(request) {
       tls: {
         // Allow self-signed certificates in development
         rejectUnauthorized: false // Set to false for development to allow self-signed certs
+      },
+      // Ensure we examine both new and cur directories in Maildir format
+      mailbox: {
+        readOnly: false, // Allow message status changes
+        listenOnlyNewEmails: false // Check both new and cur directories
       }
     });
     
@@ -186,9 +191,18 @@ export async function POST(request) {
       );
     }
     
-    // Select the mailbox to open
-    const mailbox = await client.mailboxOpen('INBOX');
+    // Select the mailbox to open with specific options to see all messages
+    console.log(`[Mail API] Opening INBOX with full access to all messages`);
+    const mailbox = await client.mailboxOpen('INBOX', {
+      readOnly: false,
+      // These options ensure we see both new and existing messages
+      condstore: false, // Don't use CONDSTORE extension
+      // Make sure to include messages in the cur directory (seen messages)
+      specialUse: false // Don't use special-use flags which might filter messages
+    });
+    
     console.log(`[Mail API] Opened INBOX with ${mailbox.exists} messages`);
+    console.log(`[Mail API] INBOX details: uidValidity=${mailbox.uidValidity}, uidNext=${mailbox.uidNext}, highestModseq=${mailbox.highestModseq}`);
     
     // Fetch the most recent 20 messages
     const messages = [];
