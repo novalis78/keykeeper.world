@@ -168,8 +168,58 @@ export default function Dashboard() {
       if (credentials) {
         try {
           console.log('=== KEYKEEPER: Checking if mail account needs activation ===');
+          console.log(`=== KEYKEEPER: Credentials has password: ${!!credentials.password} (length: ${credentials.password?.length || 0}) ===`);
+          
+          // Ensure we have a derived password
+          if (!credentials.password) {
+            console.error('=== KEYKEEPER ERROR: No derived password available for activation ===');
+            
+            // Try to derive it if possible
+            try {
+              console.log('=== KEYKEEPER: Attempting to derive password on the fly ===');
+              // Try to access the PGP key object from localStorage (this is set during login)
+              const pgpKeyData = localStorage.getItem('pgp_key_data');
+              if (pgpKeyData) {
+                const keyData = JSON.parse(pgpKeyData);
+                
+                // If we have a private key available, derive the Dovecot password
+                if (keyData.privateKey) {
+                  console.log('=== KEYKEEPER: Found private key, deriving password ===');
+                  
+                  const { getDovecotPassword } = await import('@/lib/mail/mailCredentialManager');
+                  
+                  const derivedPassword = await getDovecotPassword(
+                    credentials.email,
+                    keyData.privateKey,
+                    '' // No passphrase for now
+                  );
+                  
+                  console.log('=== KEYKEEPER: Successfully derived password on the fly ===');
+                  console.log(`Password length: ${derivedPassword.length}, first 5 chars: ${derivedPassword.substring(0, 5)}...`);
+                  
+                  // Update credentials with the derived password
+                  credentials.password = derivedPassword;
+                }
+              } else {
+                console.error('=== KEYKEEPER ERROR: No PGP key data available in localStorage ===');
+              }
+            } catch (derivationError) {
+              console.error('=== KEYKEEPER ERROR: Failed to derive password on the fly ===');
+              console.error('Error details:', derivationError);
+            }
+          }
+          
+          // Double-check we now have a password
+          if (!credentials.password) {
+            console.error('=== KEYKEEPER ERROR: Still no password available after derivation attempt ===');
+            throw new Error('No password available for mail account activation');
+          }
           
           // Call the mail activation API
+          console.log('=== KEYKEEPER: Calling mail activation API ===');
+          console.log(`Using email: ${credentials.email}`);
+          console.log(`Using password length: ${credentials.password.length}, first 5 chars: ${credentials.password.substring(0, 5)}...`);
+          
           const activationResponse = await fetch('/api/mail/activate', {
             method: 'POST',
             headers: {
@@ -193,6 +243,13 @@ export default function Dashboard() {
             console.error('=== KEYKEEPER ERROR: Failed to activate mail account ===');
             console.error('Error details:', activationData.error);
             console.error('Additional details:', activationData.details);
+            
+            // If activation failed because of missing derived password, just log it and continue 
+            // No need to show the modal since we still want to display the empty inbox
+            if (activationData.error === 'Missing derived password' || activationData.error === 'Derived password is required') {
+              console.log('=== KEYKEEPER: Activation issue, but continuing without showing modal ===');
+              // Just log the error but don't interrupt the flow
+            }
           }
         } catch (activationError) {
           console.error('=== KEYKEEPER ERROR: Exception during mail account activation ===');

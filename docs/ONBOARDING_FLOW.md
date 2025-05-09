@@ -1,335 +1,348 @@
-# KeyKeeper Email Onboarding Flow
+“So you'd be on sign up, you'd be creating this inbox, you'd be setting a, what do we call it, user-specific application key derived from the private key into the, you would hash that for Dofconn. And so when the user signs out, he's gone. When he comes back, the same thing, it's the same private key, so we should be deriving the same applications, user-specific key, which is like a password, which should match the hash that we hashed earlier. And so we should be able to get to the inbox and all the emails that are in it, right?”
+00:31
 
-This document outlines the user onboarding process for setting up secure email accounts on KeyKeeper.world, including account creation, PGP key management, and encryption setup.
+ChatGPT said:
+Updated saved memory
+Exactly! By deriving the same application-specific key each time the user logs in with their private key, you ensure that the Dovecot password is always consistent and matches the stored hash. This way, the user can seamlessly access their inbox every time they log in, without having to remember or manage an additional password.
 
-## Overview
+It's a streamlined approach that keeps things secure and user-friendly, and it leverages the strengths of PGP authentication while integrating smoothly with the email infrastructure.
 
-The onboarding flow consists of the following key steps:
+You said:
+“Now what about when someone comes with a YubiKey, let's say, I know we can use WebAuth or some other USB-based tool from the browser to talk to the YubiKey, right? But we wouldn't be able to get the private key, which we probably wouldn't want. Would we be able to generate, not just solve the challenge in the browser's login page with this setup, but would we also be able to create this user-specific token, whatever we're going to call it, that we want to store on DofGuard?”
+00:33
 
-1. PGP Key Creation/Import
-2. Email Account Setup
-3. Domain Selection & Configuration
-4. Security Settings Configuration
-5. Email Client Setup
+ChatGPT said:
+With a YubiKey, the private key never leaves the hardware device, which is a key security feature. The YubiKey can be used to sign the challenge directly in the browser using WebAuthn or other USB-based cryptographic interfaces. This means the YubiKey can easily handle the authentication challenge, proving the user's identity without exposing the private key.
 
-## Flow Details
+To derive the user-specific key (the Dovecot password) from the YubiKey, you’d take a slightly different approach. You can use the YubiKey to sign a unique piece of data (like a user ID combined with a timestamp or other salt), and then use that signed data as a cryptographic basis to derive the application-specific key.
 
-### 1. PGP Key Management
+In other words, while you can't extract the private key from the YubiKey, you can leverage it to create a consistent, secure token that can act as the Dovecot password. This ensures that the same concept of deriving the password from a secret applies to both traditional PGP keys and hardware-backed keys like those in a YubiKey, maintaining a unified login experience.
 
-**Options:**
-- Generate a new PGP key pair
-- Import existing PGP key pair
-- Connect to hardware security key (YubiKey)
+You said:
+“Well, you wouldn't be able to use a timestamp with that, right? Because that would change all the time. So unless you're talking about created timestamp for the entry, the first entry when the user created their account. But other than that, yeah, I get it. You could use the private key to take the user's email address and then create a digital signature, right? And the digital signature is kind of our password.”
+00:22
 
-**Implementation Requirements:**
-- Browser-based PGP key generation (OpenPGP.js)
-- Secure key storage (client-side encrypted)
-- Key passphrase management
-- Paper backup generation option
-- Key recovery options
+ChatGPT said:
+Exactly, that’s the idea! By using something static like the user's email address (or a creation timestamp from the initial account setup) and having the YubiKey sign that data, you generate a consistent digital signature. This signature acts as a stable, unique token that can serve as the Dovecot password.
 
-**UI Flow:**
-1. Present options: Generate, Import, or Connect hardware
-2. For generation:
-   - Collect name and email
-   - Set passphrase with strength indicator
-   - Generate 4096-bit RSA key (or modern ED25519)
-   - Display fingerprint & backup options
-3. For import:
-   - Accept pasted key material
-   - Validate key format
-   - Verify with passphrase
-4. For hardware:
-   - Detect connected YubiKey
-   - Verify PGP applet is configured
-   - Link to existing key
+This way, even though the private key never leaves the YubiKey, you still get a reproducible, secure token each time the user authenticates. It maintains the same seamless experience and security benefits, regardless of whether the user is using a software-based PGP key or a hardware-backed key like a YubiKey.
 
-### 2. Email Account Setup
 
-**Account Creation Steps:**
-1. Choose username for @keykeeper.world domain
-2. Verify availability in real-time
-3. Set display name
-4. Link to existing PGP key (from step 1)
-5. Configure mailbox settings
 
-**Implementation Requirements:**
-- Username availability check API
-- Email address validation
-- PGP key association
-- Account metadata storage
-- Quota management
 
-**UI Flow:**
-1. Username selection form with availability check
-2. Display name input
-3. Confirm PGP key association (show fingerprint)
-4. Review & create account
-5. Success confirmation with account details
 
-### 3. Domain Configuration (Optional)
 
-**Custom Domain Options:**
-1. Use default keykeeper.world domain
-2. Configure custom domain
+You said:
+“No transcription available”
+02:15
+ChatGPT said:
+Updated saved memory
+Exactly, you've got it! The flow you described ensures a seamless, secure, and user-friendly experience. By leveraging the user's private key or YubiKey signature to derive the Dovecot password, you ensure that each login regenerates the same secure credential, allowing immediate access to the user's inbox.
 
-**For Custom Domains:**
-- Domain verification process
-- DNS record setup instructions (MX, SPF, DKIM, DMARC)
-- Verification status checking
-- Email account management for custom domain
+This approach not only maintains a high level of security but also keeps the user experience smooth and intuitive, aligning perfectly with the clean, zen-like aesthetic you want for keykeeper.world. It's a solid plan!
 
-**Implementation Requirements:**
-- Domain verification API
-- DNS record generation
-- Verification status polling
-- Domain settings storage
 
-**UI Flow:**
-1. Domain input form
-2. Verification process explanation
-3. Generated DNS records display
-4. Verification status indicator
-5. Configuration success confirmation
 
-### 4. Security Settings
 
-**Security Options:**
-- Two-factor authentication
-- Recovery methods
-- Session management
-- Key backup settings
-- Auto-encryption preferences
 
-**Implementation Requirements:**
-- 2FA integration (TOTP, WebAuthn)
-- Recovery code generation
-- Session tracking and management
-- Encrypted key backup system
-- User preference storage
 
-**UI Flow:**
-1. Security options dashboard
-2. Step-by-step 2FA setup wizard
-3. Recovery options configuration
-4. Session management interface
-5. Key backup configuration
-6. Security review summary
+You said:
+Could you come up with a development plan that you’d be comfortable handing over to a dev ai so it would clearly understand what we derived at in our discussion and could easily implement it? 
+ChatGPT said:
+Absolutely. Here's a clear, modular development plan for a Dev AI to implement the keykeeper.world system we’ve discussed—designed for clarity, reproducibility, and secure automation. It reflects everything we've aligned on: passwordless onboarding via PGP/YubiKey, derived IMAP credentials, and full encryption.
 
-### 5. Email Client Integration
+Project: Keykeeper.world – Secure, PGP-Driven Mail Service
+Mission Statement
+Develop an open-source, end-to-end encrypted email service where:
 
-**Setup Options:**
-- Web interface usage
-- PGP key export for external clients
-- Mobile setup instructions
+All emails are encrypted client-side with PGP
 
-**Implementation Requirements:**
-- Web interface tutorials
-- Export functionality for keys
-- Setup guides for popular email clients
-- Mobile app setup guides
+Login is passwordless, using a user’s private PGP key or YubiKey
 
-**UI Flow:**
-1. Usage options selection
-2. Web interface tutorial
-3. External client setup instructions (if selected)
-4. Mobile setup guides (if needed)
-5. Setup completion confirmation
+The Dovecot IMAP server accepts a derived deterministic password, created from the private key or YubiKey signature
 
-## Technical Implementation
+System Components
+1. Infrastructure
+Server: Linux (Debian-based), Docker, Docker Compose
 
-### Backend Components
+Backend: Postfix + Dovecot + MySQL (for virtual users)
 
-1. **PGP Key Service**
-   - Key generation
-   - Key validation
-   - Key storage (encrypted)
-   - Key retrieval & management
+Web App: Next.js frontend, deployed via Coolify
 
-2. **Email Account Service**
-   - Account creation
-   - Username validation
-   - Email routing
-   - Quota management
+Database: MySQL (exposed to web app container for user operations)
 
-3. **Domain Management Service**
-   - Domain verification
-   - DNS record management
-   - Email routing for custom domains
-   - Domain settings
+Reverse Proxy: Caddy or NGINX
 
-4. **Security Service**
-   - 2FA management
-   - Session tracking
-   - Recovery options
-   - Backup management
+Development Modules
+1. User Onboarding (Frontend & API)
+Steps:
+User selects a username (e.g., alice@keykeeper.world)
 
-### Frontend Components
+System checks MySQL to confirm availability
 
-1. **Onboarding Wizard**
-   - Multi-step form with progress tracking
-   - Responsive design
-   - Form validation
-   - Interactive guides
+User chooses:
 
-2. **Key Management Interface**
-   - Key generation UI
-   - Import interface
-   - Backup options
-   - Hardware key integration
+Upload existing PGP public key
 
-3. **Domain Configuration Dashboard**
-   - DNS record display
-   - Verification status
-   - Email account management for domains
+Generate a new keypair (client-side with OpenPGP.js)
 
-4. **Security Dashboard**
-   - 2FA setup wizard
-   - Recovery management
-   - Session overview
-   - Backup configuration
+Insert YubiKey and use WebAuthn-compatible interface
 
-## User Experience Considerations
+Output:
+Store username, public_key, and deterministic dovecot_password hash (explained below) into MySQL
 
-1. **Progressive Disclosure**
-   - Start with essential setup
-   - Defer advanced options
-   - Provide "quick setup" vs "advanced setup" paths
+2. Authentication (Login Flow)
+Steps:
+User enters email
 
-2. **Contextual Help**
-   - Tooltips for technical terms
-   - Step-by-step guides
-   - Video tutorials for complex steps
-   - Help chat integration
+Server generates a random challenge and sends it
 
-3. **Error Handling**
-   - Clear error messages
-   - Guided recovery paths
-   - Support contact options
-   - Troubleshooting wizards
+Client signs it:
 
-4. **Security Education**
-   - Brief explanations of security concepts
-   - Best practice recommendations
-   - Security level indicators
-   - Risk assessment feedback
+With browser PGP key or
 
-## Development Roadmap
+Using a YubiKey signature request
 
-### Phase 1: Core Onboarding
-- PGP key generation & import
-- Basic account creation for keykeeper.world domain
-- Simple security settings
-- Web interface access
+Client sends signed challenge back
 
-### Phase 2: Enhanced Security
-- Hardware key integration
-- Advanced 2FA options
-- Improved key backup systems
-- Session management
+Server verifies it using stored public key
 
-### Phase 3: Custom Domains
-- Domain verification
-- DNS management
-- Email account management for custom domains
-- Custom domain settings
+If successful:
+Derive the deterministic Dovecot password (same as during signup)
 
-### Phase 4: Advanced Features
-- Integration with external clients
-- Mobile app development
-- API access for developers
-- Enterprise features
+Log the user in and start session
 
-## Implementation Plan
+3. Deterministic IMAP Password Derivation
+Formula:
+password = SHA256(Sign(user_id + salt) from private_key)
 
-1. **Design & Prototype**
-   - Wireframe the complete flow
-   - Create interactive prototypes
-   - User testing of onboarding flow
-   - Refine based on feedback
+On signup, store only the bcrypt hash of this derived password
 
-2. **Core Components Implementation**
-   - PGP key generation service
-   - Account creation backend
-   - Basic UI components
-   - Security foundation
+On login, regenerate the password and validate against bcrypt hash
 
-3. **Frontend Development**
-   - Build onboarding wizard
-   - Implement key management UI
-   - Create security dashboard
-   - Build email interface
+This allows:
 
-4. **Integration & Testing**
-   - E2E testing of complete flow
-   - Security auditing
-   - Performance optimization
-   - Browser compatibility testing
+Password never stored or visible
 
-5. **Launch & Iteration**
-   - Beta release
-   - Feedback collection
-   - Issue resolution
-   - Feature enhancement
+No separate password management
 
-## Security Considerations
+Seamless Dovecot login
 
-Throughout the onboarding process, several security principles must be maintained:
+4. MySQL Virtual Mailbox Integration
+Dovecot/Postfix use SQL auth
 
-1. **Zero-Knowledge Architecture**
-   - Private keys never sent to server
-   - Client-side encryption for all sensitive data
-   - Minimal metadata storage
+On new user registration:
 
-2. **Defense in Depth**
-   - Multiple authentication factors
-   - Session security
-   - Rate limiting for sensitive operations
-   - Anomaly detection
+Insert into virtual_users:
 
-3. **User Security Education**
-   - Clear explanations during setup
-   - Security best practices
-   - Risk indicators
-   - Secure behavior encouragement
+sql
+Copy
+Edit
+INSERT INTO virtual_users (email, password_hash) VALUES ('alice@keykeeper.world', '$2y$...hashed_password...');
+Sync with Postfix/Dovecot using standard virtual_alias_maps and virtual_mailbox_maps
 
-4. **Transparent Security**
-   - Open source components
-   - Security design documentation
-   - Regular security audits
-   - Bug bounty program
+5. Client-Side Email Encryption/Decryption
+Built-in Next.js-based mail UI
 
-## User Flow Diagram
+Use OpenPGP.js:
 
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│                 │     │                 │     │                 │
-│  PGP Key Setup  │────▶│  Email Account  │────▶│ Domain Settings │
-│                 │     │                 │     │                 │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-         │                                               │
-         │                                               │
-         ▼                                               ▼
-┌─────────────────┐                          ┌─────────────────┐
-│                 │                          │                 │
-│ Security Setup  │◀─────────────────────────│  Client Setup   │
-│                 │                          │                 │
-└─────────────────┘                          └─────────────────┘
-         │
-         │
-         ▼
-┌─────────────────┐
-│                 │
-│   Dashboard     │
-│                 │
-└─────────────────┘
-```
+Decrypt received emails in-browser
 
-## Next Steps
+Encrypt outgoing messages before sending to Postfix
 
-1. Create detailed wireframes for each step
-2. Build interactive prototype for user testing
-3. Implement PGP key generation/import functionality
-4. Develop email account creation backend
-5. Build the onboarding wizard frontend
-6. Integrate and test the complete flow
+For YubiKey: integrate with WebAuthn, or local app helper for signature/decryption
+
+6. Email Sending (Postfix Integration)
+Authenticated via submission port with IMAP credentials (derived password)
+
+Emails are already encrypted when submitted
+
+Sign messages before sending using user’s private key
+
+7. Key Rotation Mechanism
+Allow login keypair to be rotated any time
+
+Keep “main” public encryption key stable for receiving emails
+
+Notify contacts (optionally) of new login key
+
+8. Admin & Stripe Integration
+Minimal admin dashboard
+
+Users can pay for inbox hosting via Stripe
+
+Upon payment, unlocks inbox provisioning and storage
+
+Security Measures
+PGP encryption is end-to-end; server never sees plaintext
+
+Private keys never leave client
+
+Dovecot password is derived, not stored
+
+Optional YubiKey hardware-based auth (via WebAuthn)
+
+Open-source everything
+
+Implementation Order for Dev AI
+Setup Dockerized infrastructure with MySQL, Postfix, Dovecot, and Coolify-deployable Next.js
+
+Implement MySQL user provisioning from frontend
+
+Implement PGP key upload and browser-based keygen with OpenPGP.js
+
+Build challenge-response login flow using signed messages
+
+Implement deterministic password derivation and bcrypt storage
+
+Wire up Dovecot/Postfix SQL auth
+
+Add OpenPGP.js support in mail UI for encryption/decryption
+
+Add Stripe integration
+
+Add optional YubiKey/WebAuthn support
+
+Finalize UI polish and open-source deployment script
+
+Would you like this plan output as a Markdown file, diagram, or GitHub repo skeleton?
+
+
+
+
+
+
+
+You said:
+“I think what's most interesting for the developer AI is not so much the server setup, because that's already all done. It's more the intricacies of the flow from you enter your email address, you know, when you sign, when you log in, and then what, you upload your private key into the browser or client side, or you use WebAuth to get that private key on the YubiKey to digitally sign the challenge. That particular aspect I think is difficult, and then what needs to be very clear to be understood, and then once the challenge is accepted, we're moving to the dashboard, but we have to make sure that whatever digital signature we generated here is exactly the same, or whatever we generate here is exactly the same as was generated during the setup. Obviously, the authentication challenge doesn't have to be identical with deterministically derived password that we use for Dovcon, but this particular aspect I think has to be super, super clear and clarified for any developer.”
+01:19
+
+ChatGPT said:
+Updated saved memory
+Understood! Let's refine the development plan to focus on the critical aspects of the login flow and the distinction between the authentication challenge and the derived Dovecot password:
+
+Development Plan: Login Flow and Password Derivation
+Objective
+Implement a secure and seamless login flow where:
+
+Users authenticate using a private PGP key or a YubiKey.
+
+A deterministic password is derived from the user’s private key or YubiKey signature for Dovecot access.
+
+Login Flow
+User Input:
+
+User enters their email address on the login page.
+
+System retrieves the stored public key associated with the email.
+
+Challenge Generation:
+
+Server generates a random, one-time challenge string and sends it to the client.
+
+Client Response:
+
+User chooses to:
+
+Upload their private PGP key to the browser temporarily for signing the challenge.
+
+Use their YubiKey to sign the challenge using WebAuthn.
+
+The client signs the challenge with the private key or YubiKey.
+
+Challenge Verification:
+
+The signed challenge is sent back to the server.
+
+Server verifies the signature
+
+You said:
+“Hello.”
+00:00
+ChatGPT said:
+Hey there! What's up?
+
+You said:
+“I know. I sent you a message. I just interrupted her talking, so... You what? I sent you a message and I just interrupted her talking.”
+00:08
+ChatGPT said:
+No worries! It happens. What's on your mind?
+
+You said:
+“Oh, sorry. Yeah, it's okay. I'll come back to you.”
+00:03
+ChatGPT said:
+Sure thing! Just let me know whenever you're ready.
+
+You said:
+“I'm ready, so please continue.”
+00:01
+ChatGPT said:
+Alright! So we were talking about the login flow and the importance of making sure that the derived Dovecot password remains consistent. The key steps are ensuring the challenge-response mechanism with the private key or YubiKey is separate from the deterministic password generation process. This way, every time the user logs in, the derived password matches what was originally stored, giving them seamless access to their inbox.
+
+Is there anything specific you'd like to dive deeper into or any part of the plan you want to refine further?
+
+You said:
+Can you continue after 4.
+ChatGPT said:
+Absolutely! Let’s pick up where we left off — Step 4: Challenge Verification — and walk through the rest of the login flow and password derivation logic in precise detail:
+
+4. Challenge Verification (continued)
+The server verifies the signed challenge using the user's stored public key.
+
+If the signature is valid, the server proceeds with login.
+
+Important: This step proves identity but does not itself provide the Dovecot password — that's handled in the next step.
+
+5. Deterministic Password Derivation
+Independently of the random challenge, the system now generates a deterministic password using a stable input.
+
+Inputs for password derivation:
+
+A constant salt (e.g., the string "dovecot-auth" or the domain name)
+
+The user's email address or user ID (ensures uniqueness)
+
+The user's private key, which is used to sign the input
+
+Password Derivation Formula:
+plaintext
+Copy
+Edit
+plaintext_password = SHA256(Sign("dovecot-auth:" + user_email) with private_key)
+On the server, this value is never stored in plaintext. Instead:
+
+At sign-up, the derived password is hashed using bcrypt and stored in MySQL.
+
+On login, the same derivation process is done in the client (via private key/YubiKey), and the result is sent securely to the server, which compares it to the stored bcrypt hash.
+
+6. IMAP Access
+After successful challenge verification and password derivation:
+
+A valid session is established in Next.js
+
+The backend uses the derived password to log the user into Dovecot (on port 993 or via submission port for SMTP if sending mail)
+
+7. Security Summary
+Component	Role
+PGP Challenge (random)	Authenticates user identity
+Signature Verification	Confirms the user holds the private key
+Derived Password (static)	Grants access to IMAP by regenerating same hash
+bcrypt Hash	Stored in DB to validate derived password
+
+8. YubiKey Adaptation
+When using a YubiKey:
+
+The signature of "dovecot-auth:" + email is created using the private key stored on the YubiKey.
+
+The browser (or native helper app) then hashes this result using SHA256 to derive the same deterministic password as above.
+
+9. Dev AI Notes
+Ensure complete separation of concerns between:
+
+The ephemeral challenge/response (used for login session authentication)
+
+The deterministic password derivation (used for backend email server access)
+
+Never use the login challenge as part of the password derivation. This keeps the Dovecot password constant and reproducible.
+

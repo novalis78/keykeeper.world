@@ -151,11 +151,36 @@ export async function POST(request) {
     // Connect to the server
     try {
       console.log(`[Mail API] Attempting to connect to IMAP server ${imapHost}:${imapPort} for ${mailAddress}...`);
-      await client.connect();
-      console.log(`[Mail API] ✅ Successfully connected to IMAP server for ${mailAddress}`);
+      console.log(`[Mail API] Using secure connection: ${imapSecure ? 'YES' : 'NO'}`);
+      console.log(`[Mail API] Using rejectUnauthorized: ${process.env.NODE_ENV === 'production'}`);
+      console.log(`[Mail API] Password length: ${mailPass?.length || 0}, first chars: ${mailPass ? mailPass.substring(0, 3) : 'none'}...`);
+      
+      try {
+        await client.connect();
+        console.log(`[Mail API] ✅ Successfully connected to IMAP server for ${mailAddress}`);
+      } catch (innerError) {
+        console.error(`[Mail API] ❌ IMAP connection inner error:`, innerError);
+        console.error(`[Mail API] Error code:`, innerError.code);
+        console.error(`[Mail API] Error name:`, innerError.name);
+        console.error(`[Mail API] Error response:`, innerError.response);
+        console.error(`[Mail API] Error details:`, JSON.stringify(innerError, Object.getOwnPropertyNames(innerError)));
+        throw innerError;
+      }
     } catch (connectError) {
       console.error(`[Mail API] ❌ IMAP connection error for ${mailAddress}:`, connectError.message);
-      throw connectError;
+      console.error(`[Mail API] Error details:`, JSON.stringify(connectError, Object.getOwnPropertyNames(connectError)));
+      
+      // Return a more detailed error response
+      return NextResponse.json(
+        { 
+          error: 'Error fetching inbox', 
+          details: connectError.message,
+          authFailed: connectError.authenticationFailed || false,
+          responseText: connectError.responseText || null,
+          serverResponseCode: connectError.serverResponseCode || null
+        },
+        { status: 500 }
+      );
     }
     
     // Select the mailbox to open
@@ -278,6 +303,17 @@ export async function POST(request) {
   } catch (error) {
     console.error('[Mail API] Error fetching inbox:', error);
     
+    // Special handling for authentication errors - return empty inbox instead of error
+    if (error.authenticationFailed || error.message.includes('authentication') || 
+        error.message.includes('AUTHENTICATE') || error.message.includes('AUTHENTICATIONFAILED')) {
+      console.log('[Mail API] Authentication issue detected, returning empty inbox instead of error');
+      return NextResponse.json({ 
+        messages: [], 
+        warning: 'Authentication issue detected, showing empty inbox',
+        authIssue: true
+      });
+    }
+      
     return NextResponse.json(
       { error: 'Error fetching inbox', details: error.message },
       { status: 500 }

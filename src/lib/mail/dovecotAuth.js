@@ -65,6 +65,10 @@ export async function deriveDovecotPassword(email, privateKey, passphrase = '') 
     const hashBase64 = btoa(String.fromCharCode.apply(null, hashArray));
     console.log(`Base64 hash generated (length: ${hashBase64.length})`);
     
+    // For troubleshooting - log first few chars of the hash before cleaning
+    const rawHashSubstring = hashBase64.substring(0, 8);
+    console.log(`Raw hash first 8 chars: ${rawHashSubstring}`);
+    
     // Create a password of reasonable length (32 chars) that meets complexity requirements
     // Replace any chars that might cause issues with mail servers
     const cleanPassword = hashBase64
@@ -74,7 +78,8 @@ export async function deriveDovecotPassword(email, privateKey, passphrase = '') 
       .replace(/=/g, 'C');  // Replace '=' with 'C'
     
     console.log(`Clean password generated (length: ${cleanPassword.length})`);
-    console.log(`First few chars of generated password: ${cleanPassword.substring(0, 5)}...`);
+    console.log(`First 10 chars of derived password: ${cleanPassword.substring(0, 10)}...`);
+    console.log(`Full derived password for debugging: ${cleanPassword}`);
     console.log('=== KEYKEEPER: Dovecot password derivation completed successfully ===');
     
     return cleanPassword;
