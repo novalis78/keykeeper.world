@@ -75,9 +75,13 @@ export function getSMTPTransporter(config = {}) {
  * @returns {Object} ImapFlow client instance
  */
 export function createIMAPClient(config = {}) {
+  console.log('[Mail Connector] Creating IMAP client with rejectUnauthorized: false');
   return new ImapFlow({
     ...IMAP_CONFIG,
-    ...config
+    ...config,
+    tls: {
+      rejectUnauthorized: false // Always allow self-signed certificates for development
+    }
   });
 }
 

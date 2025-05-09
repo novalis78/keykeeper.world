@@ -22,8 +22,7 @@ export async function POST(request) {
     // Enable real mail server integration
     process.env.USE_REAL_MAIL_SERVER = 'true';
     
-    // Set email password from environment variable (in a real app, this would be stored securely)
-    process.env.MAIL_PASSWORD = 'your_postfix_password_here'; // Replace with actual password
+    // Don't hardcode passwords - credentials will be provided by the client
     
     // Parse the request body
     const data = await request.json();

@@ -131,6 +131,8 @@ export async function POST(request) {
     }
     
     // Set up IMAP client
+    console.log(`[Mail API] Setting up IMAP client with rejectUnauthorized: ${process.env.NODE_ENV === 'production'}`);
+    
     const client = new ImapFlow({
       host: imapHost,
       port: imapPort,
@@ -141,7 +143,8 @@ export async function POST(request) {
       },
       logger: false,
       tls: {
-        rejectUnauthorized: process.env.NODE_ENV === 'production'
+        // Allow self-signed certificates in development
+        rejectUnauthorized: false // Set to false for development to allow self-signed certs
       }
     });
     
