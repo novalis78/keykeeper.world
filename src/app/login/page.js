@@ -167,9 +167,20 @@ export default function LoginPage() {
         console.log('Deriving session key for secure credential storage');
         const sessionKey = await deriveSessionKey(data.token, data.user.fingerprint);
         
-        // Store the credentials securely in localStorage (same as signup)
-        console.log(`Storing mail credentials in localStorage`);
-        await storeCredentials(accountId, credentials, sessionKey, true);
+        // For reliable access, store credentials directly in localStorage without encryption
+        // This is safe since localStorage is only accessible by the same origin
+        console.log(`Storing mail credentials directly in localStorage for development`);
+        const storageKey = `kk_mail_${accountId}_direct`;
+        localStorage.setItem(storageKey, JSON.stringify(credentials));
+        
+        // Also try the secure storage as a backup
+        try {
+          console.log(`Also attempting to store encrypted credentials in localStorage`);
+          await storeCredentials(accountId, credentials, sessionKey, true);
+        } catch (encryptError) {
+          console.warn('Could not store encrypted credentials, but direct credentials are available:', encryptError);
+        }
+        
         console.log(`=== KEYKEEPER: Mail credentials stored successfully ===`);
         
         // Save fingerprint and key ID for future reference

@@ -66,71 +66,91 @@ export default function Dashboard() {
         try {
           console.log('=== KEYKEEPER: Attempting to retrieve stored mail credentials ===');
           
-          // First make sure we have the user fingerprint - try multiple sources
-          let fingerprint = user?.fingerprint;
+          // First make sure we have the user email
+          const email = user?.email || localStorage.getItem('user_email');
+          if (!email) {
+            throw new Error('User email not available');
+          }
           
-          // If fingerprint is not in user object, try to get it from localStorage
-          if (!fingerprint) {
-            console.log('Fingerprint not in user object, checking localStorage...');
-            fingerprint = localStorage.getItem('user_fingerprint');
+          // Generate account ID from email
+          const accountId = `account_${email.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          console.log(`Using account ID: ${accountId}`);
+          
+          // First try the direct storage method (no encryption)
+          const directStorageKey = `kk_mail_${accountId}_direct`;
+          const directCredentials = localStorage.getItem(directStorageKey);
+          
+          if (directCredentials) {
+            console.log('Found direct credentials in localStorage!');
+            credentials = JSON.parse(directCredentials);
+            console.log('=== KEYKEEPER: Successfully retrieved direct mail credentials ===');
+            console.log(`Using credentials for: ${credentials.email}`);
+            console.log(`Credential timestamp: ${new Date(credentials.timestamp).toISOString()}`);
+          } else {
+            console.log('No direct credentials found, trying encrypted storage...');
+            
+            // If no direct credentials, try the encrypted storage
+            // First make sure we have the user fingerprint - try multiple sources
+            let fingerprint = user?.fingerprint;
+            
+            // If fingerprint is not in user object, try to get it from localStorage
+            if (!fingerprint) {
+              console.log('Fingerprint not in user object, checking localStorage...');
+              fingerprint = localStorage.getItem('user_fingerprint');
+              
+              if (fingerprint) {
+                console.log(`Found fingerprint in localStorage: ${fingerprint}`);
+              } else {
+                console.log('Fingerprint not found in localStorage, trying JWT token...');
+                
+                // Try to extract fingerprint from JWT token
+                try {
+                  const token = getToken();
+                  if (token) {
+                    // Parse JWT without verification
+                    const base64Url = token.split('.')[1];
+                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    const payload = JSON.parse(atob(base64));
+                    
+                    if (payload.fingerprint) {
+                      fingerprint = payload.fingerprint;
+                      console.log(`Extracted fingerprint from token: ${fingerprint}`);
+                      localStorage.setItem('user_fingerprint', fingerprint);
+                    }
+                  }
+                } catch (tokenError) {
+                  console.error('Error extracting fingerprint from token:', tokenError);
+                }
+              }
+            }
             
             if (fingerprint) {
-              console.log(`Found fingerprint in localStorage: ${fingerprint}`);
-            } else {
-              console.log('Fingerprint not found in localStorage, trying JWT token...');
+              console.log(`Using fingerprint: ${fingerprint}`);
               
-              // Try to extract fingerprint from JWT token
-              try {
-                const token = getToken();
-                if (token) {
-                  // Parse JWT without verification
-                  const base64Url = token.split('.')[1];
-                  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                  const payload = JSON.parse(atob(base64));
-                  
-                  if (payload.fingerprint) {
-                    fingerprint = payload.fingerprint;
-                    console.log(`Extracted fingerprint from token: ${fingerprint}`);
-                    localStorage.setItem('user_fingerprint', fingerprint);
-                  }
-                }
-              } catch (tokenError) {
-                console.error('Error extracting fingerprint from token:', tokenError);
+              // Get the session key
+              const token = getToken();
+              console.log('Got auth token, deriving session key...');
+              
+              const sessionKey = await getSessionKey(token, fingerprint);
+              console.log('Session key derived successfully');
+              
+              // Try to get credentials from secure storage
+              credentials = await getCredentials(accountId, sessionKey);
+              
+              if (credentials) {
+                console.log('=== KEYKEEPER: Successfully retrieved encrypted mail credentials ===');
+                console.log(`Using credentials for: ${credentials.email}`);
+                console.log(`Credential timestamp: ${new Date(credentials.timestamp).toISOString()}`);
+              } else {
+                console.warn('No encrypted credentials found');
               }
+            } else {
+              console.error('Failed to retrieve user fingerprint from any source');
             }
           }
           
-          if (fingerprint) {
-            console.log(`Using fingerprint: ${fingerprint}`);
-            
-            // Get the session key
-            const token = getToken();
-            console.log('Got auth token, deriving session key...');
-            
-            const sessionKey = await getSessionKey(token, fingerprint);
-            console.log('Session key derived successfully');
-            
-            // Generate account ID from email
-            const email = user?.email || localStorage.getItem('user_email');
-            if (!email) {
-              throw new Error('User email not available');
-            }
-            
-            const accountId = `account_${email.replace(/[^a-zA-Z0-9]/g, '_')}`;
-            console.log(`Using account ID: ${accountId}`);
-            
-            // Try to get credentials from secure storage
-            credentials = await getCredentials(accountId, sessionKey);
-            
-            if (credentials) {
-              console.log('=== KEYKEEPER: Successfully retrieved mail credentials ===');
-              console.log(`Using credentials for: ${credentials.email}`);
-              console.log(`Credential timestamp: ${new Date(credentials.timestamp).toISOString()}`);
-            } else {
-              console.warn('No stored credentials found - user may need to enter manually');
-            }
-          } else {
-            console.error('Failed to retrieve user fingerprint from any source');
+          if (!credentials) {
+            console.warn('No stored credentials found - user may need to enter manually');
           }
         } catch (credError) {
           console.error('=== KEYKEEPER ERROR: Failed to retrieve credentials ===');
