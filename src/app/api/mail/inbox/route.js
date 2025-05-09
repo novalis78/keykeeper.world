@@ -229,18 +229,65 @@ export async function POST(request) {
           }
           
           // Get full message source - this is the RFC822 complete message
-          const source = message.source || '';
+          // Handle different types of source content
+          let sourceContent = '';
           
-          if (!source) {
+          if (!message.source) {
             console.log(`[Mail API] Warning: Message ${message.uid} has no source content`);
           } else {
-            console.log(`[Mail API] Message ${message.uid} source length: ${source.length}`);
-            // Debug - show the first part of the message to troubleshoot
-            console.log(`[Mail API] Message ${message.uid} source preview: ${source.substring(0, 200)}...`);
+            // Handle different possible types of the source property
+            if (typeof message.source === 'string') {
+              sourceContent = message.source;
+              console.log(`[Mail API] Message ${message.uid} has string source, length: ${sourceContent.length}`);
+            } else if (message.source instanceof Buffer) {
+              sourceContent = message.source.toString('utf8');
+              console.log(`[Mail API] Message ${message.uid} has Buffer source, length: ${sourceContent.length}`);
+            } else if (typeof message.source === 'object') {
+              // Handle case where source might be a stream or another object
+              console.log(`[Mail API] Message ${message.uid} source is an object type: ${message.source.constructor?.name || 'unknown'}`);
+              // Try to get a readable form
+              sourceContent = String(message.source);
+            } else {
+              console.log(`[Mail API] Message ${message.uid} has unknown source type: ${typeof message.source}`);
+              // Convert whatever it is to a string
+              try {
+                sourceContent = String(message.source);
+              } catch (e) {
+                console.error(`[Mail API] Could not convert source to string: ${e.message}`);
+              }
+            }
+            
+            // Only try to show preview if we have a string
+            if (sourceContent && typeof sourceContent === 'string') {
+              console.log(`[Mail API] Message ${message.uid} source length: ${sourceContent.length}`);
+              try {
+                // Show the first part of the message to troubleshoot, safely
+                const preview = sourceContent.substring(0, Math.min(200, sourceContent.length));
+                console.log(`[Mail API] Message ${message.uid} source preview: ${preview}...`);
+              } catch (e) {
+                console.error(`[Mail API] Error creating preview: ${e.message}`);
+              }
+            }
           }
           
           // Parse the complete message using the full RFC822 source
-          const parsedMessage = await simpleParser(source);
+          // First we need to handle the case where source might not be parseable
+          let parsedMessage;
+          try {
+            // Pass the source to the parser - it can handle both string and Buffer
+            parsedMessage = await simpleParser(message.source || sourceContent);
+          } catch (parseError) {
+            console.error(`[Mail API] Error parsing message with simpleParser: ${parseError.message}`);
+            // Try to create a basic parsed message object as fallback
+            parsedMessage = {
+              subject: `Message ${message.uid}`,
+              from: { text: 'Unknown Sender', value: [{ name: 'Unknown', address: 'unknown@example.com' }] },
+              to: { text: mailAddress, value: [{ name: mailAddress, address: mailAddress }] },
+              date: new Date(),
+              text: `Could not parse email content. Error: ${parseError.message}`,
+              html: `<p>Could not parse email content.</p><p>Error: ${parseError.message}</p>`
+            };
+          }
           
           // Log what we managed to extract
           console.log(`[Mail API] Parsed message ${message.uid}:`);
