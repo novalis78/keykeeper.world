@@ -85,12 +85,13 @@ export async function POST(request) {
     console.log(`[Mail Activation API] Updating password hash for ${userEmail}`);
     
     try {
-      // Debug: Force direct password in PLAIN format for testing
-      // While developing, let's try this to see if our password works
-      const usePlainText = true; // Set to true for testing
+      // Always use PLAIN format for consistency
+      // This ensures the same derived password works across logins
+      const usePlainText = true; // Always use PLAIN format 
       
       console.log(`[Mail Activation API] Using derived password (first 5 chars: ${derivedPassword.substring(0, 5)}...)`);
       console.log(`[Mail Activation API] Using plain text format: ${usePlainText}`);
+      console.log(`[Mail Activation API] FULL PASSWORD FOR DEBUGGING: ${derivedPassword}`);
       
       // Prepare the password hash
       let passwordHash;

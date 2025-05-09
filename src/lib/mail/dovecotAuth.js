@@ -27,6 +27,14 @@ const DOVECOT_AUTH_VERSION = 'v1';
  * @returns {Promise<string>} - Derived password for Dovecot authentication
  */
 export async function deriveDovecotPassword(email, privateKey, passphrase = '') {
+  // For debugging - log original inputs with truncated values
+  console.log('=== KEYKEEPER DEBUG: DERIVATION INPUTS ===');
+  console.log(`Email: ${email || 'none'}`);
+  console.log(`Private key length: ${privateKey?.length || 0}`); 
+  console.log(`Private key type: ${typeof privateKey}`);
+  console.log(`Private key starts with: ${privateKey?.substring(0, 50)}`);
+  console.log(`Private key ends with: ${privateKey?.substring(privateKey?.length - 50)}`);
+  console.log('=== KEYKEEPER DEBUG: END INPUTS ===');
   try {
     console.log('=== KEYKEEPER: Starting Dovecot password derivation ===');
     
@@ -38,6 +46,14 @@ export async function deriveDovecotPassword(email, privateKey, passphrase = '') 
     console.log(`Deriving password for email: ${email}`);
     console.log(`Private key provided: ${privateKey ? 'YES (length: ' + privateKey.length + ')' : 'NO'}`);
     console.log(`Passphrase provided: ${passphrase ? 'YES' : 'NO'}`);
+    
+    // Debugging - log a fingerprint of the private key to see if it's changing
+    try {
+      const keyFingerprint = privateKey.substring(0, 100) + '...' + privateKey.substring(privateKey.length - 100);
+      console.log(`Private key fingerprint: First/last 100 chars:\n${keyFingerprint}`);
+    } catch (e) {
+      console.error('Error creating fingerprint:', e);
+    }
     
     // Create a stable input for signing
     const input = `${DOVECOT_AUTH_SALT}:${email}:${DOVECOT_AUTH_VERSION}`;
