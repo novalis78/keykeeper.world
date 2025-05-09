@@ -199,13 +199,13 @@ export async function POST(request) {
       const startSeq = Math.max(1, messageCount - 19);
       const endSeq = messageCount;
       
-      // Fetch messages in the range
+      // Fetch messages in the range - get full message content
       for await (const message of client.fetch(`${startSeq}:${endSeq}`, {
         uid: true,
         flags: true,
         envelope: true,
         bodyStructure: true,
-        bodyParts: ['TEXT', 'HEADER']
+        source: true // Get the full RFC822 source of the message
       })) {
         try {
           // Debug log the message object structure without exposing sensitive data
@@ -214,16 +214,28 @@ export async function POST(request) {
             console.log(`[Mail API] Flags: ${JSON.stringify(Array.isArray(message.flags) ? message.flags : Object.keys(message.flags))}`);
           }
           
-          // Get message header and body with proper null checks
-          const headerPart = message.bodyParts?.get('HEADER') || '';
-          const textPart = message.bodyParts?.get('TEXT') || '';
+          // Get full message source - this is the RFC822 complete message
+          const source = message.source || '';
           
-          if (!headerPart && !textPart) {
-            console.log(`[Mail API] Warning: Message ${message.uid} has no content parts`);
+          if (!source) {
+            console.log(`[Mail API] Warning: Message ${message.uid} has no source content`);
+          } else {
+            console.log(`[Mail API] Message ${message.uid} source length: ${source.length}`);
+            // Debug - show the first part of the message to troubleshoot
+            console.log(`[Mail API] Message ${message.uid} source preview: ${source.substring(0, 200)}...`);
           }
           
-          // Parse the complete message
-          const parsedMessage = await simpleParser(headerPart + '\r\n\r\n' + textPart);
+          // Parse the complete message using the full RFC822 source
+          const parsedMessage = await simpleParser(source);
+          
+          // Log what we managed to extract
+          console.log(`[Mail API] Parsed message ${message.uid}:`);
+          console.log(`  Subject: ${parsedMessage.subject || '(No Subject)'}`);
+          console.log(`  From: ${parsedMessage.from?.text || 'Unknown'}`);
+          console.log(`  To: ${parsedMessage.to?.text || 'Unknown'}`);
+          console.log(`  Date: ${parsedMessage.date?.toISOString() || 'Unknown'}`);
+          console.log(`  Text body length: ${parsedMessage.text?.length || 0}`);
+          console.log(`  HTML body length: ${parsedMessage.html?.length || 0}`);
           
           // Extract message data
           // CRITICAL FIX: Force flags to be always treated as an array to avoid includes errors
