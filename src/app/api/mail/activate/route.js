@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import accountManager from '@/lib/mail/accountManager';
+// Not actually importing dovecotAuth here, we are now using the client-provided password directly
 
 /**
  * First Login Mail Account Activation API

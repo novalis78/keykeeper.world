@@ -11,6 +11,7 @@
 import pgpUtils from '@/lib/auth/pgp';
 import * as openpgp from 'openpgp';
 import { deriveDovecotPassword } from '@/lib/mail/dovecotAuth';
+import { deriveDeterministicPassword } from '@/lib/mail/deterministicAuth';
 
 // Constants for storage
 const STORAGE_PREFIX = 'kk_mail_';
@@ -421,8 +422,15 @@ export async function getDovecotPassword(email, privateKey, passphrase = '') {
       throw new Error('Email and private key are required for mail password derivation');
     }
     
-    // Use the dovecotAuth utility to derive the password
-    const mailPassword = await deriveDovecotPassword(email, privateKey, passphrase);
+    console.log('=== KEYKEEPER: Getting mail password ===');
+    console.log('Using deterministic method for consistent passwords');
+    
+    // Use the deterministic method to ensure the same password every time
+    // This avoids the non-deterministic elements in PGP signatures
+    const mailPassword = await deriveDeterministicPassword(email, privateKey);
+    
+    // Log for comparison with server
+    console.log(`Generated password: ${mailPassword.substring(0, 10)}...`);
     
     return mailPassword;
   } catch (error) {
