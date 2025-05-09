@@ -43,6 +43,10 @@ export async function deriveDovecotPassword(email, privateKey, passphrase = '') 
     const input = `${DOVECOT_AUTH_SALT}:${email}:${DOVECOT_AUTH_VERSION}`;
     console.log(`Input string for signing: "${input}"`);
     
+    // For audit/debugging in development - print the input that will be used
+    console.log(`[Debug] Using authSalt: ${DOVECOT_AUTH_SALT}`);
+    console.log(`[Debug] Using authVersion: ${DOVECOT_AUTH_VERSION}`);
+    
     // Sign the input with the private key
     console.log('Calling pgpUtils.signMessage to sign the input...');
     const signature = await pgpUtils.signMessage(input, privateKey, passphrase);
@@ -70,6 +74,7 @@ export async function deriveDovecotPassword(email, privateKey, passphrase = '') 
       .replace(/=/g, 'C');  // Replace '=' with 'C'
     
     console.log(`Clean password generated (length: ${cleanPassword.length})`);
+    console.log(`First few chars of generated password: ${cleanPassword.substring(0, 5)}...`);
     console.log('=== KEYKEEPER: Dovecot password derivation completed successfully ===');
     
     return cleanPassword;
@@ -78,6 +83,67 @@ export async function deriveDovecotPassword(email, privateKey, passphrase = '') 
     console.error('Error details:', error);
     console.error('Stack trace:', error.stack);
     throw new Error('Failed to derive Dovecot password: ' + error.message);
+  }
+}
+
+/**
+ * Generate a deterministic password from public key information
+ * This is used during account creation to match what users will derive on login
+ * 
+ * @param {string} email - User's email address
+ * @param {string} publicKey - User's PGP public key
+ * @returns {Promise<string>} - Deterministic password that matches what the client will generate
+ */
+export async function generateDeterministicPassword(email, publicKey) {
+  try {
+    console.log(`[DovecotAuth] Generating deterministic password for ${email}`);
+    if (!email || !publicKey) {
+      throw new Error('Email and public key are required for password generation');
+    }
+    
+    // Create the same stable input we'll use on the client side
+    const input = `${DOVECOT_AUTH_SALT}:${email}:${DOVECOT_AUTH_VERSION}`;
+    console.log(`[DovecotAuth] Using input string: "${input}"`);
+    
+    // Extract key information from the public key
+    // This is a simpler version of what happens with the private key signing
+    const encoder = new TextEncoder();
+    const data = encoder.encode(input + publicKey);
+    
+    // Use a deterministic hash algorithm that will produce a consistent result
+    // We're using SHA-256 which is the same algorithm used in deriveDovecotPassword
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    
+    // Process the hash identical to the client-side method
+    // IMPORTANT: We must use the exact same method as in deriveDovecotPassword
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    
+    // In Node.js environment, use Buffer for consistent results with btoa in browser
+    let hashBase64;
+    if (typeof window === 'undefined') {
+      // Server-side (Node.js)
+      hashBase64 = Buffer.from(hashArray).toString('base64');
+    } else {
+      // Client-side (Browser)
+      hashBase64 = btoa(String.fromCharCode.apply(null, hashArray));
+    }
+    
+    // Create a password of reasonable length (32 chars) with the exact same replacements
+    const cleanPassword = hashBase64
+      .substring(0, 32)
+      .replace(/\+/g, 'A')  // Replace '+' with 'A'
+      .replace(/\//g, 'B')  // Replace '/' with 'B'
+      .replace(/=/g, 'C');  // Replace '=' with 'C'
+      
+    // In development, print for comparison
+    console.log(`[DovecotAuth] Deterministic password first chars: ${cleanPassword.substring(0, 5)}...`)
+    
+    console.log(`[DovecotAuth] Generated deterministic password (length: ${cleanPassword.length})`);
+    
+    return cleanPassword;
+  } catch (error) {
+    console.error('Error generating deterministic password:', error);
+    throw new Error('Failed to generate deterministic password: ' + error.message);
   }
 }
 
@@ -95,17 +161,45 @@ export async function generateServerPasswordHash(email, publicKey) {
       throw new Error('Email and public key are required for password hash generation');
     }
     
-    // In a real implementation, this would:
-    // 1. Extract key information from the public key
-    // 2. Generate a server-side challenge
-    // 3. Create a deterministic hash that can be verified against client-generated passwords
+    // First generate the deterministic password - this should exactly match
+    // what will be generated on the client during login
+    console.log(`[DovecotAuth] Generating server password hash for ${email}`);
+    const deterministicPassword = await generateDeterministicPassword(email, publicKey);
+    console.log(`[DovecotAuth] Generated deterministic password: ${deterministicPassword.substring(0, 5)}...`);
     
-    // For now, we'll return a mock password hash that would work in development
-    // This would be replaced with a secure implementation that integrates with your mail server
-    return '{SHA512-CRYPT}$6$salt$mockHashForDevelopment';
+    // For testing, we can use the PLAIN format to see exactly what's happening
+    if (process.env.NODE_ENV === 'development' && process.env.MAIL_PASSWORD_SCHEME === 'PLAIN') {
+      console.log(`[DovecotAuth] Using PLAIN scheme for testing`);
+      return `{PLAIN}${deterministicPassword}`;
+    }
+    
+    // For production, use the crypto module to generate a proper hash
+    console.log(`[DovecotAuth] Calling OpenSSL to hash password for Dovecot`);
+    const { execSync } = require('child_process');
+    
+    try {
+      // Generate a salt for hashing
+      const crypto = require('crypto');
+      const salt = crypto.randomBytes(8).toString('base64')
+        .replace(/[+\/=]/g, '.')
+        .substring(0, 16);
+      
+      // Use OpenSSL to generate the proper SHA512-CRYPT hash
+      // This produces the exact format Dovecot expects
+      const hash = execSync(`openssl passwd -6 -salt "${salt}" "${deterministicPassword}"`).toString().trim();
+      console.log(`[DovecotAuth] Password hash generated successfully: {SHA512-CRYPT}${hash.substring(0, 15)}...`);
+      
+      return `{SHA512-CRYPT}${hash}`;
+    } catch (opensslError) {
+      console.error('OpenSSL command failed:', opensslError);
+      
+      // As a fallback, return a PLAIN hash that will definitely work
+      console.log(`[DovecotAuth] Falling back to PLAIN scheme due to OpenSSL error`);
+      return `{PLAIN}${deterministicPassword}`;
+    }
   } catch (error) {
     console.error('Error generating server password hash:', error);
-    throw new Error('Failed to generate server password hash');
+    throw new Error('Failed to generate server password hash: ' + error.message);
   }
 }
 

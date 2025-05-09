@@ -110,6 +110,7 @@
 	`email` VARCHAR(100) NOT NULL COLLATE 'utf8mb3_general_ci',
 	`user_id` VARCHAR(36) NULL COMMENT 'Link to users table',
 	`username` VARCHAR(100) NULL COLLATE 'utf8mb3_general_ci',
+	`pending_activation` TINYINT(1) NOT NULL DEFAULT '1' COMMENT 'Flag for first login activation',
 	PRIMARY KEY (`id`) USING BTREE,
 	UNIQUE INDEX `email` (`email`) USING BTREE,
 	INDEX `idx_user_id` (`user_id`) USING BTREE

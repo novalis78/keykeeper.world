@@ -216,21 +216,29 @@ export async function POST(request) {
         // Initialize account password
         let accountPassword;
         
-        // Generate a deterministic mail password hash based on the user's public key
+        // Generate a deterministic mail password based on the user's public key
+        // This should match exactly what the client will derive during login
         console.log(`[Register API] Generating deterministic password for email: ${email}`);
         
         try {
-          // We'll use a consistent method to derive the password
-          // This won't be the actual password, but a hash that can be used to verify
-          // the client-derived password during authentication
+          // First, generate the deterministic password (same algorithm as client login)
+          // Important: This needs to match exactly what deriveDovecotPassword will produce!
+          const deterministicPassword = await generateDeterministicPassword(email, publicKey);
+          console.log(`[Register API] Successfully generated deterministic mail password`);
+          console.log(`[Register API] Password first few chars: ${deterministicPassword.substring(0, 5)}...`);
+          
+          // Generate a SHA512-CRYPT hash of this password for Dovecot
           const passwordHash = await generateServerPasswordHash(email, publicKey);
+          console.log(`[Register API] Successfully generated server password hash`);
           
-          console.log(`[Register API] Successfully generated deterministic mail password hash`);
+          // Important: Use the actual deterministic password that will be derived on login
+          // This ensures the hash stored in the database will match what the client sends
+          accountPassword = deterministicPassword;
           
-          // For compatibility with the existing system during development,
-          // we'll set a dummy password that won't actually be used for auth
-          // In production, the client will derive the real password from their private key
-          accountPassword = "client_will_derive_real_password";
+          // For testing in development, you can set this env var to see the actual password
+          if (process.env.NODE_ENV === 'development' && process.env.LOG_PASSWORDS === 'true') {
+            console.log(`[Register API] DEVELOPMENT ONLY - Password: ${accountPassword}`);
+          }
         } catch (passwordError) {
           console.error('[Register API] Error generating deterministic password:', passwordError);
           

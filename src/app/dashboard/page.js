@@ -164,6 +164,43 @@ export default function Dashboard() {
       
       console.log('Fetching inbox for user ID:', userId);
       
+      // Try to activate mail account if this is the first login
+      if (credentials) {
+        try {
+          console.log('=== KEYKEEPER: Checking if mail account needs activation ===');
+          
+          // Call the mail activation API
+          const activationResponse = await fetch('/api/mail/activate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              derivedPassword: credentials.password
+            }),
+          });
+          
+          const activationData = await activationResponse.json();
+          
+          if (activationResponse.ok) {
+            if (activationData.activated) {
+              console.log('=== KEYKEEPER: Successfully activated mail account! ===');
+            } else if (activationData.alreadyActive) {
+              console.log('=== KEYKEEPER: Mail account already activated ===');
+            }
+          } else {
+            console.error('=== KEYKEEPER ERROR: Failed to activate mail account ===');
+            console.error('Error details:', activationData.error);
+            console.error('Additional details:', activationData.details);
+          }
+        } catch (activationError) {
+          console.error('=== KEYKEEPER ERROR: Exception during mail account activation ===');
+          console.error('Error details:', activationError);
+          console.error('Stack trace:', activationError.stack);
+          // Continue despite activation error - it might work anyway
+        }
+      }
+      
       // Add credentials to request if available
       const requestBody = { userId };
       if (credentials) {
