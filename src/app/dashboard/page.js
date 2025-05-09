@@ -62,41 +62,84 @@ export default function Dashboard() {
       
       // If user credentials were not provided directly, try to get them from storage
       let credentials = userCredentials;
-      if (!credentials && user?.fingerprint) {
+      if (!credentials) {
         try {
-          console.log('Attempting to retrieve stored mail credentials...');
+          console.log('=== KEYKEEPER: Attempting to retrieve stored mail credentials ===');
           
-          // Get the session key
-          const token = getToken();
-          console.log('Got auth token, deriving session key...');
+          // First make sure we have the user fingerprint - try multiple sources
+          let fingerprint = user?.fingerprint;
           
-          const sessionKey = await getSessionKey(token, user.fingerprint);
-          console.log('Session key derived successfully');
+          // If fingerprint is not in user object, try to get it from localStorage
+          if (!fingerprint) {
+            console.log('Fingerprint not in user object, checking localStorage...');
+            fingerprint = localStorage.getItem('user_fingerprint');
+            
+            if (fingerprint) {
+              console.log(`Found fingerprint in localStorage: ${fingerprint}`);
+            } else {
+              console.log('Fingerprint not found in localStorage, trying JWT token...');
+              
+              // Try to extract fingerprint from JWT token
+              try {
+                const token = getToken();
+                if (token) {
+                  // Parse JWT without verification
+                  const base64Url = token.split('.')[1];
+                  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                  const payload = JSON.parse(atob(base64));
+                  
+                  if (payload.fingerprint) {
+                    fingerprint = payload.fingerprint;
+                    console.log(`Extracted fingerprint from token: ${fingerprint}`);
+                    localStorage.setItem('user_fingerprint', fingerprint);
+                  }
+                }
+              } catch (tokenError) {
+                console.error('Error extracting fingerprint from token:', tokenError);
+              }
+            }
+          }
           
-          // Generate account ID from email
-          const accountId = `account_${user.email.replace(/[^a-zA-Z0-9]/g, '_')}`;
-          console.log(`Using account ID: ${accountId}`);
-          
-          // Try to get credentials from secure storage
-          credentials = await getCredentials(accountId, sessionKey);
-          
-          if (credentials) {
-            console.log('Successfully retrieved mail credentials from secure storage');
-            console.log(`Using credentials for: ${credentials.email}`);
+          if (fingerprint) {
+            console.log(`Using fingerprint: ${fingerprint}`);
+            
+            // Get the session key
+            const token = getToken();
+            console.log('Got auth token, deriving session key...');
+            
+            const sessionKey = await getSessionKey(token, fingerprint);
+            console.log('Session key derived successfully');
+            
+            // Generate account ID from email
+            const email = user?.email || localStorage.getItem('user_email');
+            if (!email) {
+              throw new Error('User email not available');
+            }
+            
+            const accountId = `account_${email.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            console.log(`Using account ID: ${accountId}`);
+            
+            // Try to get credentials from secure storage
+            credentials = await getCredentials(accountId, sessionKey);
+            
+            if (credentials) {
+              console.log('=== KEYKEEPER: Successfully retrieved mail credentials ===');
+              console.log(`Using credentials for: ${credentials.email}`);
+              console.log(`Credential timestamp: ${new Date(credentials.timestamp).toISOString()}`);
+            } else {
+              console.warn('No stored credentials found - user may need to enter manually');
+            }
           } else {
-            console.warn('No stored credentials found - user may need to enter manually');
+            console.error('Failed to retrieve user fingerprint from any source');
           }
         } catch (credError) {
-          console.error('Error retrieving credentials:', credError);
-          console.error('Error details:', credError.message);
+          console.error('=== KEYKEEPER ERROR: Failed to retrieve credentials ===');
+          console.error('Error details:', credError);
+          console.error('Stack trace:', credError.stack);
           // Continue without credentials, the server will prompt if needed
         }
-      } else {
-        if (userCredentials) {
-          console.log('Using explicitly provided credentials');
-        } else if (!user?.fingerprint) {
-          console.warn('User fingerprint not available - cannot retrieve credentials');
-        }
+      } else if (userCredentials) {
+        console.log('Using explicitly provided credentials');
       }
       
       console.log('Fetching inbox for user ID:', userId);

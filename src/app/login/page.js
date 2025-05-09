@@ -106,10 +106,16 @@ export default function LoginPage() {
       console.log('Key ID:', data.user?.keyId);
       console.log('Fingerprint:', data.user?.fingerprint);
       
-      // Store the token in localStorage for future API requests
+      // Store the token and user data in localStorage for future API requests
       if (data.token) {
         localStorage.setItem('auth_token', data.token);
         console.log('JWT token stored in localStorage');
+      }
+      
+      // Store critical user info in localStorage for reliability
+      if (data.user?.email) {
+        localStorage.setItem('user_email', data.user.email);
+        console.log('User email stored in localStorage');
       }
       
       try {
