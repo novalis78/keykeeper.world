@@ -56,7 +56,7 @@ export async function POST(request) {
     // Custom query to check activation status
     // Since we don't have the user_id, we'll just use the email
     const result = await db.query(`
-      SELECT id, pending_activation 
+      SELECT id, pending_activation, password
       FROM virtual_users 
       WHERE email = ?
     `, [userEmail]);
@@ -68,9 +68,12 @@ export async function POST(request) {
     
     const mailAccount = result[0];
     
+    // Debug current password in database
+    console.log(`[Mail Activation API] Current password in database: ${mailAccount.password?.substring(0, 20)}...`);
+    
     // Check if activation is needed
     if (mailAccount.pending_activation !== 1) {
-      console.log(`[Mail Activation API] Mail account already activated for ${user.email}`);
+      console.log(`[Mail Activation API] Mail account already activated for ${userEmail}`);
       return NextResponse.json({ 
         message: 'Mail account already activated', 
         activated: false,
@@ -79,26 +82,40 @@ export async function POST(request) {
     }
     
     // Update the password hash with the derived password
-    console.log(`[Mail Activation API] Updating password hash for ${user.email}`);
+    console.log(`[Mail Activation API] Updating password hash for ${userEmail}`);
     
     try {
+      // Debug: Force direct password in PLAIN format for testing
+      // While developing, let's try this to see if our password works
+      const usePlainText = true; // Set to true for testing
+      
       console.log(`[Mail Activation API] Using derived password (first 5 chars: ${derivedPassword.substring(0, 5)}...)`);
+      console.log(`[Mail Activation API] Using plain text format: ${usePlainText}`);
       
-      // Update the password in the virtual_users table
-      // Generate a proper SHA512-CRYPT hash with a new salt using OpenSSL
-      const { execSync } = await import('child_process');
-      const crypto = await import('crypto');
+      // Prepare the password hash
+      let passwordHash;
       
-      // Generate a random salt
-      const salt = crypto.randomBytes(8).toString('base64')
-        .replace(/[+\/=]/g, '.')
-        .substring(0, 16);
-      
-      // Use OpenSSL to generate the proper SHA512-CRYPT hash
-      const hash = execSync(`openssl passwd -6 -salt "${salt}" "${derivedPassword}"`).toString().trim();
-      const passwordHash = `{SHA512-CRYPT}${hash}`;
-      
-      console.log(`[Mail Activation API] Generated hash: ${passwordHash.substring(0, 20)}...`);
+      if (usePlainText) {
+        // Use PLAIN format for testing
+        passwordHash = `{PLAIN}${derivedPassword}`;
+        console.log(`[Mail Activation API] Using PLAIN password format: ${passwordHash.substring(0, 20)}...`);
+      } else {
+        // Update the password in the virtual_users table
+        // Generate a proper SHA512-CRYPT hash with a new salt using OpenSSL
+        const { execSync } = await import('child_process');
+        const crypto = await import('crypto');
+        
+        // Generate a random salt
+        const salt = crypto.randomBytes(8).toString('base64')
+          .replace(/[+\/=]/g, '.')
+          .substring(0, 16);
+        
+        // Use OpenSSL to generate the proper SHA512-CRYPT hash
+        const hash = execSync(`openssl passwd -6 -salt "${salt}" "${derivedPassword}"`).toString().trim();
+        passwordHash = `{SHA512-CRYPT}${hash}`;
+        
+        console.log(`[Mail Activation API] Generated SHA512-CRYPT hash: ${passwordHash.substring(0, 20)}...`);
+      }
       
       // Update both password and activation flag in a single query
       await db.query(`
@@ -111,9 +128,18 @@ export async function POST(request) {
       
       console.log(`[Mail Activation API] Successfully activated mail account for ${userEmail}`);
       
-      // We don't have activityLogs.create in this context, so we'll skip it
-      // In a real app, you'd want to log this activity
-      console.log(`[Mail Activation API] Mail account activated for ${userEmail}`);
+      // Try to add an activity log if possible
+      try {
+        await db.query(`
+          INSERT INTO activity_logs (id, user_id, activity_type, details, created_at)
+          SELECT UUID(), u.user_id, 'mail_account_activation', '{"success":true}', NOW()
+          FROM virtual_users u
+          WHERE u.email = ?
+        `, [userEmail]);
+        console.log('[Mail Activation API] Activity logged successfully');
+      } catch (logError) {
+        console.warn('[Mail Activation API] Could not log activity:', logError.message);
+      }
       
       return NextResponse.json({
         success: true,
