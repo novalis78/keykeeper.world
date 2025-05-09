@@ -226,6 +226,14 @@ export async function POST(request) {
           const parsedMessage = await simpleParser(headerPart + '\r\n\r\n' + textPart);
           
           // Extract message data
+          // CRITICAL FIX: Force flags to be always treated as an array to avoid includes errors
+          const flags = message.flags || [];
+          const flagsArray = Array.isArray(flags) ? flags : 
+                             (typeof flags === 'string' ? [flags] : 
+                             (typeof flags === 'object' ? Object.keys(flags) : []));
+          
+          console.log(`[Mail API] Message ${message.uid} flags converted to array: ${JSON.stringify(flagsArray)}`);
+                       
           const messageData = {
             id: message.uid,
             subject: parsedMessage.subject || '(No Subject)',
@@ -237,9 +245,10 @@ export async function POST(request) {
               name: parsedMessage.to?.value[0]?.name || user.email,
               email: user.email
             },
-            read: Array.isArray(message.flags) ? message.flags.includes('\\Seen') : false,
-            flagged: Array.isArray(message.flags) ? message.flags.includes('\\Flagged') : false,
-            answered: Array.isArray(message.flags) ? message.flags.includes('\\Answered') : false,
+            // Use indexOf for maximum compatibility instead of includes
+            read: flagsArray.indexOf('\\Seen') >= 0,
+            flagged: flagsArray.indexOf('\\Flagged') >= 0,
+            answered: flagsArray.indexOf('\\Answered') >= 0,
             labels: [],
             timestamp: parsedMessage.date?.toISOString() || new Date().toISOString(),
             snippet: parsedMessage.text?.substring(0, 120) + '...' || '',
@@ -252,7 +261,8 @@ export async function POST(request) {
           };
           
           // Add any special labels based on flags or headers
-          if (message.flags.includes('\\Flagged')) {
+          // Use the safe flagsArray instead of direct flag access
+          if (flagsArray.indexOf('\\Flagged') >= 0) {
             messageData.labels.push('important');
           }
           
