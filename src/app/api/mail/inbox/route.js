@@ -117,7 +117,11 @@ export async function POST(request) {
       imapHost = credentials.imapServer || process.env.MAIL_HOST || 'localhost';
       imapPort = credentials.imapPort || parseInt(process.env.MAIL_IMAP_PORT || '993');
       imapSecure = credentials.imapSecure !== undefined ? credentials.imapSecure : process.env.MAIL_IMAP_SECURE !== 'false';
+      
+      // Log credential info for debugging (mask password)
       console.log(`[Mail API] Using user-provided credentials for ${mailAddress}`);
+      console.log(`[Mail API] Password provided: ${mailPass ? 'YES (length: ' + mailPass.length + ', first chars: ' + mailPass.substring(0, 3) + '...)' : 'NO'}`);
+      console.log(`[Mail API] IMAP server: ${imapHost}:${imapPort} (secure: ${imapSecure ? 'YES' : 'NO'})`);
     } else {
       // This branch shouldn't be reached due to the check above, but keeping it for safety
       return NextResponse.json(
@@ -142,8 +146,14 @@ export async function POST(request) {
     });
     
     // Connect to the server
-    await client.connect();
-    console.log(`[Mail API] Connected to IMAP server for ${mailAddress}`);
+    try {
+      console.log(`[Mail API] Attempting to connect to IMAP server ${imapHost}:${imapPort} for ${mailAddress}...`);
+      await client.connect();
+      console.log(`[Mail API] ✅ Successfully connected to IMAP server for ${mailAddress}`);
+    } catch (connectError) {
+      console.error(`[Mail API] ❌ IMAP connection error for ${mailAddress}:`, connectError.message);
+      throw connectError;
+    }
     
     // Select the mailbox to open
     const mailbox = await client.mailboxOpen('INBOX');

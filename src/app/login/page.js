@@ -111,8 +111,9 @@ export default function LoginPage() {
         console.log('Deriving deterministic mail password from PGP key...');
         
         // Derive the deterministic mail password from the private key
+        console.log(`Deriving deterministic mail password for ${email} from PGP key with fingerprint: ${data.user.fingerprint}`);
         const derivedPassword = await getDovecotPassword(email, privateKey, passphrase);
-        console.log('Successfully derived mail password');
+        console.log(`Successfully derived mail password (length: ${derivedPassword?.length || 0}): ${derivedPassword ? derivedPassword.substring(0, 5) + '...' : 'NULL'}`);
         
         // Generate account ID from email
         const accountId = `account_${email.replace(/[^a-zA-Z0-9]/g, '_')}`;
@@ -134,8 +135,9 @@ export default function LoginPage() {
         const sessionKey = await deriveSessionKey(data.token, data.user.fingerprint);
         
         // Store the credentials securely
+        console.log(`Storing mail credentials with account ID: ${accountId}`);
         await storeCredentials(accountId, credentials, sessionKey, true);
-        console.log('Stored mail credentials successfully');
+        console.log(`Stored mail credentials successfully for ${email} in localStorage`);
         
         // Save fingerprint and key ID for future reference
         if (data.user.fingerprint) {

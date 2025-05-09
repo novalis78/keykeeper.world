@@ -197,8 +197,32 @@ const passwordManager = {
   async hasMailAccount(userId) {
     console.log(`Checking if user ${userId} has a mail account`);
     
-    // First try using getMailAccounts
+    // Try direct query first - this is the most reliable method
+    if (process.env.USE_MAIN_DB_FOR_MAIL === 'true') {
+      try {
+        console.log('Using direct query method to check mail account (most reliable)');
+        const tableName = process.env.MAIL_USERS_TABLE || 'virtual_users';
+        const rows = await db.query(
+          `SELECT COUNT(*) as count FROM ${tableName} WHERE user_id = ?`,
+          [userId]
+        );
+        
+        const count = rows[0]?.count || 0;
+        if (count > 0) {
+          console.log(`Found ${count} mail accounts through direct count query`);
+          return true;
+        }
+        console.log(`No mail accounts found for user ${userId} using direct query`);
+        return false;
+      } catch (directError) {
+        console.error('Error in direct query check:', directError);
+        // Only continue to other methods if direct query fails
+      }
+    }
+    
+    // Fallback to getMailAccounts if direct query fails or isn't available
     try {
+      console.log('Falling back to getMailAccounts method');
       const accounts = await this.getMailAccounts(userId);
       if (accounts && accounts.length > 0) {
         console.log(`Found ${accounts.length} mail accounts for user ${userId}`);
@@ -258,8 +282,30 @@ const passwordManager = {
   async getPrimaryMailAccount(userId) {
     console.log(`Attempting to get primary mail account for user ${userId}`);
     
-    // First try: Use getMailAccounts method
+    // Try direct database query first - most reliable method
+    if (process.env.USE_MAIN_DB_FOR_MAIL === 'true') {
+      console.log(`Attempting direct database query for mail account (user ${userId})`);
+      try {
+        const tableName = process.env.MAIL_USERS_TABLE || 'virtual_users';
+        const directRows = await db.query(
+          `SELECT id, email, username, password FROM ${tableName} WHERE user_id = ? LIMIT 1`,
+          [userId]
+        );
+        
+        if (directRows && directRows.length > 0) {
+          console.log(`Found mail account via direct query for user ${userId}: ${directRows[0].email}`);
+          return directRows[0];
+        }
+        console.log(`No mail accounts found for user ${userId} using direct query`);
+      } catch (directError) {
+        console.error('Error in direct database query:', directError);
+        // Only continue to other methods if direct query fails
+      }
+    }
+    
+    // Fallback to getMailAccounts method
     try {
+      console.log('Falling back to getMailAccounts method');
       const accounts = await this.getMailAccounts(userId);
       
       if (accounts && accounts.length > 0) {
@@ -267,7 +313,7 @@ const passwordManager = {
         return accounts[0];
       }
     } catch (firstError) {
-      console.error(`Error in first attempt to get mail accounts for ${userId}:`, firstError);
+      console.error(`Error in attempt to get mail accounts via getMailAccounts:`, firstError);
       // Continue to fallback methods
     }
     
