@@ -324,6 +324,11 @@ export async function POST(request) {
             answered: flagsArray.indexOf('\\Answered') >= 0,
             labels: [],
             timestamp: parsedMessage.date?.toISOString() || new Date().toISOString(),
+            // Include the full text content
+            text: parsedMessage.text || '',
+            // Include HTML content if available
+            html: parsedMessage.html || '',
+            // Keep snippet for inbox preview
             snippet: parsedMessage.text?.substring(0, 120) + '...' || '',
             encryptedBody: false,
             attachments: parsedMessage.attachments?.map(att => ({

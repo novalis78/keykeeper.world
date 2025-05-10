@@ -207,10 +207,17 @@ export default function EmailDetail({ message, onBack }) {
             )}
             
             <div className="prose dark:prose-invert max-w-none text-gray-300">
-              <p className="text-lg">Hello,</p>
-              <p className="my-4">{message.snippet.endsWith('...') ? message.snippet.slice(0, -3) : message.snippet}</p>
-              <p className="my-4">We appreciate your continued trust in our services. For any further questions or feedback, please don't hesitate to contact our support team.</p>
-              <p className="my-4">Best regards,<br/>{message.from.name}</p>
+              {/* If we have HTML content, render it safely */}
+              {message.html ? (
+                <div dangerouslySetInnerHTML={{ __html: message.html }} />
+              ) : (
+                // Otherwise show text content with proper line breaks
+                <div>
+                  {(message.text || message.snippet || "No content available").split('\n').map((paragraph, idx) => (
+                    <p key={idx} className="my-4">{paragraph}</p>
+                  ))}
+                </div>
+              )}
             </div>
             
             {/* Attachments */}
