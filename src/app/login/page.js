@@ -6,7 +6,6 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import pgpUtils from '@/lib/auth/pgp';
 import { getDovecotPassword, storeCredentials, deriveSessionKey } from '@/lib/mail/mailCredentialManager';
-import { deriveDovecotPassword } from '@/lib/mail/dovecotAuth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -129,9 +128,10 @@ export default function LoginPage() {
         
         let derivedPassword;
         try {
-          // Use the stable method that signup uses
-          console.log('Calling deriveDovecotPassword to generate deterministic password');
-          derivedPassword = await deriveDovecotPassword(email, privateKey, passphrase);
+          // Use the truly deterministic method that avoids PGP signatures
+          console.log('Calling deriveDeterministicPassword to generate deterministic password');
+          const { deriveDeterministicPassword } = await import('@/lib/mail/deterministicAuth');
+          derivedPassword = await deriveDeterministicPassword(email, privateKey);
           console.log('Successfully derived deterministic password');
         } catch (error) {
           console.error('ERROR: Failed to derive deterministic password:', error);
