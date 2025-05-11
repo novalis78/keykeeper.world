@@ -312,9 +312,46 @@ Original plan:
 ## Next Steps
 
 1. Complete and finalize frontend landing page ✅
-2. Begin authentication system implementation
-3. Set up development environment for Postfix mail server
-4. Create PGP key management utilities
+2. Begin authentication system implementation ✅
+3. Set up development environment for Postfix mail server ✅
+4. Create PGP key management utilities ✅
 5. Implement basic disposable email address generation
+
+## Future Feature Ideas
+
+### Automatic PGP Key Discovery
+
+**Concept:** Automatically discover and import PGP public keys from incoming emails by scanning for:
+- Links to major keyservers (keys.openpgp.org, keyserver.ubuntu.com, etc.)
+- Attached public key files (.asc)
+- Key IDs or fingerprints in email signatures
+
+**Implementation Details:**
+1. Build a parser to scan incoming email content for:
+   - Regex patterns to detect keyserver URLs
+   - File attachments with proper PGP public key format
+   - Standard key ID formats in email text/signatures
+
+2. Create a secure address book system to:
+   - Store discovered public keys mapped to email addresses
+   - Validate keys before storage
+   - Update keys when newer versions are detected
+   - Allow manual approval option (configurable)
+
+3. Enhance compose UI to:
+   - Show encryption status for recipients based on available keys
+   - Auto-enable encryption when keys are available
+   - Provide visual indicators of encryption capability
+
+**Benefits:**
+- Frictionless encryption without requiring manual key exchange
+- Network effect: as more people share their keys, encryption becomes ubiquitous
+- Progressive enhancement of security with minimal user effort
+- Differentiation from other secure email services
+
+**Implementation Priority:** Medium
+**Complexity:** Medium-High
+**Impact:** High
+**Dependencies:** 2.2 PGP Implementation, 1.3 User Dashboard
 
 This development plan will be regularly updated as progress is made and requirements evolve.
