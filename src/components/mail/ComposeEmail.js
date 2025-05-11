@@ -341,8 +341,9 @@ export default function ComposeEmail({
             rows={12}
             value={formData.body}
             onChange={handleChange}
-            className="block w-full border-0 py-0 resize-none text-gray-900 dark:text-white placeholder-gray-500 focus:ring-0 sm:text-sm bg-transparent"
+            className="block w-full border-0 py-0 resize-none text-gray-900 dark:text-white placeholder-gray-500 focus:ring-0 sm:text-sm bg-transparent focus:outline-none"
             placeholder="Write your message here..."
+            style={{ border: 'none', boxShadow: 'none' }}
           />
         </div>
         
