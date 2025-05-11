@@ -355,33 +355,33 @@ export default function LoginPage() {
             </form>
           ) : (
             <div>
-              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-6">
+              <div className="bg-primary-50 dark:bg-primary-900/20 p-4 rounded-lg mb-6 border border-primary-100 dark:border-primary-800">
                 <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <EnvelopeIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+                  <div className="flex-shrink-0 mt-0.5">
+                    <LockClosedIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                   </div>
                   <div className="ml-3">
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Authentication Challenge</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Sign the challenge below with your private key to authenticate.
+                    <h3 className="text-sm font-medium text-primary-900 dark:text-primary-100">Secure Authentication</h3>
+                    <p className="text-sm text-primary-700 dark:text-primary-300 mt-1">
+                      Please authenticate using your private key to securely sign in to your account.
                     </p>
-                    <div className="mt-2 bg-gray-100 dark:bg-gray-600 p-2 rounded font-mono text-xs overflow-x-auto">
-                      {challenge}
-                    </div>
                   </div>
                 </div>
               </div>
               
               <form onSubmit={handleSignChallenge} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Choose Authentication Method
-                  </label>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                    Authentication Method
+                  </h3>
                   
-                  <div className="mt-4 space-y-4">
-                    <div className="relative bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 p-3 hover:border-primary-500 dark:hover:border-primary-500 cursor-pointer">
-                      <div className="flex items-start">
-                        <div className="flex items-center h-5">
+                  <div className="mt-4 space-y-6">
+                    <div className="relative bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-600 p-5 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-md transition-all">
+                      <div className="absolute top-0 left-6 transform -translate-y-1/2 bg-primary-600 rounded-full h-8 w-8 flex items-center justify-center shadow-lg">
+                        <KeyIcon className="h-4 w-4 text-white" />
+                      </div>
+                      <div className="flex flex-col pt-2">
+                        <div className="flex items-center">
                           <input
                             id="private-key-file"
                             name="auth-method"
@@ -389,172 +389,178 @@ export default function LoginPage() {
                             defaultChecked
                             className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-700"
                           />
-                        </div>
-                        <div className="ml-3">
-                          <label htmlFor="private-key-file" className="font-medium text-gray-700 dark:text-gray-300">
-                            Upload Private Key File
+                          <label htmlFor="private-key-file" className="ml-2 font-bold text-gray-900 dark:text-white text-lg">
+                            Private Key File
                           </label>
-                          <p className="text-gray-500 dark:text-gray-400 text-sm">
-                            Select the PGP private key file you downloaded during signup.
-                          </p>
-                          
-                          <div className="bg-primary-50 dark:bg-primary-900/20 p-3 rounded-md mt-2 mb-3">
-                            <div className="flex items-start">
-                              <ShieldCheckIcon className="h-4 w-4 text-primary-600 dark:text-primary-400 mt-0.5 flex-shrink-0" />
-                              <p className="text-xs text-primary-700 dark:text-primary-300 ml-2">
-                                Your private key is processed entirely in your browser and never sent to our servers.
-                                This provides zero-knowledge security, meaning we cannot access your encrypted data.
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <div className="mt-3">
-                            <label htmlFor="key-file" className="relative cursor-pointer bg-white dark:bg-gray-700 rounded-md font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 focus-within:outline-none">
-                              <span>Upload key file</span>
-                              <input
-                                id="key-file"
-                                name="key-file"
-                                type="file"
-                                className="sr-only"
-                                accept=".asc,.txt,.key,.gpg"
-                                onChange={handleKeyFileUpload}
-                              />
-                            </label>
-                            {privateKey && (
-                              <span className="ml-2 text-xs text-green-600 dark:text-green-400">
-                                ✓ Key file loaded
-                              </span>
-                            )}
-                          </div>
-                          
-                          {showPassphraseField && (
-                            <div className="mt-3">
-                              <label htmlFor="passphrase" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Key Passphrase
-                              </label>
-                              <input
-                                type="password"
-                                id="passphrase"
-                                name="passphrase"
-                                value={passphrase}
-                                onChange={(e) => setPassphrase(e.target.value)}
-                                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-700 dark:text-white"
-                                placeholder="Enter passphrase for your key"
-                              />
-                            </div>
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mt-2 mb-3">
+                          Select the PGP private key file you downloaded during signup.
+                        </p>
+                        
+                        <div className="mt-3 flex items-center">
+                          <label htmlFor="key-file" className="inline-flex items-center px-4 py-2 border border-primary-600 bg-primary-600 rounded-md font-medium text-white hover:bg-primary-700 shadow-sm transition-colors cursor-pointer">
+                            <span>Upload key file</span>
+                            <input
+                              id="key-file"
+                              name="key-file"
+                              type="file"
+                              className="sr-only"
+                              accept=".asc,.txt,.key,.gpg"
+                              onChange={handleKeyFileUpload}
+                            />
+                          </label>
+                          {privateKey && (
+                            <span className="ml-3 text-sm text-green-600 dark:text-green-400 flex items-center">
+                              <svg className="h-5 w-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              Key file loaded successfully
+                            </span>
                           )}
+                        </div>
+                        
+                        {showPassphraseField && (
+                          <div className="mt-4">
+                            <label htmlFor="passphrase" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Key Passphrase
+                            </label>
+                            <input
+                              type="password"
+                              id="passphrase"
+                              name="passphrase"
+                              value={passphrase}
+                              onChange={(e) => setPassphrase(e.target.value)}
+                              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-700 dark:text-white"
+                              placeholder="Enter passphrase for your key"
+                            />
+                          </div>
+                        )}
+                        
+                        <div className="bg-primary-50 dark:bg-primary-900/20 p-3 rounded-md my-4 border border-primary-100 dark:border-primary-800">
+                          <div className="flex items-start">
+                            <ShieldCheckIcon className="h-4 w-4 text-primary-600 dark:text-primary-400 mt-0.5 flex-shrink-0" />
+                            <p className="text-xs text-primary-700 dark:text-primary-300 ml-2">
+                              Your private key is processed entirely in your browser and never sent to our servers.
+                              This provides zero-knowledge security, meaning we cannot access your encrypted data.
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="relative bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 p-3 hover:border-primary-500 dark:hover:border-primary-500 cursor-pointer">
-                      <div className="flex items-start">
-                        <div className="flex items-center h-5">
+                    <div className="relative bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-600 p-5 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-md transition-all">
+                      <div className="absolute top-0 left-6 transform -translate-y-1/2 bg-gray-600 dark:bg-gray-700 rounded-full h-8 w-8 flex items-center justify-center shadow-lg">
+                        <EnvelopeIcon className="h-4 w-4 text-white" />
+                      </div>
+                      <div className="flex flex-col pt-2">
+                        <div className="flex items-center">
                           <input
                             id="password-manager"
                             name="auth-method"
                             type="radio"
                             className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-700"
                           />
-                        </div>
-                        <div className="ml-3">
-                          <label htmlFor="password-manager" className="font-medium text-gray-700 dark:text-gray-300">
-                            Use Password Manager
+                          <label htmlFor="password-manager" className="ml-2 font-bold text-gray-900 dark:text-white text-lg">
+                            Password Manager
                           </label>
-                          <p className="text-gray-500 dark:text-gray-400 text-sm">
-                            Copy your private key from your password manager and paste it below.
-                          </p>
-                          
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mt-2 mb-3">
+                          Copy your private key from your password manager and paste it below.
+                        </p>
+                        
+                        <div className="mt-3">
+                          <textarea
+                            id="paste-key"
+                            name="paste-key"
+                            rows={3}
+                            className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+                            placeholder="Paste your PGP private key here..."
+                            onChange={(e) => {
+                              const keyContent = e.target.value;
+                              setPrivateKey(keyContent);
+                              
+                              // Check if key likely has a passphrase by looking for encryption markers
+                              const hasPassphrase = keyContent.includes('ENCRYPTED PRIVATE KEY');
+                              setShowPassphraseField(hasPassphrase);
+                            }}
+                          />
+                        </div>
+                        
+                        {showPassphraseField && (
                           <div className="mt-3">
-                            <textarea
-                              id="paste-key"
-                              name="paste-key"
-                              rows={2}
-                              className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
-                              placeholder="Paste your PGP private key here..."
-                              onChange={(e) => {
-                                const keyContent = e.target.value;
-                                setPrivateKey(keyContent);
-                                
-                                // Check if key likely has a passphrase by looking for encryption markers
-                                const hasPassphrase = keyContent.includes('ENCRYPTED PRIVATE KEY');
-                                setShowPassphraseField(hasPassphrase);
-                              }}
+                            <label htmlFor="passphrase-text" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Key Passphrase
+                            </label>
+                            <input
+                              type="password"
+                              id="passphrase-text"
+                              name="passphrase-text"
+                              value={passphrase}
+                              onChange={(e) => setPassphrase(e.target.value)}
+                              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-700 dark:text-white"
+                              placeholder="Enter passphrase for your key"
                             />
                           </div>
-                          
-                          {showPassphraseField && (
-                            <div className="mt-3">
-                              <label htmlFor="passphrase-text" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Key Passphrase
-                              </label>
-                              <input
-                                type="password"
-                                id="passphrase-text"
-                                name="passphrase-text"
-                                value={passphrase}
-                                onChange={(e) => setPassphrase(e.target.value)}
-                                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-700 dark:text-white"
-                                placeholder="Enter passphrase for your key"
-                              />
-                            </div>
-                          )}
-                        </div>
+                        )}
                       </div>
                     </div>
                     
-                    <div className="relative bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 p-3 hover:border-primary-500 dark:hover:border-primary-500 cursor-pointer">
-                      <div className="flex items-start">
-                        <div className="flex items-center h-5">
+                    <div className="relative bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-600 p-5 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-md transition-all">
+                      <div className="absolute top-0 left-6 transform -translate-y-1/2 bg-gray-600 dark:bg-gray-700 rounded-full h-8 w-8 flex items-center justify-center shadow-lg">
+                        <ShieldCheckIcon className="h-4 w-4 text-white" />
+                      </div>
+                      <div className="flex flex-col pt-2">
+                        <div className="flex items-center">
                           <input
                             id="hardware-key"
                             name="auth-method"
                             type="radio"
                             className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-700"
                           />
-                        </div>
-                        <div className="ml-3 flex-1">
-                          <label htmlFor="hardware-key" className="font-medium text-gray-700 dark:text-gray-300">
-                            Use Hardware Security Key
+                          <label htmlFor="hardware-key" className="ml-2 font-bold text-gray-900 dark:text-white text-lg">
+                            Hardware Security Key
                           </label>
-                          <p className="text-gray-500 dark:text-gray-400 text-sm">
-                            Authenticate with your YubiKey or other hardware security device.
-                          </p>
-                          
-                          <div className="mt-3">
-                            <button
-                              type="button"
-                              onClick={handleHardwareAuth}
-                              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-                            >
-                              <KeyIcon className="mr-2 h-4 w-4" />
-                              Connect Hardware Key
-                            </button>
-                          </div>
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mt-2 mb-3">
+                          Authenticate with your YubiKey or other hardware security device.
+                        </p>
+                        
+                        <div className="mt-3">
+                          <button
+                            type="button"
+                            onClick={handleHardwareAuth}
+                            className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                          >
+                            <KeyIcon className="mr-2 h-4 w-4" />
+                            Connect Hardware Key
+                          </button>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
                 
-                <div>
+                <div className="mt-8">
                   <motion.button
                     type="submit"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     disabled={loading || !privateKey}
-                    className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+                    className="w-full flex justify-center py-3 px-6 border border-transparent rounded-md shadow-lg text-base font-medium text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
                   >
                     {loading ? (
                       <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                         Authenticating...
                       </>
                     ) : (
-                      'Sign In'
+                      <>
+                        <LockClosedIcon className="h-5 w-5 mr-2" />
+                        Secure Sign In
+                      </>
                     )}
                   </motion.button>
                 </div>
