@@ -54,9 +54,26 @@ export async function POST(request) {
     };
     
     console.log('Sending email to:', data.to.map(r => r.email).join(', '));
+    console.log('Sending email from:', data.from.email);
+    
+    // Include user's SMTP credentials if provided
+    const smtpConfig = data.credentials ? {
+      auth: {
+        user: data.from.email,
+        pass: data.credentials.password
+      }
+    } : undefined;
+    
+    // Log that we're attempting to use user's credentials (don't log the actual password)
+    if (data.credentials) {
+      console.log(`Using SMTP credentials for user: ${data.from.email}`);
+    } else {
+      console.log('No SMTP credentials provided, will use default config');
+    }
     
     const result = await sendEmail(emailData, {
-      pgpEncrypted: data.pgpEncrypted || false
+      pgpEncrypted: data.pgpEncrypted || false,
+      smtpConfig: smtpConfig
     });
     
     if (!result.success) {

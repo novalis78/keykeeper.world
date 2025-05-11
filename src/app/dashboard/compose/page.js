@@ -180,6 +180,33 @@ export default function ComposePage() {
         attachmentsToSend = attachmentsToSend.filter(Boolean);
       }
       
+      // Get mail credentials from localStorage
+      // This is the same pattern used by the dashboard page for inbox fetching
+      let credentials = null;
+      
+      try {
+        console.log('=== KEYKEEPER: Attempting to retrieve stored mail credentials ===');
+        
+        // Generate account ID from email
+        const accountId = `account_${selectedAccount.email.replace(/[^a-zA-Z0-9]/g, '_')}`;
+        console.log(`Using account ID: ${accountId}`);
+        
+        // First try the direct storage method (no encryption)
+        const directStorageKey = `kk_mail_${accountId}_direct`;
+        const directCredentials = localStorage.getItem(directStorageKey);
+        
+        if (directCredentials) {
+          console.log('Found direct credentials in localStorage!');
+          credentials = JSON.parse(directCredentials);
+          console.log('=== KEYKEEPER: Successfully retrieved mail credentials ===');
+          console.log(`Using credentials for: ${credentials.email}`);
+        } else {
+          console.log('No direct credentials found in localStorage');
+        }
+      } catch (error) {
+        console.error('Error retrieving mail credentials:', error);
+      }
+      
       // Prepare email data for API
       const emailApiData = {
         from: {
@@ -193,7 +220,9 @@ export default function ComposePage() {
         subject: emailData.subject,
         body: emailData.message,
         pgpEncrypted: encryptionStatus === 'available',
-        attachments: attachmentsToSend
+        attachments: attachmentsToSend,
+        // Include credentials if found
+        credentials: credentials
       };
       
       // Send the email through the API
