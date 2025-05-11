@@ -226,7 +226,7 @@ export default function ComposePage() {
             .replace(/\n/g, '<br>');       // Single newlines become line breaks
         };
         
-        // Create professional email template
+        // Create professional email template with left alignment
         return `
           <!DOCTYPE html>
           <html>
@@ -241,11 +241,13 @@ export default function ComposePage() {
                 color: #333333;
                 margin: 0;
                 padding: 0;
+                text-align: left;
               }
               .email-container {
                 max-width: 600px;
                 margin: 0 auto;
                 padding: 20px;
+                text-align: left;
               }
               .email-header {
                 margin-bottom: 20px;
@@ -254,6 +256,7 @@ export default function ComposePage() {
               }
               .email-content {
                 margin-bottom: 20px;
+                text-align: left;
               }
               .email-footer {
                 margin-top: 30px;
@@ -262,8 +265,9 @@ export default function ComposePage() {
                 font-size: 12px;
                 color: #888888;
               }
-              p {
+              h1, h2, h3, h4, h5, h6, p {
                 margin: 0 0 15px;
+                text-align: left;
               }
               a {
                 color: #2b7de9;
@@ -277,7 +281,7 @@ export default function ComposePage() {
           <body>
             <div class="email-container">
               <div class="email-header">
-                <h2 style="margin-top:0;">${escapeHtml(emailData.subject)}</h2>
+                <h2 style="margin-top:0; text-align:left;">${escapeHtml(emailData.subject)}</h2>
               </div>
               <div class="email-content">
                 <p>${textToHtml(plainText)}</p>
