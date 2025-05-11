@@ -5,6 +5,7 @@ import DashboardLayout from '../../components/dashboard/DashboardLayout';
 import EmailRow from '../../components/dashboard/EmailRow';
 import EmailDetail from '../../components/dashboard/EmailDetail';
 import MailCredentialsModal from '../../components/mail/MailCredentialsModal';
+import ComposeEmail from '../../components/mail/ComposeEmail';
 import { mockMessages } from '../../lib/email/mock-data';
 import { getCurrentUserId } from '../../lib/auth/getCurrentUser';
 import { getCredentials, getSessionKey } from '../../lib/mail/mailCredentialManager';
@@ -32,6 +33,9 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
   const [showCredentialsModal, setShowCredentialsModal] = useState(false);
   const [credentialsRequired, setCredentialsRequired] = useState(false);
+  const [showComposeEmail, setShowComposeEmail] = useState(false);
+  const [composeMode, setComposeMode] = useState('new'); // 'new', 'reply', or 'forward'
+  const [composeInitialData, setComposeInitialData] = useState({});
   const { user, getToken } = useAuth();
   
   // Fetch real messages from the inbox
@@ -398,6 +402,34 @@ export default function Dashboard() {
     console.log('Credentials submitted for account:', accountInfo.email);
     fetchInboxMessages(accountInfo);
   };
+  
+  // Handle reply to email
+  const handleReply = (replyData) => {
+    console.log('Replying to email:', replyData);
+    
+    setComposeInitialData(replyData);
+    setComposeMode('reply');
+    setShowComposeEmail(true);
+  };
+  
+  // Handle forward email
+  const handleForward = (forwardData) => {
+    console.log('Forwarding email:', forwardData);
+    
+    setComposeInitialData(forwardData);
+    setComposeMode('forward');
+    setShowComposeEmail(true);
+  };
+  
+  // Handle compose close
+  const handleComposeClose = () => {
+    setShowComposeEmail(false);
+    // Reset compose data after a short delay to prevent flashes
+    setTimeout(() => {
+      setComposeInitialData({});
+      setComposeMode('new');
+    }, 300);
+  };
 
   return (
     <DashboardLayout>
@@ -408,6 +440,15 @@ export default function Dashboard() {
         onSuccess={handleCredentialsSubmit}
         email={user?.email}
       />
+      
+      {/* Email Composer */}
+      {showComposeEmail && (
+        <ComposeEmail
+          onClose={handleComposeClose}
+          initialData={composeInitialData}
+          mode={composeMode}
+        />
+      )}
       
       <div>
         <div className="mb-6">
@@ -515,6 +556,8 @@ export default function Dashboard() {
                 message={selectedEmail} 
                 onBack={() => setSelectedEmail(null)} 
                 onDelete={handleDeleteEmail}
+                onReply={handleReply}
+                onForward={handleForward}
               />
             ) : loading ? (
               <div className="py-20 flex flex-col items-center justify-center text-center px-4">

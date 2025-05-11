@@ -18,7 +18,7 @@ import {
   FolderIcon
 } from '@heroicons/react/24/outline';
 
-export default function EmailDetail({ message, onBack, onDelete }) {
+export default function EmailDetail({ message, onBack, onDelete, onReply, onForward }) {
   const [decrypted, setDecrypted] = useState(false);
   const [isStarred, setIsStarred] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -51,6 +51,39 @@ export default function EmailDetail({ message, onBack, onDelete }) {
         alert('Failed to delete the email. Please try again.');
         setIsDeleting(false);
       }
+    }
+  };
+  
+  const handleReply = () => {
+    // Prepare data for reply
+    const replyData = {
+      replyTo: message.from,
+      subject: message.subject,
+      date: message.timestamp || message.date,
+      // Use the original body text if available, or use HTML content
+      originalBody: message.text || message.body || (message.html ? 'HTML content' : ''),
+    };
+    
+    // Call the reply handler passed from parent
+    if (onReply) {
+      onReply(replyData);
+    }
+  };
+  
+  const handleForward = () => {
+    // Prepare data for forwarding
+    const forwardData = {
+      subject: message.subject,
+      date: message.timestamp || message.date,
+      from: message.from,
+      to: message.to,
+      originalBody: message.text || message.body || (message.html ? 'HTML content' : ''),
+      attachments: message.attachments || [],
+    };
+    
+    // Call the forward handler passed from parent
+    if (onForward) {
+      onForward(forwardData);
     }
   };
   
@@ -154,6 +187,7 @@ export default function EmailDetail({ message, onBack, onDelete }) {
       <div className="px-6 py-3 border-b border-gray-700 flex flex-wrap gap-2">
         <button
           type="button"
+          onClick={handleReply}
           className="inline-flex items-center px-3 py-1.5 border border-gray-700 rounded-md text-sm font-medium text-white hover:bg-gray-700 transition-colors"
         >
           <ArrowUturnLeftIcon className="h-4 w-4 mr-1.5" />
@@ -162,6 +196,7 @@ export default function EmailDetail({ message, onBack, onDelete }) {
         
         <button
           type="button"
+          onClick={handleForward}
           className="inline-flex items-center px-3 py-1.5 border border-gray-700 rounded-md text-sm font-medium text-white hover:bg-gray-700 transition-colors"
         >
           <ArrowTopRightOnSquareIcon className="h-4 w-4 mr-1.5" />
