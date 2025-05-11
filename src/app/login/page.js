@@ -302,8 +302,8 @@ export default function LoginPage() {
         </h2>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl">
-        <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-4xl">
+        <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow-lg sm:rounded-lg sm:px-10">
           {error && (
             <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-300 text-sm">
               {error}
@@ -376,15 +376,18 @@ export default function LoginPage() {
                   </h3>
                   
                   <div className="mt-4">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 text-center">
                       Choose one of the following authentication methods:
                     </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="relative bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-600 p-5 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-md transition-all">
-                        <div className="absolute top-0 left-6 transform -translate-y-1/2 bg-primary-600 rounded-full h-8 w-8 flex items-center justify-center shadow-lg">
-                          <KeyIcon className="h-4 w-4 text-white" />
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                      {/* Private Key File Option */}
+                      <div className="relative bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 p-6 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-lg transition-all group">
+                        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-primary-600 rounded-full h-10 w-10 flex items-center justify-center shadow-lg">
+                          <KeyIcon className="h-5 w-5 text-white" />
                         </div>
-                        <div className="flex flex-col pt-2">
+                        
+                        <div className="flex flex-col pt-3 items-center text-center">
                           <div className="flex items-center">
                             <input
                               id="private-key-file"
@@ -393,16 +396,17 @@ export default function LoginPage() {
                               defaultChecked
                               className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-700"
                             />
-                            <label htmlFor="private-key-file" className="ml-2 font-bold text-gray-900 dark:text-white text-lg">
+                            <label htmlFor="private-key-file" className="ml-2 font-bold text-gray-900 dark:text-white text-xl">
                               Private Key File
                             </label>
                           </div>
-                          <p className="text-gray-600 dark:text-gray-400 text-sm mt-2 mb-3">
+                          
+                          <p className="text-gray-600 dark:text-gray-400 text-sm mt-3 mb-4">
                             Select the PGP private key file you downloaded during signup.
                           </p>
                           
-                          <div className="mt-3 flex items-center">
-                            <label htmlFor="key-file" className="inline-flex items-center px-4 py-2 border border-primary-600 bg-primary-600 rounded-md font-medium text-white hover:bg-primary-700 shadow-sm transition-colors cursor-pointer">
+                          <div className="mt-2 flex items-center">
+                            <label htmlFor="key-file" className="inline-flex items-center px-5 py-2.5 border border-primary-600 bg-primary-600 rounded-md font-medium text-white hover:bg-primary-700 shadow-sm transition-colors cursor-pointer group-hover:shadow-md">
                               <span>Upload key file</span>
                               <input
                                 id="key-file"
@@ -424,7 +428,7 @@ export default function LoginPage() {
                           </div>
                           
                           {showPassphraseField && (
-                            <div className="mt-4">
+                            <div className="mt-4 w-full">
                               <label htmlFor="passphrase" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Key Passphrase
                               </label>
@@ -440,7 +444,7 @@ export default function LoginPage() {
                             </div>
                           )}
                           
-                          <div className="bg-primary-50 dark:bg-primary-900/20 p-3 rounded-md my-3 border border-primary-100 dark:border-primary-800 hidden md:block">
+                          <div className="bg-primary-50 dark:bg-primary-900/20 p-3 rounded-md mt-4 border border-primary-100 dark:border-primary-800 w-full">
                             <div className="flex items-start">
                               <ShieldCheckIcon className="h-4 w-4 text-primary-600 dark:text-primary-400 mt-0.5 flex-shrink-0" />
                               <p className="text-xs text-primary-700 dark:text-primary-300 ml-2">
@@ -451,11 +455,13 @@ export default function LoginPage() {
                         </div>
                       </div>
                       
-                      <div className="relative bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-600 p-5 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-md transition-all">
-                        <div className="absolute top-0 left-6 transform -translate-y-1/2 bg-gray-600 dark:bg-gray-700 rounded-full h-8 w-8 flex items-center justify-center shadow-lg">
-                          <EnvelopeIcon className="h-4 w-4 text-white" />
+                      {/* Password Manager Option */}
+                      <div className="relative bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 p-6 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-lg transition-all group">
+                        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-600 dark:bg-gray-700 rounded-full h-10 w-10 flex items-center justify-center shadow-lg">
+                          <EnvelopeIcon className="h-5 w-5 text-white" />
                         </div>
-                        <div className="flex flex-col pt-2">
+                        
+                        <div className="flex flex-col pt-3 items-center text-center">
                           <div className="flex items-center">
                             <input
                               id="password-manager"
@@ -463,15 +469,16 @@ export default function LoginPage() {
                               type="radio"
                               className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-700"
                             />
-                            <label htmlFor="password-manager" className="ml-2 font-bold text-gray-900 dark:text-white text-lg">
+                            <label htmlFor="password-manager" className="ml-2 font-bold text-gray-900 dark:text-white text-xl">
                               Password Manager
                             </label>
                           </div>
-                          <p className="text-gray-600 dark:text-gray-400 text-sm mt-2 mb-3">
+                          
+                          <p className="text-gray-600 dark:text-gray-400 text-sm mt-3 mb-4">
                             Copy your private key from your password manager and paste it below.
                           </p>
                           
-                          <div className="mt-3">
+                          <div className="mt-2 w-full">
                             <textarea
                               id="paste-key"
                               name="paste-key"
@@ -490,7 +497,7 @@ export default function LoginPage() {
                           </div>
                           
                           {showPassphraseField && (
-                            <div className="mt-3">
+                            <div className="mt-4 w-full">
                               <label htmlFor="passphrase-text" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Key Passphrase
                               </label>
@@ -508,11 +515,13 @@ export default function LoginPage() {
                         </div>
                       </div>
                       
-                      <div className="relative bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-600 p-5 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-md transition-all">
-                        <div className="absolute top-0 left-6 transform -translate-y-1/2 bg-gray-600 dark:bg-gray-700 rounded-full h-8 w-8 flex items-center justify-center shadow-lg">
-                          <ShieldCheckIcon className="h-4 w-4 text-white" />
+                      {/* Hardware Security Key Option */}
+                      <div className="relative bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 p-6 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-lg transition-all group">
+                        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-600 dark:bg-gray-700 rounded-full h-10 w-10 flex items-center justify-center shadow-lg">
+                          <ShieldCheckIcon className="h-5 w-5 text-white" />
                         </div>
-                        <div className="flex flex-col pt-2">
+                        
+                        <div className="flex flex-col pt-3 items-center text-center">
                           <div className="flex items-center">
                             <input
                               id="hardware-key"
@@ -520,32 +529,42 @@ export default function LoginPage() {
                               type="radio"
                               className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-700"
                             />
-                            <label htmlFor="hardware-key" className="ml-2 font-bold text-gray-900 dark:text-white text-lg">
+                            <label htmlFor="hardware-key" className="ml-2 font-bold text-gray-900 dark:text-white text-xl">
                               Hardware Security Key
                             </label>
                           </div>
-                          <p className="text-gray-600 dark:text-gray-400 text-sm mt-2 mb-3">
+                          
+                          <p className="text-gray-600 dark:text-gray-400 text-sm mt-3 mb-4">
                             Authenticate with your YubiKey or other hardware security device.
                           </p>
                           
-                          <div className="mt-3">
+                          <div className="mt-2">
                             <button
                               type="button"
                               onClick={handleHardwareAuth}
-                              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                              className="inline-flex items-center px-5 py-2.5 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 group-hover:shadow-md"
                             >
                               <KeyIcon className="mr-2 h-4 w-4" />
                               Connect Hardware Key
                             </button>
                           </div>
+                          
+                          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-md mt-6 border border-yellow-100 dark:border-yellow-800 w-full">
+                            <div className="flex items-start">
+                              <ShieldCheckIcon className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
+                              <p className="text-xs text-yellow-700 dark:text-yellow-300 ml-2">
+                                Hardware key authentication provides the highest level of security protection.
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
                     
-                    <div className="bg-primary-50 dark:bg-primary-900/20 p-3 rounded-md mt-4 border border-primary-100 dark:border-primary-800 md:hidden">
+                    <div className="bg-primary-50 dark:bg-primary-900/20 p-4 rounded-md mt-8 border border-primary-100 dark:border-primary-800 max-w-3xl mx-auto">
                       <div className="flex items-start">
-                        <ShieldCheckIcon className="h-4 w-4 text-primary-600 dark:text-primary-400 mt-0.5 flex-shrink-0" />
-                        <p className="text-xs text-primary-700 dark:text-primary-300 ml-2">
+                        <ShieldCheckIcon className="h-5 w-5 text-primary-600 dark:text-primary-400 mt-0.5 flex-shrink-0" />
+                        <p className="text-sm text-primary-700 dark:text-primary-300 ml-3">
                           Your private key is processed entirely in your browser and never sent to our servers.
                           This provides zero-knowledge security, meaning we cannot access your encrypted data.
                         </p>
