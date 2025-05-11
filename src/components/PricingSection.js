@@ -45,8 +45,8 @@ export default function PricingSection() {
       mostPopular: true,
     },
     {
-      name: 'Premium',
-      id: 'tier-premium',
+      name: 'Card Plan',
+      id: 'tier-card',
       price: {
         monthly: '$4.99',
         annually: '$49.99',
@@ -61,7 +61,7 @@ export default function PricingSection() {
         'Extended address lifetime options',
         'Priority support',
       ],
-      cta: 'Get Premium',
+      cta: 'Pay with Card',
       mostPopular: false,
     },
   ];
