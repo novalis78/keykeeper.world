@@ -18,6 +18,13 @@ export const metadata = {
   title: 'KeyKeeper.world - Secure Email Services',
   description: 'Privacy-focused mail service powered by OpenPGP encryption',
   keywords: ['email', 'privacy', 'security', 'pgp', 'encryption', 'openpgp'],
+  icons: {
+    icon: [
+      { url: '/favicon.svg' },
+      { url: '/favicon-16x16.svg', sizes: '16x16', type: 'image/svg+xml' },
+      { url: '/favicon-32x32.svg', sizes: '32x32', type: 'image/svg+xml' },
+    ],
+  },
 };
 
 export default function RootLayout({ children }) {
