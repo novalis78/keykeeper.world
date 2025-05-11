@@ -354,4 +354,36 @@ Original plan:
 **Impact:** High
 **Dependencies:** 2.2 PGP Implementation, 1.3 User Dashboard
 
+### Automatic Public Key Attachment
+
+**Concept:** Automatically attach the sender's public key to every outgoing email sent through KeyKeeper.
+
+**Implementation Details:**
+1. Build a system to:
+   - Retrieve the user's public key during email composition
+   - Attach it as a standard .asc file to every outgoing email
+   - Optionally include it in OpenPGP header format for compatibility with various clients
+
+2. Add configuration options to:
+   - Enable/disable automatic key attachment (default: enabled)
+   - Choose attachment method (file, header, or both)
+   - Add a customizable email signature that explains the key attachment
+
+3. Create visual indicators in the UI:
+   - Show when a key will be attached to an outgoing email
+   - Allow easy viewing of the attached public key
+   - Provide education about the benefits of key sharing
+
+**Benefits:**
+- Creates a "virtuous cycle" of key exchange where each email enables secure return communication
+- Promotes wider adoption of encryption by removing key distribution barriers
+- Establishes KeyKeeper as a platform that prioritizes encryption by default
+- Complements the automatic key discovery feature perfectly
+- Creates a network effect that increases the value of the platform over time
+
+**Implementation Priority:** Medium
+**Complexity:** Low-Medium
+**Impact:** High
+**Dependencies:** 2.2 PGP Implementation
+
 This development plan will be regularly updated as progress is made and requirements evolve.
