@@ -35,17 +35,25 @@ export async function POST(request) {
       );
     }
     
-    // Prepare clean attachments array - strip file objects which can't be serialized
+    // Prepare clean attachments array - preserve key attachment content
     let cleanAttachments = [];
     if (data.attachments && data.attachments.length > 0) {
-      cleanAttachments = data.attachments.map(att => ({
-        id: att.id,
-        name: att.name,
-        size: att.size,
-        type: att.type,
-        // File objects can't be sent as is, they would need to be uploaded separately
-        // For now, we're not handling file attachments in this example
-      }));
+      cleanAttachments = data.attachments.map(att => {
+        const cleanAtt = {
+          id: att.id,
+          name: att.name,
+          size: att.size,
+          type: att.type
+        };
+        
+        // Preserve content for PGP key attachments
+        if (att.content && att.name === 'public_key.asc') {
+          cleanAtt.content = att.content;
+          console.log(`Preserving public key attachment ${att.name} (${att.content.substring(0, 40)}...)`);
+        }
+        
+        return cleanAtt;
+      });
     }
     
     const emailData = {

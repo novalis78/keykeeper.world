@@ -9,7 +9,8 @@ import {
   LockClosedIcon, 
   LockOpenIcon,
   MinusIcon,
-  PlusIcon
+  PlusIcon,
+  KeyIcon
 } from '@heroicons/react/24/outline';
 import { sendEmail } from '@/lib/mail/mailbox';
 
@@ -22,6 +23,7 @@ export default function ComposeEmail({
   const [isPgpEncrypted, setIsPgpEncrypted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [userPublicKey, setUserPublicKey] = useState(null);
   const [formData, setFormData] = useState({
     to: initialData.to || '',
     cc: initialData.cc || '',
@@ -56,6 +58,54 @@ export default function ComposeEmail({
       });
     }
   }, [mode, initialData]);
+  
+  // Fetch the user's public key
+  useEffect(() => {
+    const fetchPublicKey = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        if (!token) {
+          console.warn('No auth token available for fetching public key');
+          return;
+        }
+        
+        // Try to fetch from API
+        const response = await fetch('/api/user/public-key', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.publicKey) {
+            console.log('Successfully fetched public key for attachment');
+            setUserPublicKey(data.publicKey);
+            localStorage.setItem('user_public_key', data.publicKey);
+          }
+        } else {
+          // If API fails, try to get from localStorage
+          const storedKey = localStorage.getItem('user_public_key');
+          if (storedKey) {
+            console.log('Using public key from localStorage');
+            setUserPublicKey(storedKey);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user public key:', error);
+        
+        // Try localStorage as fallback
+        const storedKey = localStorage.getItem('user_public_key');
+        if (storedKey) {
+          console.log('Using public key from localStorage after API error');
+          setUserPublicKey(storedKey);
+        }
+      }
+    };
+    
+    fetchPublicKey();
+  }, []);
   
   // Handle input changes
   const handleChange = (e) => {
@@ -129,6 +179,23 @@ export default function ComposeEmail({
           }))
         : [];
       
+      // Create attachments list including public key
+      const allAttachments = [...formData.attachments];
+      
+      // Add public key attachment if available
+      if (userPublicKey) {
+        console.log('Attaching public PGP key to email');
+        allAttachments.push({
+          id: 'public-key-attachment',
+          name: 'public_key.asc',
+          content: userPublicKey,
+          contentType: 'application/pgp-keys',
+          size: userPublicKey.length
+        });
+      } else {
+        console.log('No public key available to attach');
+      }
+      
       // Create email data
       const emailData = {
         from: {
@@ -140,7 +207,7 @@ export default function ComposeEmail({
         bcc: bccArray,
         subject: formData.subject,
         body: formData.body,
-        attachments: formData.attachments,
+        attachments: allAttachments,
         pgpEncrypted: isPgpEncrypted
       };
       
@@ -400,6 +467,13 @@ export default function ComposeEmail({
                   ? 'This message will be encrypted with the recipient\'s public key.'
                   : 'No public key found for some recipients. Message will be sent unencrypted.'}
               </p>
+              
+              {userPublicKey && (
+                <div className="flex items-center mt-2 text-primary-600 dark:text-primary-400">
+                  <KeyIcon className="h-4 w-4 mr-1.5" />
+                  <span className="text-xs font-medium">Your public key will be attached automatically</span>
+                </div>
+              )}
             </div>
             <button
               onClick={() => setIsPgpEncrypted(!isPgpEncrypted)}
