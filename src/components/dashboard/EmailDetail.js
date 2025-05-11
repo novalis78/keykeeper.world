@@ -18,9 +18,10 @@ import {
   FolderIcon
 } from '@heroicons/react/24/outline';
 
-export default function EmailDetail({ message, onBack }) {
+export default function EmailDetail({ message, onBack, onDelete }) {
   const [decrypted, setDecrypted] = useState(false);
   const [isStarred, setIsStarred] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const formattedDate = (dateString) => {
     const date = new Date(dateString);
@@ -35,6 +36,22 @@ export default function EmailDetail({ message, onBack }) {
 
   const toggleStar = () => {
     setIsStarred(!isStarred);
+  };
+  
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this email?')) {
+      setIsDeleting(true);
+      try {
+        // Call the delete function passed from the parent
+        if (onDelete) {
+          await onDelete(message.id);
+        }
+      } catch (error) {
+        console.error('Error deleting email:', error);
+        alert('Failed to delete the email. Please try again.');
+        setIsDeleting(false);
+      }
+    }
   };
   
   return (
@@ -162,9 +179,18 @@ export default function EmailDetail({ message, onBack }) {
         
         <button
           type="button"
+          onClick={handleDelete}
+          disabled={isDeleting}
           className="inline-flex items-center px-2 py-1.5 border border-gray-700 rounded-md text-sm font-medium text-white hover:bg-red-700 transition-colors"
         >
-          <TrashIcon className="h-4 w-4" />
+          {isDeleting ? (
+            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          ) : (
+            <TrashIcon className="h-4 w-4" />
+          )}
         </button>
       </div>
       

@@ -332,6 +332,60 @@ export default function Dashboard() {
     fetchInboxMessages();
   };
   
+  const handleDeleteEmail = async (emailId) => {
+    try {
+      console.log(`Deleting email with ID: ${emailId}`);
+      
+      // Get current user email
+      const email = user?.email || localStorage.getItem('user_email');
+      if (!email) {
+        throw new Error('User email not available');
+      }
+      
+      // Get credentials if available
+      const accountId = `account_${email.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      const directStorageKey = `kk_mail_${accountId}_direct`;
+      const directCredentials = localStorage.getItem(directStorageKey);
+      
+      let credentials = null;
+      if (directCredentials) {
+        credentials = JSON.parse(directCredentials);
+      }
+      
+      // Call the delete email API
+      const response = await fetch('/api/mail/email', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: emailId,
+          userEmail: email,
+          folder: currentFolder,
+          permanent: false,
+          credentials: credentials 
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete email');
+      }
+      
+      console.log('Email deleted successfully:', data);
+      
+      // Remove the email from local state and clear selection
+      setMessages(prevMessages => prevMessages.filter(msg => msg.id !== emailId));
+      setSelectedEmail(null);
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting email:', error);
+      throw error;
+    }
+  };
+  
   const filteredMessages = messages.filter(message => 
     (message.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     message.from?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -460,6 +514,7 @@ export default function Dashboard() {
               <EmailDetail 
                 message={selectedEmail} 
                 onBack={() => setSelectedEmail(null)} 
+                onDelete={handleDeleteEmail}
               />
             ) : loading ? (
               <div className="py-20 flex flex-col items-center justify-center text-center px-4">
