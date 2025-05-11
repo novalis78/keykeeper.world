@@ -57,7 +57,7 @@ const SMTP_CONFIG = {
   auth: {
     user: process.env.MAIL_USER || 'lennart@keykeeper.world',
     pass: process.env.MAIL_PASSWORD, // Must be provided via environment variable
-    type: 'login' // Explicitly set auth type to prevent PLAIN auth method issues
+    type: 'LOGIN' // Use uppercase LOGIN instead of lowercase login
   },
   tls: {
     rejectUnauthorized: false // Allow self-signed certificates
@@ -72,7 +72,7 @@ const IMAP_CONFIG = {
   auth: {
     user: process.env.MAIL_USER || 'lennart@keykeeper.world',
     pass: process.env.MAIL_PASSWORD, // Must be provided via environment variable
-    type: 'login' // Explicitly set auth type to prevent PLAIN auth method issues
+    type: 'LOGIN' // Use uppercase LOGIN instead of lowercase login
   },
   tls: {
     rejectUnauthorized: false // Allow self-signed certificates
@@ -115,7 +115,7 @@ export function getSMTPTransporter(config = {}) {
       ...smtpTransporter.options.auth,
       ...config.auth,
       // Always ensure we have the login type and not PLAIN
-      type: 'login'
+      type: 'LOGIN' // Use uppercase LOGIN instead of lowercase login
     };
     
     // Ensure we're using LOGIN auth method
@@ -124,6 +124,7 @@ export function getSMTPTransporter(config = {}) {
     // Log but don't reveal full credentials
     console.log(`[Mail Connector] Using SMTP credentials for: ${smtpTransporter.options.auth.user}`);
     console.log(`[Mail Connector] Auth method: ${smtpTransporter.options.authMethod}`);
+    console.log(`[Mail Connector] Auth type: ${smtpTransporter.options.auth.type}`);
   }
   
   return smtpTransporter;

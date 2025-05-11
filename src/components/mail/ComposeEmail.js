@@ -320,14 +320,15 @@ export default function ComposeEmail({
         {/* Subject */}
         <div className="mb-3">
           <div className="flex items-center">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 w-10">Subject:</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 w-10 flex-shrink-0">Subject:</label>
             <input
               type="text"
               name="subject"
               value={formData.subject}
               onChange={handleChange}
-              className="block w-full border-0 p-0 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-0 sm:text-sm bg-transparent"
+              className="block w-full border-0 p-0 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-0 sm:text-sm bg-transparent truncate"
               placeholder="Subject"
+              style={{ textOverflow: 'ellipsis' }}
             />
           </div>
           <div className="border-b border-gray-200 dark:border-gray-700 my-2"></div>
