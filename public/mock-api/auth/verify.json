@@ -1,7 +1,0 @@
-{
-  "authenticated": true,
-  "user": {
-    "email": "user@example.com",
-    "keyId": "mock-key-fingerprint"
-  }
-}
