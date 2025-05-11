@@ -207,23 +207,119 @@ export default function ComposePage() {
         console.error('Error retrieving mail credentials:', error);
       }
       
-      // Prepare email data for API
+      // Format user's plain text message into a professional HTML template
+      const formatEmailHTML = (plainText, fromName, fromEmail) => {
+        // Escape HTML special chars to prevent XSS
+        const escapeHtml = (text) => {
+          return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+        };
+        
+        // Convert plain text to HTML paragraphs
+        const textToHtml = (text) => {
+          return escapeHtml(text)
+            .replace(/\n{2,}/g, '</p><p>') // Double newlines become new paragraphs
+            .replace(/\n/g, '<br>');       // Single newlines become line breaks
+        };
+        
+        // Create professional email template
+        return `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>${escapeHtml(emailData.subject)}</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333333;
+                margin: 0;
+                padding: 0;
+              }
+              .email-container {
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+              }
+              .email-header {
+                margin-bottom: 20px;
+                padding-bottom: 20px;
+                border-bottom: 1px solid #eeeeee;
+              }
+              .email-content {
+                margin-bottom: 20px;
+              }
+              .email-footer {
+                margin-top: 30px;
+                padding-top: 20px;
+                border-top: 1px solid #eeeeee;
+                font-size: 12px;
+                color: #888888;
+              }
+              p {
+                margin: 0 0 15px;
+              }
+              a {
+                color: #2b7de9;
+                text-decoration: none;
+              }
+              .footer-logo {
+                margin-bottom: 10px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="email-container">
+              <div class="email-header">
+                <h2 style="margin-top:0;">${escapeHtml(emailData.subject)}</h2>
+              </div>
+              <div class="email-content">
+                <p>${textToHtml(plainText)}</p>
+              </div>
+              <div class="email-footer">
+                <div class="footer-logo">
+                  <strong>KeyKeeper</strong> Secure Email
+                </div>
+                <p>Sent by ${escapeHtml(fromName)} (${fromEmail})</p>
+                <p>This email was sent with end-to-end security by <a href="https://keykeeper.world">KeyKeeper</a>.</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+      };
+      
+      // Get sender name with fallback
+      const senderName = selectedAccount.name || 'KeyKeeper User';
+      
+      // Prepare email data for API with proper formatting for optimal delivery
       const emailApiData = {
         from: {
           email: selectedAccount.email,
-          name: selectedAccount.name
+          name: senderName
         },
         to: [{ 
           email: emailData.to.trim(), 
           name: '' 
         }],
         subject: emailData.subject,
-        body: emailData.message,
+        // Use simple text version for the text field
+        text: emailData.message,
+        // Use formatted HTML template for the body
+        body: formatEmailHTML(emailData.message, senderName, selectedAccount.email),
         pgpEncrypted: encryptionStatus === 'available',
         attachments: attachmentsToSend,
         // Include credentials if found
         credentials: credentials
       };
+      
+      console.log(`Sending as: ${senderName} <${selectedAccount.email}>`);
       
       // Send the email through the API
       const response = await fetch('/api/mail/send', {

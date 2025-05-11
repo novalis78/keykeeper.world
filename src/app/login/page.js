@@ -375,166 +375,180 @@ export default function LoginPage() {
                     Authentication Method
                   </h3>
                   
-                  <div className="mt-4 space-y-6">
-                    <div className="relative bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-600 p-5 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-md transition-all">
-                      <div className="absolute top-0 left-6 transform -translate-y-1/2 bg-primary-600 rounded-full h-8 w-8 flex items-center justify-center shadow-lg">
-                        <KeyIcon className="h-4 w-4 text-white" />
-                      </div>
-                      <div className="flex flex-col pt-2">
-                        <div className="flex items-center">
-                          <input
-                            id="private-key-file"
-                            name="auth-method"
-                            type="radio"
-                            defaultChecked
-                            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-700"
-                          />
-                          <label htmlFor="private-key-file" className="ml-2 font-bold text-gray-900 dark:text-white text-lg">
-                            Private Key File
-                          </label>
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                      Choose one of the following authentication methods:
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="relative bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-600 p-5 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-md transition-all">
+                        <div className="absolute top-0 left-6 transform -translate-y-1/2 bg-primary-600 rounded-full h-8 w-8 flex items-center justify-center shadow-lg">
+                          <KeyIcon className="h-4 w-4 text-white" />
                         </div>
-                        <p className="text-gray-600 dark:text-gray-400 text-sm mt-2 mb-3">
-                          Select the PGP private key file you downloaded during signup.
-                        </p>
-                        
-                        <div className="mt-3 flex items-center">
-                          <label htmlFor="key-file" className="inline-flex items-center px-4 py-2 border border-primary-600 bg-primary-600 rounded-md font-medium text-white hover:bg-primary-700 shadow-sm transition-colors cursor-pointer">
-                            <span>Upload key file</span>
+                        <div className="flex flex-col pt-2">
+                          <div className="flex items-center">
                             <input
-                              id="key-file"
-                              name="key-file"
-                              type="file"
-                              className="sr-only"
-                              accept=".asc,.txt,.key,.gpg"
-                              onChange={handleKeyFileUpload}
+                              id="private-key-file"
+                              name="auth-method"
+                              type="radio"
+                              defaultChecked
+                              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-700"
                             />
-                          </label>
-                          {privateKey && (
-                            <span className="ml-3 text-sm text-green-600 dark:text-green-400 flex items-center">
-                              <svg className="h-5 w-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                              </svg>
-                              Key file loaded successfully
-                            </span>
+                            <label htmlFor="private-key-file" className="ml-2 font-bold text-gray-900 dark:text-white text-lg">
+                              Private Key File
+                            </label>
+                          </div>
+                          <p className="text-gray-600 dark:text-gray-400 text-sm mt-2 mb-3">
+                            Select the PGP private key file you downloaded during signup.
+                          </p>
+                          
+                          <div className="mt-3 flex items-center">
+                            <label htmlFor="key-file" className="inline-flex items-center px-4 py-2 border border-primary-600 bg-primary-600 rounded-md font-medium text-white hover:bg-primary-700 shadow-sm transition-colors cursor-pointer">
+                              <span>Upload key file</span>
+                              <input
+                                id="key-file"
+                                name="key-file"
+                                type="file"
+                                className="sr-only"
+                                accept=".asc,.txt,.key,.gpg"
+                                onChange={handleKeyFileUpload}
+                              />
+                            </label>
+                            {privateKey && (
+                              <span className="ml-3 text-sm text-green-600 dark:text-green-400 flex items-center">
+                                <svg className="h-5 w-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                Key file loaded
+                              </span>
+                            )}
+                          </div>
+                          
+                          {showPassphraseField && (
+                            <div className="mt-4">
+                              <label htmlFor="passphrase" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Key Passphrase
+                              </label>
+                              <input
+                                type="password"
+                                id="passphrase"
+                                name="passphrase"
+                                value={passphrase}
+                                onChange={(e) => setPassphrase(e.target.value)}
+                                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-700 dark:text-white"
+                                placeholder="Enter passphrase for your key"
+                              />
+                            </div>
+                          )}
+                          
+                          <div className="bg-primary-50 dark:bg-primary-900/20 p-3 rounded-md my-3 border border-primary-100 dark:border-primary-800 hidden md:block">
+                            <div className="flex items-start">
+                              <ShieldCheckIcon className="h-4 w-4 text-primary-600 dark:text-primary-400 mt-0.5 flex-shrink-0" />
+                              <p className="text-xs text-primary-700 dark:text-primary-300 ml-2">
+                                Your private key is processed entirely in your browser and never sent to our servers.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="relative bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-600 p-5 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-md transition-all">
+                        <div className="absolute top-0 left-6 transform -translate-y-1/2 bg-gray-600 dark:bg-gray-700 rounded-full h-8 w-8 flex items-center justify-center shadow-lg">
+                          <EnvelopeIcon className="h-4 w-4 text-white" />
+                        </div>
+                        <div className="flex flex-col pt-2">
+                          <div className="flex items-center">
+                            <input
+                              id="password-manager"
+                              name="auth-method"
+                              type="radio"
+                              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-700"
+                            />
+                            <label htmlFor="password-manager" className="ml-2 font-bold text-gray-900 dark:text-white text-lg">
+                              Password Manager
+                            </label>
+                          </div>
+                          <p className="text-gray-600 dark:text-gray-400 text-sm mt-2 mb-3">
+                            Copy your private key from your password manager and paste it below.
+                          </p>
+                          
+                          <div className="mt-3">
+                            <textarea
+                              id="paste-key"
+                              name="paste-key"
+                              rows={3}
+                              className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
+                              placeholder="Paste your PGP private key here..."
+                              onChange={(e) => {
+                                const keyContent = e.target.value;
+                                setPrivateKey(keyContent);
+                                
+                                // Check if key likely has a passphrase
+                                const hasPassphrase = keyContent.includes('ENCRYPTED PRIVATE KEY');
+                                setShowPassphraseField(hasPassphrase);
+                              }}
+                            />
+                          </div>
+                          
+                          {showPassphraseField && (
+                            <div className="mt-3">
+                              <label htmlFor="passphrase-text" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Key Passphrase
+                              </label>
+                              <input
+                                type="password"
+                                id="passphrase-text"
+                                name="passphrase-text"
+                                value={passphrase}
+                                onChange={(e) => setPassphrase(e.target.value)}
+                                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-700 dark:text-white"
+                                placeholder="Enter passphrase for your key"
+                              />
+                            </div>
                           )}
                         </div>
-                        
-                        {showPassphraseField && (
-                          <div className="mt-4">
-                            <label htmlFor="passphrase" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Key Passphrase
-                            </label>
+                      </div>
+                      
+                      <div className="relative bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-600 p-5 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-md transition-all">
+                        <div className="absolute top-0 left-6 transform -translate-y-1/2 bg-gray-600 dark:bg-gray-700 rounded-full h-8 w-8 flex items-center justify-center shadow-lg">
+                          <ShieldCheckIcon className="h-4 w-4 text-white" />
+                        </div>
+                        <div className="flex flex-col pt-2">
+                          <div className="flex items-center">
                             <input
-                              type="password"
-                              id="passphrase"
-                              name="passphrase"
-                              value={passphrase}
-                              onChange={(e) => setPassphrase(e.target.value)}
-                              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-700 dark:text-white"
-                              placeholder="Enter passphrase for your key"
+                              id="hardware-key"
+                              name="auth-method"
+                              type="radio"
+                              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-700"
                             />
+                            <label htmlFor="hardware-key" className="ml-2 font-bold text-gray-900 dark:text-white text-lg">
+                              Hardware Security Key
+                            </label>
                           </div>
-                        )}
-                        
-                        <div className="bg-primary-50 dark:bg-primary-900/20 p-3 rounded-md my-4 border border-primary-100 dark:border-primary-800">
-                          <div className="flex items-start">
-                            <ShieldCheckIcon className="h-4 w-4 text-primary-600 dark:text-primary-400 mt-0.5 flex-shrink-0" />
-                            <p className="text-xs text-primary-700 dark:text-primary-300 ml-2">
-                              Your private key is processed entirely in your browser and never sent to our servers.
-                              This provides zero-knowledge security, meaning we cannot access your encrypted data.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="relative bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-600 p-5 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-md transition-all">
-                      <div className="absolute top-0 left-6 transform -translate-y-1/2 bg-gray-600 dark:bg-gray-700 rounded-full h-8 w-8 flex items-center justify-center shadow-lg">
-                        <EnvelopeIcon className="h-4 w-4 text-white" />
-                      </div>
-                      <div className="flex flex-col pt-2">
-                        <div className="flex items-center">
-                          <input
-                            id="password-manager"
-                            name="auth-method"
-                            type="radio"
-                            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-700"
-                          />
-                          <label htmlFor="password-manager" className="ml-2 font-bold text-gray-900 dark:text-white text-lg">
-                            Password Manager
-                          </label>
-                        </div>
-                        <p className="text-gray-600 dark:text-gray-400 text-sm mt-2 mb-3">
-                          Copy your private key from your password manager and paste it below.
-                        </p>
-                        
-                        <div className="mt-3">
-                          <textarea
-                            id="paste-key"
-                            name="paste-key"
-                            rows={3}
-                            className="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
-                            placeholder="Paste your PGP private key here..."
-                            onChange={(e) => {
-                              const keyContent = e.target.value;
-                              setPrivateKey(keyContent);
-                              
-                              // Check if key likely has a passphrase by looking for encryption markers
-                              const hasPassphrase = keyContent.includes('ENCRYPTED PRIVATE KEY');
-                              setShowPassphraseField(hasPassphrase);
-                            }}
-                          />
-                        </div>
-                        
-                        {showPassphraseField && (
+                          <p className="text-gray-600 dark:text-gray-400 text-sm mt-2 mb-3">
+                            Authenticate with your YubiKey or other hardware security device.
+                          </p>
+                          
                           <div className="mt-3">
-                            <label htmlFor="passphrase-text" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Key Passphrase
-                            </label>
-                            <input
-                              type="password"
-                              id="passphrase-text"
-                              name="passphrase-text"
-                              value={passphrase}
-                              onChange={(e) => setPassphrase(e.target.value)}
-                              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm dark:bg-gray-700 dark:text-white"
-                              placeholder="Enter passphrase for your key"
-                            />
+                            <button
+                              type="button"
+                              onClick={handleHardwareAuth}
+                              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                            >
+                              <KeyIcon className="mr-2 h-4 w-4" />
+                              Connect Hardware Key
+                            </button>
                           </div>
-                        )}
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="relative bg-white dark:bg-gray-800 rounded-xl border border-gray-300 dark:border-gray-600 p-5 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-md transition-all">
-                      <div className="absolute top-0 left-6 transform -translate-y-1/2 bg-gray-600 dark:bg-gray-700 rounded-full h-8 w-8 flex items-center justify-center shadow-lg">
-                        <ShieldCheckIcon className="h-4 w-4 text-white" />
-                      </div>
-                      <div className="flex flex-col pt-2">
-                        <div className="flex items-center">
-                          <input
-                            id="hardware-key"
-                            name="auth-method"
-                            type="radio"
-                            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-700"
-                          />
-                          <label htmlFor="hardware-key" className="ml-2 font-bold text-gray-900 dark:text-white text-lg">
-                            Hardware Security Key
-                          </label>
-                        </div>
-                        <p className="text-gray-600 dark:text-gray-400 text-sm mt-2 mb-3">
-                          Authenticate with your YubiKey or other hardware security device.
+                    <div className="bg-primary-50 dark:bg-primary-900/20 p-3 rounded-md mt-4 border border-primary-100 dark:border-primary-800 md:hidden">
+                      <div className="flex items-start">
+                        <ShieldCheckIcon className="h-4 w-4 text-primary-600 dark:text-primary-400 mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-primary-700 dark:text-primary-300 ml-2">
+                          Your private key is processed entirely in your browser and never sent to our servers.
+                          This provides zero-knowledge security, meaning we cannot access your encrypted data.
                         </p>
-                        
-                        <div className="mt-3">
-                          <button
-                            type="button"
-                            onClick={handleHardwareAuth}
-                            className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-                          >
-                            <KeyIcon className="mr-2 h-4 w-4" />
-                            Connect Hardware Key
-                          </button>
-                        </div>
                       </div>
                     </div>
                   </div>

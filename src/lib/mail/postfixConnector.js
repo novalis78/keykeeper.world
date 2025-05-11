@@ -6,6 +6,39 @@
  * 
  * WARNING: This module is only meant to be imported in server components or API routes.
  * It contains Node.js-specific code that will not run in the browser.
+ * 
+ * ========================================================================
+ * EMAIL DELIVERABILITY RECOMMENDATIONS
+ * ========================================================================
+ * 
+ * For maximum email deliverability, implement the following:
+ * 
+ * 1. DKIM (DomainKeys Identified Mail)
+ *    - Set up DKIM signatures for all outgoing mail
+ *    - Add this to Postfix with OpenDKIM (see opendkim.org)
+ *    - Example DNS record:
+ *      selector._domainkey.keykeeper.world. IN TXT "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBA..."
+ * 
+ * 2. SPF (Sender Policy Framework)
+ *    - Create an SPF record to authorize sending servers
+ *    - Example DNS record:
+ *      keykeeper.world. IN TXT "v=spf1 ip4:107.170.27.222 ~all"
+ * 
+ * 3. DMARC (Domain-based Message Authentication, Reporting & Conformance)
+ *    - Configure DMARC policy to handle SPF/DKIM failures
+ *    - Example DNS record:
+ *      _dmarc.keykeeper.world. IN TXT "v=DMARC1; p=quarantine; rua=mailto:dmarc@keykeeper.world"
+ * 
+ * 4. PTR (Reverse DNS)
+ *    - Set proper PTR record for the server IP (107.170.27.222)
+ *    - Should resolve to mail.keykeeper.world
+ * 
+ * 5. Bounce Handling
+ *    - Implement automated handling of bounced emails
+ *    - Keep bounce rate below 2% for good reputation
+ * 
+ * These configurations will significantly improve email deliverability
+ * and reduce the likelihood of being flagged as spam.
  */
 
 // These imports are for server-side only
@@ -131,27 +164,87 @@ export async function sendEmail(emailData, options = {}) {
   try {
     const transporter = getSMTPTransporter(options.smtpConfig);
     
-    // Prepare email data for nodemailer
+    // Properly format email addresses to be RFC 5322 compliant and maximize deliverability
+    const formatEmailAddress = (address) => {
+      if (typeof address === 'string') {
+        // If it's already a properly formatted address, return it
+        if (address.includes('<') && address.includes('>')) {
+          return address;
+        }
+        // If it's just an email, return it
+        return address;
+      }
+      
+      if (typeof address === 'object') {
+        if (address.name && address.email) {
+          // Sanitize the name: remove quotes, control chars, and other problematic chars
+          const sanitizedName = address.name
+            .replace(/["\r\n\t<>()[\]\\.,;:@]/g, '')  // Remove quotes and special chars
+            .replace(/\s+/g, ' ')                      // Normalize whitespace
+            .trim();                                   // Trim extra spaces
+          
+          // If name is empty after sanitization, just use the email
+          if (!sanitizedName) {
+            return address.email;
+          }
+          
+          // Format with quotes around the name
+          return `"${sanitizedName}" <${address.email}>`;
+        } else if (address.email) {
+          return address.email;
+        }
+      }
+      
+      // Fallback case - shouldn't reach here with proper data
+      console.warn('Invalid email address format, using fallback');
+      return process.env.MAIL_USER || 'noreply@keykeeper.world';
+    };
+    
+    // Format arrays of addresses
+    const formatAddressList = (addresses) => {
+      if (!addresses) return undefined;
+      
+      if (typeof addresses === 'string') {
+        return addresses; // Already a string, assume it's formatted
+      }
+      
+      if (Array.isArray(addresses)) {
+        return addresses.map(addr => 
+          typeof addr === 'string' ? addr : formatEmailAddress(addr)
+        ).join(', ');
+      }
+      
+      return formatEmailAddress(addresses);
+    };
+    
+    // Prepare email data for nodemailer with optimal formatting for deliverability
     const mailOptions = {
-      from: emailData.from,
-      to: Array.isArray(emailData.to) 
-        ? emailData.to.map(r => r.email || r).join(',') 
-        : emailData.to,
-      cc: emailData.cc ? Array.isArray(emailData.cc) 
-        ? emailData.cc.map(r => r.email || r).join(',') 
-        : emailData.cc : undefined,
-      bcc: emailData.bcc ? Array.isArray(emailData.bcc) 
-        ? emailData.bcc.map(r => r.email || r).join(',') 
-        : emailData.bcc : undefined,
+      from: formatEmailAddress(emailData.from),
+      to: formatAddressList(emailData.to),
+      cc: emailData.cc ? formatAddressList(emailData.cc) : undefined,
+      bcc: emailData.bcc ? formatAddressList(emailData.bcc) : undefined,
       subject: emailData.subject,
       text: emailData.text || convertHtmlToText(emailData.body),
       html: emailData.body,
-      attachments: formatAttachments(emailData.attachments)
+      attachments: formatAttachments(emailData.attachments),
+      // Add standard headers to improve reputation for personal emails
+      headers: {
+        'X-Mailer': 'KeyKeeper Secure Email',
+        'X-Priority': '3',  // Normal priority
+        'Message-ID': `<${crypto.randomBytes(16).toString('hex')}@keykeeper.world>`
+      }
     };
     
-    // Add optional headers
+    // Add debug logging for the from field
+    console.log(`Sending email with From: ${mailOptions.from}`);
+    console.log(`To: ${mailOptions.to}`);
+    
+    // Add optional headers while preserving existing ones
     if (options.headers) {
-      mailOptions.headers = options.headers;
+      mailOptions.headers = {
+        ...mailOptions.headers,
+        ...options.headers
+      };
     }
     
     // Add PGP encryption headers if needed
@@ -164,6 +257,18 @@ export async function sendEmail(emailData, options = {}) {
       // In a real implementation, we would encrypt the content here
       // but for now we're just adding the header
     }
+    
+    // Log mail options for diagnostics (excluding sensitive content)
+    console.log('SMTP Mail Options:', {
+      from: mailOptions.from,
+      to: mailOptions.to,
+      subject: mailOptions.subject,
+      hasHtml: !!mailOptions.html,
+      hasText: !!mailOptions.text,
+      headerKeys: Object.keys(mailOptions.headers || {}),
+      hasAttachments: !!(mailOptions.attachments && mailOptions.attachments.length > 0),
+      attachmentCount: mailOptions.attachments ? mailOptions.attachments.length : 0
+    });
     
     // Send mail with defined transport object
     const info = await transporter.sendMail(mailOptions);
