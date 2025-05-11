@@ -118,13 +118,13 @@ export async function DELETE(request) {
     
     // Log if we have credentials
     if (data.credentials) {
-      console.log(`Using SMTP credentials for user: ${data.userEmail}`);
+      console.log(`Using IMAP credentials for user: ${data.userEmail}`);
     } else {
-      console.log('No SMTP credentials provided for deletion, will attempt without authentication');
+      console.log('No IMAP credentials provided for deletion, will attempt without authentication');
     }
 
-    // Create SMTP config if credentials are provided
-    const smtpConfig = data.credentials ? {
+    // Create IMAP config if credentials are provided
+    const imapConfig = data.credentials ? {
       auth: {
         user: data.userEmail,
         pass: data.credentials.password
@@ -136,7 +136,7 @@ export async function DELETE(request) {
       data.permanent || false,
       data.folder || 'inbox',
       data.userEmail,
-      smtpConfig // Pass the SMTP config with credentials
+      imapConfig // Pass the IMAP config with credentials
     );
     
     return NextResponse.json({

@@ -330,10 +330,10 @@ export async function updateEmail(emailId, updates, folder = 'inbox', userEmail 
  * @param {boolean} permanent Whether to permanently delete
  * @param {string} folder Current folder containing the email
  * @param {string} userEmail User's email address for authentication
- * @param {Object} smtpConfig Configuration with auth credentials (optional)
+ * @param {Object} imapConfig Configuration with auth credentials (optional) 
  * @returns {Promise<Object>} Result of the delete operation
  */
-export async function deleteEmail(emailId, permanent = false, folder = 'inbox', userEmail = null, smtpConfig = null) {
+export async function deleteEmail(emailId, permanent = false, folder = 'inbox', userEmail = null, imapConfig = null) {
   try {
     // Import here to avoid circular dependencies
     const postfix = await import('./postfixConnector.js');
@@ -343,7 +343,7 @@ export async function deleteEmail(emailId, permanent = false, folder = 'inbox', 
       console.log('Deleting email via Postfix IMAP');
       
       // Create config with auth credentials
-      const config = smtpConfig || { auth: { user: userEmail } };
+      const config = imapConfig || { auth: { user: userEmail } };
       
       // If we have credentials, log that we're using them (without showing the password)
       if (config && config.auth && config.auth.pass) {
