@@ -8,6 +8,7 @@ import { getCurrentUserId } from '@/lib/auth/getCurrentUser';
 
 export default function ComposePage() {
   const [userEmailAccounts, setUserEmailAccounts] = useState([]);
+  const [userPublicKey, setUserPublicKey] = useState(null);
   const [emailData, setEmailData] = useState({
     from: '',
     to: '',
@@ -20,8 +21,9 @@ export default function ComposePage() {
   const [encryptionStatus, setEncryptionStatus] = useState('unknown'); // unknown, available, unavailable
   
   // Fetch user's email accounts from the virtual_users table
+  // and also fetch the user's public key
   useEffect(() => {
-    const fetchUserEmailAccounts = async () => {
+    const fetchUserData = async () => {
       try {
         // Fetch the current user's email from the API
         const userId = await getCurrentUserId();
@@ -58,6 +60,33 @@ export default function ComposePage() {
           
           // Set default From address
           setEmailData(prev => ({ ...prev, from: userAccount.id.toString() }));
+          
+          // Fetch the user's public key
+          try {
+            const publicKeyResponse = await fetch('/api/user/public-key', {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+              }
+            });
+            
+            if (publicKeyResponse.ok) {
+              const pkData = await publicKeyResponse.json();
+              if (pkData.publicKey) {
+                console.log('Public key fetched for automatic attachment');
+                setUserPublicKey(pkData.publicKey);
+              }
+            } else {
+              // Fallback to get public key from localStorage if available
+              const storedPublicKey = localStorage.getItem('user_public_key');
+              if (storedPublicKey) {
+                console.log('Using public key from localStorage');
+                setUserPublicKey(storedPublicKey);
+              }
+            }
+          } catch (pkError) {
+            console.error('Error fetching user public key:', pkError);
+          }
         } else {
           console.warn('No email found for user, falling back to mock data');
           // Fallback to mock data if no real email found
@@ -93,7 +122,7 @@ export default function ComposePage() {
       }
     };
     
-    fetchUserEmailAccounts();
+    fetchUserData();
   }, []);
   
   const handleInputChange = (e) => {
@@ -178,6 +207,50 @@ export default function ComposePage() {
         
         // Filter out any null attachments (ones that failed to process)
         attachmentsToSend = attachmentsToSend.filter(Boolean);
+      }
+      
+      // Automatically attach the user's public key as an attachment
+      if (userPublicKey) {
+        console.log('Attaching user public key to email');
+        
+        // The public key will be automatically attached as a .asc file
+        attachmentsToSend.push({
+          filename: 'public_key.asc',
+          content: userPublicKey,
+          contentType: 'application/pgp-keys'
+        });
+      } else {
+        console.log('No public key available to attach');
+        
+        // Try one more time to get the public key from the API
+        try {
+          const publicKeyResponse = await fetch('/api/user/public-key', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            }
+          });
+          
+          if (publicKeyResponse.ok) {
+            const pkData = await publicKeyResponse.json();
+            if (pkData.publicKey) {
+              console.log('Public key fetched at last minute for attachment');
+              
+              // Add the newly retrieved public key as an attachment
+              attachmentsToSend.push({
+                filename: 'public_key.asc',
+                content: pkData.publicKey,
+                contentType: 'application/pgp-keys'
+              });
+              
+              // Also save for future use
+              setUserPublicKey(pkData.publicKey);
+              localStorage.setItem('user_public_key', pkData.publicKey);
+            }
+          }
+        } catch (lastMinuteError) {
+          console.error('Last-minute attempt to fetch public key failed:', lastMinuteError);
+        }
       }
       
       // Get mail credentials from localStorage
@@ -501,6 +574,12 @@ export default function ComposePage() {
                       ? `${emailData.attachments.length} ${emailData.attachments.length === 1 ? 'file' : 'files'} attached` 
                       : 'No files attached'}
                   </span>
+                  {userPublicKey && (
+                    <div className="inline-flex items-center px-3 py-1.5 bg-primary-600/20 rounded-lg border border-primary-600/30">
+                      <LockClosedIcon className="h-4 w-4 mr-1.5 text-primary-400" />
+                      <span className="text-xs font-medium text-primary-400">Public key will be attached</span>
+                    </div>
+                  )}
                   <input
                     type="file"
                     ref={fileInputRef}
