@@ -29,9 +29,9 @@ export default function PricingSection() {
       id: 'tier-bitcoin',
       price: {
         monthly: '$30',
-        annually: 'in Bitcoin',
+        annually: 'for 3 years',
       },
-      description: 'Privacy-focused payment for 3 years of full access.',
+      description: 'Privacy-focused payment for 3 years (only $0.85/month).',
       features: [
         'Full features for 3 years',
         '1GB storage',
@@ -122,7 +122,7 @@ export default function PricingSection() {
               </p>
               <p className="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-400">
                 {tier.name === 'Bitcoin Plan' 
-                  ? 'One-time payment for 3 years' 
+                  ? 'One-time payment ($0.85/month equivalent)' 
                   : tier.price.annually !== 'Custom' 
                     ? `${tier.price.annually} billed annually` 
                     : ''}
