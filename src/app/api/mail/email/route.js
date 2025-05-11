@@ -116,11 +116,27 @@ export async function DELETE(request) {
       );
     }
     
+    // Log if we have credentials
+    if (data.credentials) {
+      console.log(`Using SMTP credentials for user: ${data.userEmail}`);
+    } else {
+      console.log('No SMTP credentials provided for deletion, will attempt without authentication');
+    }
+
+    // Create SMTP config if credentials are provided
+    const smtpConfig = data.credentials ? {
+      auth: {
+        user: data.userEmail,
+        pass: data.credentials.password
+      }
+    } : undefined;
+    
     const result = await deleteEmail(
       data.id,
       data.permanent || false,
       data.folder || 'inbox',
-      data.userEmail
+      data.userEmail,
+      smtpConfig // Pass the SMTP config with credentials
     );
     
     return NextResponse.json({

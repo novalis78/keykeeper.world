@@ -330,9 +330,10 @@ export async function updateEmail(emailId, updates, folder = 'inbox', userEmail 
  * @param {boolean} permanent Whether to permanently delete
  * @param {string} folder Current folder containing the email
  * @param {string} userEmail User's email address for authentication
+ * @param {Object} smtpConfig Configuration with auth credentials (optional)
  * @returns {Promise<Object>} Result of the delete operation
  */
-export async function deleteEmail(emailId, permanent = false, folder = 'inbox', userEmail = null) {
+export async function deleteEmail(emailId, permanent = false, folder = 'inbox', userEmail = null, smtpConfig = null) {
   try {
     // Import here to avoid circular dependencies
     const postfix = await import('./postfixConnector.js');
@@ -340,7 +341,21 @@ export async function deleteEmail(emailId, permanent = false, folder = 'inbox', 
     // Use Postfix integration if USE_REAL_MAIL_SERVER flag is set
     if (process.env.USE_REAL_MAIL_SERVER === 'true' && userEmail) {
       console.log('Deleting email via Postfix IMAP');
-      const config = { auth: { user: userEmail } };
+      
+      // Create config with auth credentials
+      const config = smtpConfig || { auth: { user: userEmail } };
+      
+      // If we have credentials, log that we're using them (without showing the password)
+      if (config && config.auth && config.auth.pass) {
+        console.log(`Using auth credentials for: ${config.auth.user}`);
+        console.log(`Password provided: YES (length: ${config.auth.pass.length})`);
+      } else {
+        console.log(`Using auth with only username: ${userEmail}`);
+      }
+      
+      // Always ensure TLS rejectUnauthorized is false
+      config.tls = { rejectUnauthorized: false };
+      
       // emailId is the UID in IMAP
       return await postfix.default.deleteEmail(parseInt(emailId), folder.toUpperCase(), permanent, config);
     } else {
