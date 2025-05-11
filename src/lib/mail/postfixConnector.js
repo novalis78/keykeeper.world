@@ -18,22 +18,28 @@ import crypto from 'crypto';
 
 // Configuration - in production, these would come from environment variables
 const SMTP_CONFIG = {
-  host: process.env.MAIL_HOST || '172.17.0.1', // Use Docker bridge IP for connecting from inside container
+  host: process.env.MAIL_HOST || '107.170.27.222',
   port: 587,
   secure: false, // true for 465, false for other ports
   auth: {
-    user: 'test@keykeeper.world', // default user for testing
-    pass: process.env.MAIL_PASSWORD || 'your_password_here' // Using environment variable
+    user: process.env.MAIL_USER || 'lennart@keykeeper.world',
+    pass: process.env.MAIL_PASSWORD // Must be provided via environment variable
+  },
+  tls: {
+    rejectUnauthorized: false // Allow self-signed certificates
   }
 };
 
 const IMAP_CONFIG = {
-  host: process.env.MAIL_HOST || '172.17.0.1', // Use Docker bridge IP for connecting from inside container
+  host: process.env.MAIL_HOST || '107.170.27.222',
   port: 993,
   secure: true,
   auth: {
-    user: 'test@keykeeper.world',
-    pass: process.env.MAIL_PASSWORD || 'your_password_here' // Using environment variable
+    user: process.env.MAIL_USER || 'lennart@keykeeper.world',
+    pass: process.env.MAIL_PASSWORD // Must be provided via environment variable
+  },
+  tls: {
+    rejectUnauthorized: false // Allow self-signed certificates
   }
 };
 
@@ -65,6 +71,18 @@ export function getSMTPTransporter(config = {}) {
   if (!smtpTransporter) {
     return initSMTP(config);
   }
+  
+  // If auth is provided in config, update the transporter's auth
+  if (config.auth) {
+    smtpTransporter.options.auth = {
+      ...smtpTransporter.options.auth,
+      ...config.auth
+    };
+    
+    // Log but don't reveal full credentials
+    console.log(`[Mail Connector] Using SMTP credentials for: ${smtpTransporter.options.auth.user}`);
+  }
+  
   return smtpTransporter;
 }
 
@@ -76,13 +94,30 @@ export function getSMTPTransporter(config = {}) {
  */
 export function createIMAPClient(config = {}) {
   console.log('[Mail Connector] Creating IMAP client with rejectUnauthorized: false');
-  return new ImapFlow({
+  
+  // Make sure we respect any auth credentials passed in the config
+  const mergedConfig = {
     ...IMAP_CONFIG,
-    ...config,
-    tls: {
-      rejectUnauthorized: false // Always allow self-signed certificates for development
-    }
-  });
+    ...config
+  };
+  
+  // Always ensure rejectUnauthorized is false for TLS
+  mergedConfig.tls = {
+    ...mergedConfig.tls,
+    rejectUnauthorized: false // Always allow self-signed certificates
+  };
+  
+  // If auth credentials were passed in config, make sure they take precedence
+  if (config.auth) {
+    mergedConfig.auth = {
+      ...IMAP_CONFIG.auth,
+      ...config.auth
+    };
+  }
+  
+  console.log(`[Mail Connector] Using IMAP credentials for: ${mergedConfig.auth.user}`);
+  
+  return new ImapFlow(mergedConfig);
 }
 
 /**
