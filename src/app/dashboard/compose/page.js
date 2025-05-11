@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 import { EnvelopeIcon, PaperAirplaneIcon, XMarkIcon, PaperClipIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { LockClosedIcon } from '@heroicons/react/24/solid';
+import { getCurrentUserId } from '@/lib/auth/getCurrentUser';
 
 export default function ComposePage() {
   const [userEmailAccounts, setUserEmailAccounts] = useState([]);
@@ -18,16 +19,68 @@ export default function ComposePage() {
   const [sendingStatus, setSendingStatus] = useState('idle'); // idle, sending, success, error
   const [encryptionStatus, setEncryptionStatus] = useState('unknown'); // unknown, available, unavailable
   
-  // Fetch user's email accounts
+  // Fetch user's email accounts from the virtual_users table
   useEffect(() => {
     const fetchUserEmailAccounts = async () => {
       try {
-        // In a real implementation, this would fetch from the API
-        // For now, we'll use mock data
+        // Fetch the current user's email from the API
+        const userId = await getCurrentUserId();
+        if (!userId) {
+          console.error('No user ID found');
+          return;
+        }
+        
+        // Get user email from virtual_users table
+        const response = await fetch('/api/mail/user-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch user email');
+        }
+
+        const data = await response.json();
+        
+        if (data.success && data.email) {
+          // Create account object from real user email
+          const userAccount = { 
+            id: 1, 
+            email: data.email, 
+            name: 'Primary Account', 
+            isDefault: true 
+          };
+          
+          setUserEmailAccounts([userAccount]);
+          
+          // Set default From address
+          setEmailData(prev => ({ ...prev, from: userAccount.id.toString() }));
+        } else {
+          console.warn('No email found for user, falling back to mock data');
+          // Fallback to mock data if no real email found
+          const mockAccounts = [
+            { id: 1, email: 'user@keykeeper.world', name: 'Primary Account', isDefault: true },
+            { id: 2, email: 'admin@keykeeper.world', name: 'Admin Account', isDefault: false }
+          ];
+          
+          setUserEmailAccounts(mockAccounts);
+          
+          // Set default From address
+          const defaultAccount = mockAccounts.find(account => account.isDefault) || mockAccounts[0];
+          if (defaultAccount) {
+            setEmailData(prev => ({ ...prev, from: defaultAccount.id.toString() }));
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user email accounts:', error);
+        
+        // Fallback to mock data on error
         const mockAccounts = [
           { id: 1, email: 'user@keykeeper.world', name: 'Primary Account', isDefault: true },
-          { id: 2, email: 'admin@keykeeper.world', name: 'Admin Account', isDefault: false },
-          { id: 3, email: 'business@phoneshield.ai', name: 'Business Account', isDefault: false }
+          { id: 2, email: 'admin@keykeeper.world', name: 'Admin Account', isDefault: false }
         ];
         
         setUserEmailAccounts(mockAccounts);
@@ -37,8 +90,6 @@ export default function ComposePage() {
         if (defaultAccount) {
           setEmailData(prev => ({ ...prev, from: defaultAccount.id.toString() }));
         }
-      } catch (error) {
-        console.error('Error fetching user email accounts:', error);
       }
     };
     
@@ -189,16 +240,7 @@ export default function ComposePage() {
   
   return (
     <DashboardLayout>
-      <div className="max-w-5xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-extrabold text-white bg-clip-text text-transparent bg-gradient-to-r from-primary-400 to-primary-600">
-            Compose Message
-          </h1>
-          <p className="mt-2 text-sm text-gray-400">
-            Write and send a new secure email
-          </p>
-        </div>
-        
+      <div className="w-full">
         <div className="bg-gray-800/70 shadow-xl rounded-xl overflow-hidden border border-gray-700 backdrop-blur-sm">
           <form onSubmit={handleSubmit}>
             <div className="p-8 space-y-6">
