@@ -7,22 +7,42 @@ import Link from 'next/link';
 export default function PricingSection() {
   const tiers = [
     {
-      name: 'Basic',
-      id: 'tier-basic',
+      name: 'Free Trial',
+      id: 'tier-free',
       price: {
         monthly: '$0',
         annually: '$0',
       },
-      description: 'Everything you need to get started with secure email.',
+      description: 'Try KeyKeeper with basic features at no cost.',
       features: [
-        '5 disposable email addresses',
-        '1GB storage',
+        '100 emails max inbox capacity',
+        '100MB storage',
         'Basic encryption features',
-        'Integration with SecureMailClient',
+        'KeyKeeper branding in email footer',
         'Community support',
       ],
       cta: 'Start for free',
       mostPopular: false,
+    },
+    {
+      name: 'Bitcoin Plan',
+      id: 'tier-bitcoin',
+      price: {
+        monthly: '$30',
+        annually: 'in Bitcoin',
+      },
+      description: 'Privacy-focused payment for 3 years of full access.',
+      features: [
+        'Full features for 3 years',
+        '1GB storage',
+        'Advanced encryption features',
+        'No KeyKeeper branding in emails',
+        'Priority message routing',
+        'Regular updates for 3 years',
+        'Community support',
+      ],
+      cta: 'Pay with Bitcoin',
+      mostPopular: true,
     },
     {
       name: 'Premium',
@@ -31,38 +51,17 @@ export default function PricingSection() {
         monthly: '$4.99',
         annually: '$49.99',
       },
-      description: 'Ideal for privacy-conscious individuals with advanced needs.',
+      description: 'Monthly subscription with credit card for privacy enthusiasts.',
       features: [
         'Unlimited disposable email addresses',
-        '15GB storage',
+        '1GB storage',
         'Advanced encryption features',
-        'Encrypted key backup service',
+        'No KeyKeeper branding in emails',
         'Priority message routing',
         'Extended address lifetime options',
         'Priority support',
       ],
       cta: 'Get Premium',
-      mostPopular: true,
-    },
-    {
-      name: 'Enterprise',
-      id: 'tier-enterprise',
-      price: {
-        monthly: 'Custom',
-        annually: 'Custom',
-      },
-      description: 'For organizations requiring enhanced security and compliance.',
-      features: [
-        'Custom domain support',
-        'Unlimited storage',
-        'Enterprise-grade encryption',
-        'Admin console & user management',
-        'SSO integration',
-        'Compliance features & reporting',
-        'Dedicated account manager',
-        '24/7 priority support',
-      ],
-      cta: 'Contact Sales',
       mostPopular: false,
     },
   ];
@@ -98,7 +97,16 @@ export default function PricingSection() {
               transition={{ duration: 0.5, delay: tierIdx * 0.1 }}
             >
               <div className="flex items-center justify-between gap-x-4">
-                <h3 className="text-lg font-semibold leading-8 text-gray-900 dark:text-white">{tier.name}</h3>
+                <h3 className="text-lg font-semibold leading-8 text-gray-900 dark:text-white">
+                  {tier.name}
+                  {tier.name === 'Bitcoin Plan' && (
+                    <span className="ml-2 inline-block">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="#f7931a" className="inline-block">
+                        <path d="M23.638 14.904c-1.602 6.43-8.113 10.34-14.542 8.736C2.67 22.05-1.244 15.525.362 9.105 1.962 2.67 8.475-1.243 14.9.358c6.43 1.605 10.342 8.115 8.738 14.548v-.002zm-6.35-4.613c.24-1.59-.974-2.45-2.64-3.03l.54-2.153-1.315-.33-.525 2.107c-.345-.087-.705-.167-1.064-.25l.526-2.127-1.32-.33-.54 2.165c-.285-.067-.565-.132-.84-.2l-1.815-.45-.35 1.407s.975.225.955.236c.535.136.63.486.615.766l-1.477 5.92c-.075.166-.24.406-.614.314.015.02-.96-.24-.96-.24l-.66 1.51 1.71.426.93.242-.54 2.19 1.32.327.54-2.17c.36.1.705.19 1.05.273l-.51 2.154 1.32.33.545-2.19c2.24.427 3.93.257 4.64-1.774.57-1.637-.03-2.58-1.217-3.196.854-.193 1.5-.76 1.68-1.93h.01zm-3.01 4.22c-.404 1.64-3.157.75-4.05.53l.72-2.9c.896.23 3.757.67 3.33 2.37zm.41-4.24c-.37 1.49-2.662.735-3.405.55l.654-2.64c.744.18 3.137.524 2.75 2.084v.006z" />
+                      </svg>
+                    </span>
+                  )}
+                </h3>
                 {tier.mostPopular ? (
                   <p className="rounded-full bg-primary-600/10 px-2.5 py-1 text-xs font-semibold leading-5 text-primary-600">
                     Most popular
@@ -109,11 +117,15 @@ export default function PricingSection() {
               <p className="mt-6 flex items-baseline gap-x-1">
                 <span className="text-4xl font-bold tracking-tight text-gray-900 dark:text-white">{tier.price.monthly}</span>
                 <span className="text-sm font-semibold leading-6 text-gray-600 dark:text-gray-300">
-                  {tier.price.monthly !== 'Custom' ? '/month' : ''}
+                  {tier.name === 'Bitcoin Plan' ? '' : tier.price.monthly !== 'Custom' ? '/month' : ''}
                 </span>
               </p>
               <p className="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-400">
-                {tier.price.annually !== 'Custom' ? `${tier.price.annually} billed annually` : ''}
+                {tier.name === 'Bitcoin Plan' 
+                  ? 'One-time payment for 3 years' 
+                  : tier.price.annually !== 'Custom' 
+                    ? `${tier.price.annually} billed annually` 
+                    : ''}
               </p>
               <ul className="mt-8 space-y-3 text-sm leading-6 text-gray-600 dark:text-gray-300">
                 {tier.features.map((feature) => (

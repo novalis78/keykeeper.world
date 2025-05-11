@@ -56,11 +56,13 @@ const SMTP_CONFIG = {
   secure: false, // true for 465, false for other ports
   auth: {
     user: process.env.MAIL_USER || 'lennart@keykeeper.world',
-    pass: process.env.MAIL_PASSWORD // Must be provided via environment variable
+    pass: process.env.MAIL_PASSWORD, // Must be provided via environment variable
+    type: 'login' // Explicitly set auth type to prevent PLAIN auth method issues
   },
   tls: {
     rejectUnauthorized: false // Allow self-signed certificates
-  }
+  },
+  authMethod: 'LOGIN' // Force LOGIN auth method instead of PLAIN
 };
 
 const IMAP_CONFIG = {
@@ -69,11 +71,13 @@ const IMAP_CONFIG = {
   secure: true,
   auth: {
     user: process.env.MAIL_USER || 'lennart@keykeeper.world',
-    pass: process.env.MAIL_PASSWORD // Must be provided via environment variable
+    pass: process.env.MAIL_PASSWORD, // Must be provided via environment variable
+    type: 'login' // Explicitly set auth type to prevent PLAIN auth method issues
   },
   tls: {
     rejectUnauthorized: false // Allow self-signed certificates
-  }
+  },
+  authMethod: 'LOGIN' // Force LOGIN auth method instead of PLAIN
 };
 
 // Create reusable transporter object for SMTP
@@ -109,11 +113,17 @@ export function getSMTPTransporter(config = {}) {
   if (config.auth) {
     smtpTransporter.options.auth = {
       ...smtpTransporter.options.auth,
-      ...config.auth
+      ...config.auth,
+      // Always ensure we have the login type and not PLAIN
+      type: 'login'
     };
+    
+    // Ensure we're using LOGIN auth method
+    smtpTransporter.options.authMethod = 'LOGIN';
     
     // Log but don't reveal full credentials
     console.log(`[Mail Connector] Using SMTP credentials for: ${smtpTransporter.options.auth.user}`);
+    console.log(`[Mail Connector] Auth method: ${smtpTransporter.options.authMethod}`);
   }
   
   return smtpTransporter;
