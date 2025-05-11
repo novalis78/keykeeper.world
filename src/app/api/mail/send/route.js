@@ -49,6 +49,8 @@ export async function POST(request) {
         // Preserve content for PGP key attachments
         if (att.content && att.name === 'public_key.asc') {
           cleanAtt.content = att.content;
+          // Set proper content type
+          cleanAtt.contentType = 'application/pgp-keys';
           console.log(`Preserving public key attachment ${att.name} (${att.content.substring(0, 40)}...)`);
         }
         
