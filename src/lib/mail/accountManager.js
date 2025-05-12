@@ -247,8 +247,8 @@ export async function createMailAccount(email, password, name = null, quota = 10
       if (userId) {
         console.log(`[Account Manager] Using user_id in mail account creation: ${userId}`);
         const [insertResults] = await connection.execute(
-          `INSERT INTO ${tableName} (domain_id, email, password, username, user_id) 
-           VALUES (?, ?, ?, ?, ?)`,
+          `INSERT INTO ${tableName} (domain_id, email, password, username, user_id, pending_activation) 
+           VALUES (?, ?, ?, ?, ?, 1)`,
           [domainId, email, passwordFormat, username, userId]
         );
         console.log(`[Account Manager] Mail account created with ID: ${insertResults.insertId}`);
@@ -257,8 +257,8 @@ export async function createMailAccount(email, password, name = null, quota = 10
         // Legacy insertion without user_id
         console.log(`[Account Manager] Creating mail account without user_id`);
         const [insertResults] = await connection.execute(
-          `INSERT INTO ${tableName} (domain_id, email, password, username) 
-           VALUES (?, ?, ?, ?)`,
+          `INSERT INTO ${tableName} (domain_id, email, password, username, pending_activation) 
+           VALUES (?, ?, ?, ?, 1)`,
           [domainId, email, passwordFormat, username]
         );
         console.log(`[Account Manager] Mail account created with ID: ${insertResults.insertId}`);
