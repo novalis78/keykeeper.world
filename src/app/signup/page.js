@@ -140,16 +140,13 @@ export default function SignupPage() {
                 </label>
                 <div className="flex rounded-lg shadow-sm">
                   <div className="relative flex items-stretch flex-grow focus-within:z-10">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <AtSymbolIcon className="h-5 w-5 text-primary-500 dark:text-primary-400" />
-                    </div>
                     <input
                       type="text"
                       id="username"
                       name="username"
                       value={username}
                       onChange={handleUsernameChange}
-                      className="pl-10 block w-full rounded-l-lg border-0 py-4 text-lg text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-primary-500 dark:focus:ring-primary-400 transition-all duration-200 bg-white dark:bg-gray-800 dark:bg-opacity-80"
+                      className="pl-4 block w-full rounded-l-lg border-0 py-4 text-lg text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-inset focus:ring-primary-500 dark:focus:ring-primary-400 transition-all duration-200 bg-white dark:bg-gray-800 dark:bg-opacity-80"
                       placeholder="username"
                       autoComplete="off"
                       autoFocus
