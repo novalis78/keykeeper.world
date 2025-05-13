@@ -64,6 +64,7 @@ try {
     });
     
     console.log(`MySQL connection pool created for ${config.host}:${config.port}/${config.database}`);
+    console.log(`Connection details - user: ${config.user}@${config.host} (from ${process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || 'unknown'})`);
   } else {
     console.warn('DATABASE_URL environment variable not set');
   }
@@ -97,6 +98,7 @@ export async function query(sql, params) {
           connectTimeout: 10000 // 10 seconds timeout
         });
         console.log(`Recreated MySQL connection pool for ${config.host}:${config.port}/${config.database}`);
+        console.log(`Connection details - user: ${config.user}@${config.host} (from ${process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || 'unknown'})`);
       } catch (poolError) {
         console.error('Error recreating MySQL connection pool:', poolError.message);
         throw new Error('Database connection not available. Make sure DATABASE_URL is properly configured.');
@@ -124,14 +126,22 @@ export async function query(sql, params) {
         connectTimeout: 10000 // 10 seconds timeout
       });
       console.log(`Recreated MySQL connection pool after closed state`);
+      console.log(`Connection details - user: ${config.user}@${config.host} (from ${process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || 'unknown'})`);
     }
     
     const [results] = await pool.execute(sql, params);
     return results;
   } catch (error) {
     console.error('Database error:', error);
+    console.error('Error details:', {
+      code: error.code,
+      errno: error.errno,
+      hostname: process.env.HOSTNAME || 'unknown',
+      connection: process.env.DATABASE_URL ? `${process.env.DATABASE_URL.split(':')[1].split('@')[0]}@${process.env.DATABASE_URL.split('@')[1].split('/')[0]}` : 'unknown'
+    });
+    
     // If pool is closed error, try one more time with a new connection
-    if (error.message.includes('Pool is closed') || error.message.includes('Connection lost')) {
+    if (error.message.includes('Pool is closed') || error.message.includes('Connection lost') || error.code === 'ETIMEDOUT') {
       console.log('Caught pool closed error, attempting one retry with new connection');
       try {
         // Recreate the pool
@@ -147,6 +157,8 @@ export async function query(sql, params) {
           queueLimit: 0,
           connectTimeout: 10000 // 10 seconds timeout
         });
+        
+        console.log(`Connection details - user: ${config.user}@${config.host} (from ${process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || 'unknown'})`);
         
         // Try the query again
         const [retryResults] = await pool.execute(sql, params);
@@ -546,6 +558,7 @@ export async function getMailDbConnection() {
             connectTimeout: 10000 // 10 seconds timeout
           });
           console.log(`Recreated MySQL connection pool for mail use: ${config.host}:${config.port}/${config.database}`);
+          console.log(`Connection details - user: ${config.user}@${config.host} (from ${process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || 'unknown'})`);
         } catch (poolError) {
           console.error('Error recreating MySQL connection pool for mail:', poolError.message);
         }
