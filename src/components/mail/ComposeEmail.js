@@ -263,15 +263,50 @@ export default function ComposeEmail({
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
           console.error(`Authentication error (${response.status}) when sending email`);
-          throw new Error('Authentication error. Please log in again.');
+          
+          try {
+            // Try to read the response text - this will work even if it's HTML
+            const text = await response.text();
+            console.error('Error response:', text.substring(0, 500) + '...');
+            
+            // Check if response is HTML (indicates a server error page)
+            if (text.startsWith('<!DOCTYPE') || text.startsWith('<html')) {
+              throw new Error('Server returned an HTML error page instead of JSON. This usually indicates a server-side issue.');
+            }
+            
+            // Try to parse as JSON if it might be JSON
+            try {
+              const errorData = JSON.parse(text);
+              throw new Error(errorData.error || 'Authentication error. Please log in again.');
+            } catch (parseError) {
+              // Not valid JSON
+              throw new Error('Authentication error. Please log in again.');
+            }
+          } catch (readError) {
+            throw new Error('Authentication error. Please log in again.');
+          }
         }
         
         // For other error status codes, try to get error details from the response
         try {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `Failed to send email: ${response.statusText}`);
-        } catch (jsonError) {
-          // If we can't parse the JSON, just use the status text
+          // Try to read the response text first
+          const text = await response.text();
+          console.error('Error response for status', response.status, ':', text.substring(0, 500) + '...');
+          
+          // Check if response is HTML
+          if (text.startsWith('<!DOCTYPE') || text.startsWith('<html')) {
+            throw new Error('Server returned an HTML error page instead of JSON. This usually indicates a server-side issue.');
+          }
+          
+          // Try to parse as JSON
+          try {
+            const errorData = JSON.parse(text);
+            throw new Error(errorData.error || `Failed to send email: ${response.statusText}`);
+          } catch (parseError) {
+            throw new Error(`Failed to send email: ${response.statusText}`);
+          }
+        } catch (error) {
+          // If we can't read the response at all
           throw new Error(`Failed to send email: ${response.statusText}`);
         }
       }

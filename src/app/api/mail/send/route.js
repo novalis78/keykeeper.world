@@ -18,6 +18,18 @@ import { verifyToken, extractTokenFromHeader } from '@/lib/auth/jwt';
 // Mark this route as dynamically rendered
 export const dynamic = 'force-dynamic';
 
+// Needed to make Next.js correctly process OPTIONS requests for CORS
+export async function OPTIONS(request) {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
+}
+
 export async function POST(request) {
   // Check for authentication token
   const token = extractTokenFromHeader(request);
@@ -31,8 +43,11 @@ export async function POST(request) {
   }
   
   try {
-    // Verify the token
-    await verifyToken(token);
+    // Verify the token and get user data
+    const payload = await verifyToken(token);
+    
+    // Add debug logging
+    console.log('Token verified successfully. User:', payload.email || 'unknown');
   } catch (error) {
     console.error('Invalid authentication token:', error);
     return NextResponse.json(
