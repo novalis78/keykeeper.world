@@ -116,21 +116,13 @@ export async function POST(request) {
       console.log(`Using SMTP credentials for user: ${data.from.email}`);
       console.log(`Password provided: ${data.credentials.password ? 'YES' : 'NO'}`);
       
-      // Make sure we have a password
+      // Log a warning if password is provided but empty
       if (!data.credentials.password) {
-        return NextResponse.json(
-          { error: 'Mail password is required but was not provided' },
-          { status: 400 }
-        );
+        console.warn('Credentials object provided but password is empty');
       }
     } else {
       console.log('No SMTP credentials provided, will use default config');
-      
-      // For now, require credentials
-      return NextResponse.json(
-        { error: 'Mail credentials are required to send email' },
-        { status: 400 }
-      );
+      // No credentials required - will use default config
     }
     
     const result = await sendEmail(emailData, {
