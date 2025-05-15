@@ -214,6 +214,27 @@ export default function ComposeEmail({
         console.log('No public key available to attach');
       }
       
+      // Try to get mail credentials from localStorage
+      console.log('=== LOOKING FOR MAIL CREDENTIALS ===');
+      let mailPassword = null;
+      try {
+        const accountId = `account_${userEmail?.replace(/[@.]/g, '_') || 'unknown'}`;
+        console.log('Looking for credentials with ID:', accountId);
+        
+        const storedCreds = localStorage.getItem(accountId);
+        if (storedCreds) {
+          try {
+            const parsedCreds = JSON.parse(storedCreds);
+            mailPassword = parsedCreds.password;
+            console.log('Found credentials for account:', userEmail);
+          } catch (e) {
+            console.error('Failed to parse stored credentials:', e);
+          }
+        }
+      } catch (e) {
+        console.error('Error accessing localStorage credentials:', e);
+      }
+      
       // Create email data
       const emailData = {
         from: {
@@ -226,7 +247,12 @@ export default function ComposeEmail({
         subject: formData.subject,
         body: formData.body,
         attachments: allAttachments,
-        pgpEncrypted: isPgpEncrypted
+        pgpEncrypted: isPgpEncrypted,
+        // Add credentials for the mail server
+        credentials: mailPassword ? {
+          user: userEmail || localStorage.getItem('userEmail'),
+          password: mailPassword
+        } : undefined
       };
       
       // Handle file attachments by converting them to base64
