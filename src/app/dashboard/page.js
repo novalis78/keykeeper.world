@@ -41,7 +41,8 @@ export default function Dashboard() {
   // Fetch real messages from the inbox
   useEffect(() => {
     fetchInboxMessages();
-    // No longer showing credentials modal for new accounts as the activation now happens on first login
+    // Never show credentials modal - if credentials fail, user should be logged out
+    setShowCredentialsModal(false);
   }, []);
   
   const fetchInboxMessages = async (userCredentials = null) => {
@@ -287,11 +288,12 @@ export default function Dashboard() {
       const data = await response.json();
       
       if (!response.ok) {
-        // Special handling for the credentials required error
+        // If mail credentials are required, log user out instead of showing modal
         if (response.status === 401 && data.requireCredentials) {
-          setCredentialsRequired(true);
-          setShowCredentialsModal(true);
-          throw new Error('Mail credentials required to access your inbox');
+          console.error('Mail credentials required but unavailable - logging out user');
+          // Force logout by redirecting to logout page
+          window.location.href = '/logout';
+          throw new Error('Mail credentials unavailable - session terminated');
         }
         
         throw new Error(data.error || 'Failed to fetch inbox');
@@ -576,11 +578,11 @@ export default function Dashboard() {
                     <div className="mt-6">
                       <button
                         type="button"
-                        onClick={() => setShowCredentialsModal(true)}
+                        onClick={() => window.location.href = '/logout'}
                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-500 transition-colors"
                       >
                         <KeyIcon className="h-4 w-4 mr-2" />
-                        Enter Mail Credentials
+                        Sign Out and Try Again
                       </button>
                     </div>
                   </>

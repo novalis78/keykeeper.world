@@ -302,7 +302,7 @@ export default function LoginPage() {
         </h2>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-xl">
+      <div className={`mt-8 sm:mx-auto sm:w-full ${step === 1 ? 'sm:max-w-xl' : 'sm:max-w-4xl'}`}>
         <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow-lg sm:rounded-lg sm:px-10">
           {error && (
             <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-300 text-sm">
