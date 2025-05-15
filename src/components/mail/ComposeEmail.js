@@ -249,6 +249,26 @@ export default function ComposeEmail({
         throw new Error('Authentication token not found. Please log in again.');
       }
       
+      // First check authentication status
+      console.log('Checking authentication status before sending email...');
+      const authCheckResponse = await fetch('/api/diagnostics/auth-status', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (authCheckResponse.ok) {
+        const authStatus = await authCheckResponse.json();
+        console.log('Authentication status:', authStatus);
+        
+        if (authStatus.status !== 'authenticated') {
+          throw new Error(`Authentication check failed: ${authStatus.status}`);
+        }
+      } else {
+        console.warn('Auth status check failed:', authCheckResponse.status);
+      }
+      
       // Send the email using the API instead of the direct function
       const response = await fetch('/api/mail/send', {
         method: 'POST',
@@ -596,6 +616,54 @@ export default function ComposeEmail({
             className="inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             Discard
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                setIsLoading(true);
+                setError(null);
+                const token = localStorage.getItem('auth_token');
+                if (!token) {
+                  throw new Error('No auth token found');
+                }
+                
+                // Use our simplified test endpoint
+                const response = await fetch('/api/diagnostics/mail-test', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  },
+                  body: JSON.stringify({
+                    from: { email: 'test@example.com' },
+                    to: [{ email: 'recipient@example.com' }]
+                  })
+                });
+                
+                const result = await response.text();
+                console.log('Test endpoint response:', result);
+                
+                try {
+                  const jsonResult = JSON.parse(result);
+                  if (jsonResult.success) {
+                    setError('Test succeeded! Check console for details.');
+                  } else {
+                    setError(`Test failed: ${jsonResult.error}`);
+                  }
+                } catch (e) {
+                  setError(`Test returned non-JSON response: ${result.substring(0, 100)}...`);
+                }
+              } catch (err) {
+                console.error('Test failed:', err);
+                setError(`Test error: ${err.message}`);
+              } finally {
+                setIsLoading(false);
+              }
+            }}
+            className="inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            Test API
           </button>
           <button
             type="button"
