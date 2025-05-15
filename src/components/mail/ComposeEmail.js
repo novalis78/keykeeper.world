@@ -13,6 +13,7 @@ import {
   KeyIcon
 } from '@heroicons/react/24/outline';
 import { sendEmail } from '@/lib/mail/mailbox';
+import { getCurrentUserEmail } from '@/lib/auth/getCurrentUser';
 
 export default function ComposeEmail({ 
   onClose, 
@@ -24,6 +25,7 @@ export default function ComposeEmail({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [userPublicKey, setUserPublicKey] = useState(null);
+  const [userEmail, setUserEmail] = useState(null);
   const [formData, setFormData] = useState({
     to: initialData.to || '',
     cc: initialData.cc || '',
@@ -59,17 +61,33 @@ export default function ComposeEmail({
     }
   }, [mode, initialData]);
   
-  // Fetch the user's public key
+  // Fetch the user's email and public key
   useEffect(() => {
-    const fetchPublicKey = async () => {
+    const fetchUserData = async () => {
       try {
         const token = localStorage.getItem('auth_token');
         if (!token) {
-          console.warn('No auth token available for fetching public key');
+          console.warn('No auth token available for fetching user data');
           return;
         }
         
-        // Try to fetch from API
+        // Get user email
+        const email = localStorage.getItem('userEmail');
+        if (email) {
+          console.log('Using email from localStorage:', email);
+          setUserEmail(email);
+        } else {
+          // Try to get email using getCurrentUserEmail
+          const currentEmail = getCurrentUserEmail();
+          if (currentEmail) {
+            console.log('Using email from getCurrentUserEmail:', currentEmail);
+            setUserEmail(currentEmail);
+          } else {
+            console.warn('No user email found in localStorage or getCurrentUserEmail');
+          }
+        }
+        
+        // Try to fetch public key from API
         const response = await fetch('/api/user/public-key', {
           method: 'GET',
           headers: {
@@ -93,7 +111,7 @@ export default function ComposeEmail({
           }
         }
       } catch (error) {
-        console.error('Error fetching user public key:', error);
+        console.error('Error fetching user data:', error);
         
         // Try localStorage as fallback
         const storedKey = localStorage.getItem('user_public_key');
@@ -104,7 +122,7 @@ export default function ComposeEmail({
       }
     };
     
-    fetchPublicKey();
+    fetchUserData();
   }, []);
   
   // Handle input changes
@@ -199,8 +217,8 @@ export default function ComposeEmail({
       // Create email data
       const emailData = {
         from: {
-          email: 'test@keykeeper.world', // Use our test account
-          name: 'KeyKeeper Test'
+          email: userEmail || localStorage.getItem('userEmail') || 'no-reply@keykeeper.world',
+          name: localStorage.getItem('userName') || 'KeyKeeper User'
         },
         to: toArray,
         cc: ccArray,
@@ -224,14 +242,39 @@ export default function ComposeEmail({
         }
       }
       
+      // Get auth token from localStorage
+      const token = localStorage.getItem('auth_token');
+      
+      if (!token) {
+        throw new Error('Authentication token not found. Please log in again.');
+      }
+      
       // Send the email using the API instead of the direct function
       const response = await fetch('/api/mail/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(emailData),
       });
+      
+      // Handle non-200 responses before parsing JSON
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          console.error(`Authentication error (${response.status}) when sending email`);
+          throw new Error('Authentication error. Please log in again.');
+        }
+        
+        // For other error status codes, try to get error details from the response
+        try {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Failed to send email: ${response.statusText}`);
+        } catch (jsonError) {
+          // If we can't parse the JSON, just use the status text
+          throw new Error(`Failed to send email: ${response.statusText}`);
+        }
+      }
       
       const result = await response.json();
       
@@ -245,7 +288,13 @@ export default function ComposeEmail({
       onClose();
     } catch (err) {
       console.error('Error sending email:', err);
-      setError(err.message || 'Failed to send email. Please try again.');
+      
+      // Handle specific error types
+      if (err.message.includes('Authentication') || err.message.includes('token')) {
+        setError('Authentication error. Please log in again to continue.');
+      } else {
+        setError(err.message || 'Failed to send email. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }

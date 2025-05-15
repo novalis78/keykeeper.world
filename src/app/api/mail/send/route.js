@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/mail/mailbox';
+import { verifyToken, extractTokenFromHeader } from '@/lib/auth/jwt';
 
 /**
  * API route to send an email
@@ -18,6 +19,27 @@ import { sendEmail } from '@/lib/mail/mailbox';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
+  // Check for authentication token
+  const token = extractTokenFromHeader(request);
+  
+  if (!token) {
+    console.error('No authentication token provided for mail/send API');
+    return NextResponse.json(
+      { error: 'Authentication required' },
+      { status: 401 }
+    );
+  }
+  
+  try {
+    // Verify the token
+    await verifyToken(token);
+  } catch (error) {
+    console.error('Invalid authentication token:', error);
+    return NextResponse.json(
+      { error: 'Invalid authentication token' },
+      { status: 403 }
+    );
+  }
   try {
     // Enable real mail server integration
     process.env.USE_REAL_MAIL_SERVER = 'true';
