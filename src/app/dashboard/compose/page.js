@@ -398,11 +398,15 @@ export default function ComposePage() {
       
       console.log(`Sending as: ${senderName} <${selectedAccount.email}>`);
       
+      // Get the auth token from localStorage
+      const authToken = localStorage.getItem('auth_token');
+      
       // Send the email through the API
       const response = await fetch('/api/mail/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
         },
         body: JSON.stringify(emailApiData),
       });
