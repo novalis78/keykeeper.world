@@ -385,6 +385,80 @@ export async function POST(request) {
             messageData.labels.push('important');
           }
           
+          // Check for PGP public key attachments
+          if (parsedMessage.attachments && parsedMessage.attachments.length > 0) {
+            for (const attachment of parsedMessage.attachments) {
+              // Look for .asc files or PGP key content types
+              if (attachment.filename?.endsWith('.asc') || 
+                  attachment.contentType === 'application/pgp-keys' ||
+                  attachment.filename?.toLowerCase().includes('public') && attachment.filename?.toLowerCase().includes('key')) {
+                
+                console.log(`[Mail API] Found potential public key attachment: ${attachment.filename}`);
+                
+                try {
+                  // Get the attachment content
+                  const keyContent = attachment.content?.toString('utf8') || '';
+                  
+                  // Basic validation - check if it looks like a PGP public key
+                  if (keyContent.includes('-----BEGIN PGP PUBLIC KEY BLOCK-----')) {
+                    console.log(`[Mail API] Valid PGP public key found in attachment ${attachment.filename}`);
+                    
+                    // Parse the key to extract metadata
+                    try {
+                      const { default: pgpUtils } = await import('@/lib/auth/pgp');
+                      const keyInfo = await pgpUtils.getKeyInfo(keyContent);
+                      
+                      console.log(`[Mail API] Extracted key info:`, {
+                        keyId: keyInfo.keyId,
+                        fingerprint: keyInfo.fingerprint,
+                        email: messageData.from.email,
+                        name: messageData.from.name
+                      });
+                      
+                      // Store the public key in the database
+                      if (db.publicKeys) {
+                        await db.publicKeys.store({
+                          email: messageData.from.email,
+                          publicKey: keyContent,
+                          keyId: keyInfo.keyId,
+                          fingerprint: keyInfo.fingerprint,
+                          name: messageData.from.name || keyInfo.userIds[0]?.name,
+                          source: 'attachment',
+                          userId: null // Not linked to a user account yet
+                        });
+                        
+                        console.log(`[Mail API] Successfully stored public key for ${messageData.from.email}`);
+                      } else {
+                        console.warn(`[Mail API] publicKeys module not available in db`);
+                      }
+                    } catch (keyError) {
+                      console.error(`[Mail API] Error parsing/storing public key:`, keyError.message);
+                    }
+                  }
+                } catch (attachError) {
+                  console.error(`[Mail API] Error processing attachment ${attachment.filename}:`, attachError.message);
+                }
+              }
+            }
+          }
+          
+          // Check for keyserver links in email body
+          const emailBody = parsedMessage.text || parsedMessage.html || '';
+          const keyserverRegex = /https?:\/\/(?:keys\.openpgp\.org|keyserver\.ubuntu\.com|pgp\.mit\.edu|keybase\.io)\/[^\s<>"]+/gi;
+          const keyserverLinks = emailBody.match(keyserverRegex);
+          
+          if (keyserverLinks && keyserverLinks.length > 0) {
+            console.log(`[Mail API] Found keyserver links in email:`, keyserverLinks);
+            
+            // Store the first keyserver link as metadata
+            // In a full implementation, we'd fetch the key from the keyserver
+            // For now, just log it
+            for (const link of keyserverLinks) {
+              console.log(`[Mail API] TODO: Fetch public key from keyserver: ${link}`);
+              // Future: Implement keyserver fetch and store
+            }
+          }
+          
           // Check for PGP encrypted content
           if (parsedMessage.text && parsedMessage.text.includes('-----BEGIN PGP MESSAGE-----')) {
             messageData.encryptedBody = true;
