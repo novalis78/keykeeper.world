@@ -620,6 +620,7 @@ const dbInterface = {
   challenges,
   sessions,
   activityLogs,
+  publicKeys: null, // Will be imported dynamically to avoid circular dependencies
   getMailDbConnection,
   isConnected: () => !!pool && !pool._closed,
   test: {
@@ -634,5 +635,12 @@ const dbInterface = {
 // Log database connection status on startup
 console.log(`Database module loaded - connection status: ${dbInterface.isConnected() ? 'CONNECTED' : 'NOT CONNECTED'}`);
 console.log(`Database version: ${dbInterface.test.version}, initialized at: ${dbInterface.test.initialized}`);
+
+// Dynamically import publicKeys to avoid circular dependencies
+import('./db/publicKeys.js').then(module => {
+  dbInterface.publicKeys = module.default;
+}).catch(error => {
+  console.error('Failed to load publicKeys module:', error);
+});
 
 export default dbInterface;

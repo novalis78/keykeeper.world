@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
 import db from '@/lib/db';
 import passwordManager from '@/lib/users/passwordManager';
+import { verifyToken, extractTokenFromHeader, extractTokenFromCookies } from '@/lib/auth/jwt';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,9 +19,48 @@ export async function POST(request) {
   let client = null;
   
   try {
+    // Check for authentication token in header or cookies
+    let token = extractTokenFromHeader(request);
+    
+    if (!token) {
+      // Try to get token from cookies
+      const cookieStore = cookies();
+      token = extractTokenFromCookies(cookieStore);
+    }
+    
+    if (!token) {
+      console.error('[Mail API] No authentication token provided');
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
+    // Verify the token and get user data
+    let tokenPayload;
+    try {
+      tokenPayload = await verifyToken(token);
+      console.log('[Mail API] Token verified for user:', tokenPayload.email);
+    } catch (error) {
+      console.error('[Mail API] Invalid authentication token:', error);
+      return NextResponse.json(
+        { error: 'Invalid authentication token' },
+        { status: 403 }
+      );
+    }
+    
     // Get user info and credentials from the request
     const body = await request.json();
     const { userId, credentials } = body;
+    
+    // Verify the userId matches the token
+    if (userId !== tokenPayload.userId) {
+      console.error('[Mail API] User ID mismatch - token userId:', tokenPayload.userId, 'request userId:', userId);
+      return NextResponse.json(
+        { error: 'Unauthorized access' },
+        { status: 403 }
+      );
+    }
     
     console.log(`[Mail API] Got request for user ID: ${userId}`);
     console.log(`[Mail API] Credentials provided: ${credentials ? 'YES' : 'NO'}`);

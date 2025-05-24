@@ -277,10 +277,14 @@ export default function Dashboard() {
         console.warn('No credentials available for mail request');
       }
       
+      // Get the auth token from localStorage
+      const authToken = localStorage.getItem('auth_token');
+      
       const response = await fetch('/api/mail/inbox', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
         },
         body: JSON.stringify(requestBody),
       });

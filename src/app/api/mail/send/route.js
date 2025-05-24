@@ -32,27 +32,17 @@ export async function OPTIONS(request) {
 }
 
 export async function POST(request) {
-  console.log('=== MAIL/SEND API: Request received ===');
-  console.log('API Version: v2.1 - Cookie support added');
-  
   // Check for authentication token in header or cookies
   let token = extractTokenFromHeader(request);
-  console.log('Token from header:', token ? 'FOUND' : 'NOT FOUND');
   
   if (!token) {
-    console.log('No token in header, checking cookies...');
     // Try to get token from cookies
     const cookieStore = cookies();
     token = extractTokenFromCookies(cookieStore);
-    console.log('Token from cookies:', token ? 'FOUND' : 'NOT FOUND');
-    
-    // Also log all cookies for debugging
-    const allCookies = cookieStore.getAll();
-    console.log('All cookies:', allCookies.map(c => c.name).join(', '));
   }
   
   if (!token) {
-    console.error('No authentication token provided for mail/send API - returning 401');
+    console.error('No authentication token provided for mail/send API');
     return NextResponse.json(
       { error: 'Authentication required' },
       { status: 401 }
@@ -61,17 +51,10 @@ export async function POST(request) {
   
   try {
     // Verify the token and get user data
-    console.log('Attempting to verify token...');
-    console.log('Token first 20 chars:', token.substring(0, 20) + '...');
     const payload = await verifyToken(token);
-    
-    // Add debug logging
-    console.log('Token verified successfully!');
-    console.log('User payload:', JSON.stringify(payload, null, 2));
+    console.log('Token verified successfully. User:', payload.email || 'unknown');
   } catch (error) {
-    console.error('Token verification FAILED - returning 403');
-    console.error('Error message:', error.message);
-    console.error('Error details:', error);
+    console.error('Invalid authentication token:', error);
     return NextResponse.json(
       { error: 'Invalid authentication token' },
       { status: 403 }
