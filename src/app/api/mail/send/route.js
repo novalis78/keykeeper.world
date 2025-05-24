@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { sendEmail } from '@/lib/mail/mailbox';
-import { verifyToken, extractTokenFromHeader } from '@/lib/auth/jwt';
+import { verifyToken, extractTokenFromHeader, extractTokenFromCookies } from '@/lib/auth/jwt';
 
 /**
  * API route to send an email
@@ -31,8 +32,14 @@ export async function OPTIONS(request) {
 }
 
 export async function POST(request) {
-  // Check for authentication token
-  const token = extractTokenFromHeader(request);
+  // Check for authentication token in header or cookies
+  let token = extractTokenFromHeader(request);
+  
+  if (!token) {
+    // Try to get token from cookies
+    const cookieStore = cookies();
+    token = extractTokenFromCookies(cookieStore);
+  }
   
   if (!token) {
     console.error('No authentication token provided for mail/send API');
