@@ -208,9 +208,11 @@ export default function SentPage() {
                   <div className="flex flex-col justify-center items-center h-full text-gray-400">
                     <PaperAirplaneIcon className="h-16 w-16 mb-4 transform rotate-90 text-gray-600" />
                     <p className="text-xl font-medium">No sent messages</p>
-                    <p className="mt-2">Messages you send will appear here</p>
+                    <p className="mt-2 text-center max-w-md">
+                      Sent email storage is coming soon. For now, sent emails are delivered but not saved to this folder.
+                    </p>
                     <button
-                      onClick={handleComposeEmail}
+                      onClick={() => window.location.href = '/dashboard/compose'}
                       className="mt-6 px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-md transition-colors"
                     >
                       Compose Email

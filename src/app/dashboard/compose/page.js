@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 import { EnvelopeIcon, PaperAirplaneIcon, XMarkIcon, PaperClipIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { LockClosedIcon } from '@heroicons/react/24/solid';
 import { getCurrentUserId } from '@/lib/auth/getCurrentUser';
 
 export default function ComposePage() {
+  const searchParams = useSearchParams();
   const [userEmailAccounts, setUserEmailAccounts] = useState([]);
   const [userPublicKey, setUserPublicKey] = useState(null);
   const [emailData, setEmailData] = useState({
@@ -20,6 +22,16 @@ export default function ComposePage() {
   const [sendingStatus, setSendingStatus] = useState('idle'); // idle, sending, success, error
   const [encryptionStatus, setEncryptionStatus] = useState('unknown'); // unknown, available, unavailable
   
+  // Handle query parameters (like ?to=email@example.com)
+  useEffect(() => {
+    const toEmail = searchParams.get('to');
+    if (toEmail) {
+      setEmailData(prev => ({ ...prev, to: decodeURIComponent(toEmail) }));
+      // Check encryption status for the pre-filled email
+      checkEncryptionStatus(decodeURIComponent(toEmail));
+    }
+  }, [searchParams]);
+
   // Fetch user's email accounts from the virtual_users table
   // and also fetch the user's public key
   useEffect(() => {
