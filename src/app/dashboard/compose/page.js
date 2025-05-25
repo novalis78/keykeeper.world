@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 import { EnvelopeIcon, PaperAirplaneIcon, XMarkIcon, PaperClipIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { LockClosedIcon } from '@heroicons/react/24/solid';
 import { getCurrentUserId } from '@/lib/auth/getCurrentUser';
 
-export default function ComposePage() {
+function ComposeContent() {
   const searchParams = useSearchParams();
   const [userEmailAccounts, setUserEmailAccounts] = useState([]);
   const [userPublicKey, setUserPublicKey] = useState(null);
@@ -785,5 +785,19 @@ export default function ComposePage() {
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function ComposePage() {
+  return (
+    <Suspense fallback={
+      <DashboardLayout>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        </div>
+      </DashboardLayout>
+    }>
+      <ComposeContent />
+    </Suspense>
   );
 }

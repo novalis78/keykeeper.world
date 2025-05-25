@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth/jwt';
 import db from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request) {
   try {
     // Get token from Authorization header

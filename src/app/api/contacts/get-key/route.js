@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth/jwt';
 import db from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request) {
   try {
     // Get token from Authorization header
