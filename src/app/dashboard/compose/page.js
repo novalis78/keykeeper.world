@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
-import { EnvelopeIcon, PaperAirplaneIcon, XMarkIcon, PaperClipIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { EnvelopeIcon, PaperAirplaneIcon, XMarkIcon, PaperClipIcon, ShieldCheckIcon, KeyIcon } from '@heroicons/react/24/outline';
 import { LockClosedIcon } from '@heroicons/react/24/solid';
 import { getCurrentUserId } from '@/lib/auth/getCurrentUser';
 
@@ -242,8 +242,10 @@ function ComposeContent() {
         console.log('Attaching user public key to email');
         
         // The public key will be automatically attached as a .asc file
+        // Use sender's email in filename for clarity
+        const senderEmail = selectedAccount.email.replace('@', '_at_');
         attachmentsToSend.push({
-          filename: 'public_key.asc',
+          filename: `${senderEmail}_public_key.asc`,
           content: userPublicKey,
           contentType: 'application/pgp-keys'
         });
@@ -265,8 +267,9 @@ function ComposeContent() {
               console.log('Public key fetched at last minute for attachment');
               
               // Add the newly retrieved public key as an attachment
+              const senderEmail = selectedAccount.email.replace('@', '_at_');
               attachmentsToSend.push({
-                filename: 'public_key.asc',
+                filename: `${senderEmail}_public_key.asc`,
                 content: pkData.publicKey,
                 contentType: 'application/pgp-keys'
               });
@@ -639,9 +642,9 @@ function ComposeContent() {
                       : 'No files attached'}
                   </span>
                   {userPublicKey && (
-                    <div className="inline-flex items-center px-3 py-1.5 bg-primary-600/20 rounded-lg border border-primary-600/30">
-                      <LockClosedIcon className="h-4 w-4 mr-1.5 text-primary-400" />
-                      <span className="text-xs font-medium text-primary-400">Public key will be attached</span>
+                    <div className="inline-flex items-center px-3 py-1.5 bg-green-900/20 rounded-lg border border-green-700">
+                      <KeyIcon className="h-4 w-4 mr-1.5 text-green-400" />
+                      <span className="text-xs font-medium text-green-400">Your public key will be attached</span>
                     </div>
                   )}
                   <input
