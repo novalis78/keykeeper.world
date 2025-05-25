@@ -19,7 +19,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { motion } from 'framer-motion';
-import { fetchEmail, updateEmail, deleteEmail } from '@/lib/mail/mailbox';
+// Email operations are handled through API routes
 
 export default function EmailDetail({ emailId, onClose, onReply, onForward }) {
   const [email, setEmail] = useState(null);

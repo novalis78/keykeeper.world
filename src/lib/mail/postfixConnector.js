@@ -316,83 +316,85 @@ export async function sendEmail(emailData, options = {}) {
       try {
         console.log('[Mail] Attempting to save email to Sent folder');
         
-        // Connect to IMAP to save the sent message
-        const { ImapFlow } = await import('imapflow');
-        
-        const client = new ImapFlow({
-          host: process.env.MAIL_SERVER_HOST || 'mail',
-          port: 993,
-          secure: true,
-          auth: {
-            user: options.smtpConfig.auth.user,
-            pass: options.smtpConfig.auth.pass
-          },
-          tls: {
-            rejectUnauthorized: false
-          },
-          logger: false
-        });
-        
-        await client.connect();
-        
-        // Find or create Sent folder
-        let sentFolder = 'Sent';
-        const mailboxes = await client.list();
-        
-        // Look for existing Sent folder
-        const sentNames = ['Sent', 'Sent Messages', 'Sent Items', 'INBOX.Sent'];
-        for (const name of sentNames) {
-          if (mailboxes.find(mb => mb.path === name)) {
-            sentFolder = name;
-            break;
-          }
-        }
-        
-        // Open or create the Sent folder
-        try {
-          await client.mailboxOpen(sentFolder);
-        } catch (e) {
-          console.log(`[Mail] Creating ${sentFolder} folder`);
-          await client.mailboxCreate(sentFolder);
-          await client.mailboxOpen(sentFolder);
-        }
-        
-        // Build the raw email message
-        const date = new Date().toUTCString();
-        let rawMessage = `Date: ${date}\r\n`;
-        rawMessage += `From: ${mailOptions.from}\r\n`;
-        rawMessage += `To: ${mailOptions.to}\r\n`;
-        if (mailOptions.cc) rawMessage += `Cc: ${mailOptions.cc}\r\n`;
-        rawMessage += `Subject: ${mailOptions.subject}\r\n`;
-        rawMessage += `Message-ID: ${info.messageId}\r\n`;
-        
-        // Add content type
-        if (mailOptions.html) {
-          rawMessage += `Content-Type: text/html; charset=utf-8\r\n`;
-        } else {
-          rawMessage += `Content-Type: text/plain; charset=utf-8\r\n`;
-        }
-        
-        // Add custom headers if any
-        if (mailOptions.headers) {
-          for (const [key, value] of Object.entries(mailOptions.headers)) {
-            if (!key.toLowerCase().startsWith('content-')) {
-              rawMessage += `${key}: ${value}\r\n`;
+        // Only run on server-side
+        if (typeof window === 'undefined') {
+          const { ImapFlow } = await import('imapflow');
+          
+          const client = new ImapFlow({
+            host: process.env.MAIL_SERVER_HOST || 'mail',
+            port: 993,
+            secure: true,
+            auth: {
+              user: options.smtpConfig.auth.user,
+              pass: options.smtpConfig.auth.pass
+            },
+            tls: {
+              rejectUnauthorized: false
+            },
+            logger: false
+          });
+          
+          await client.connect();
+          
+          // Find or create Sent folder
+          let sentFolder = 'Sent';
+          const mailboxes = await client.list();
+          
+          // Look for existing Sent folder
+          const sentNames = ['Sent', 'Sent Messages', 'Sent Items', 'INBOX.Sent'];
+          for (const name of sentNames) {
+            if (mailboxes.find(mb => mb.path === name)) {
+              sentFolder = name;
+              break;
             }
           }
+          
+          // Open or create the Sent folder
+          try {
+            await client.mailboxOpen(sentFolder);
+          } catch (e) {
+            console.log(`[Mail] Creating ${sentFolder} folder`);
+            await client.mailboxCreate(sentFolder);
+            await client.mailboxOpen(sentFolder);
+          }
+          
+          // Build the raw email message
+          const date = new Date().toUTCString();
+          let rawMessage = `Date: ${date}\r\n`;
+          rawMessage += `From: ${mailOptions.from}\r\n`;
+          rawMessage += `To: ${mailOptions.to}\r\n`;
+          if (mailOptions.cc) rawMessage += `Cc: ${mailOptions.cc}\r\n`;
+          rawMessage += `Subject: ${mailOptions.subject}\r\n`;
+          rawMessage += `Message-ID: ${info.messageId}\r\n`;
+          
+          // Add content type
+          if (mailOptions.html) {
+            rawMessage += `Content-Type: text/html; charset=utf-8\r\n`;
+          } else {
+            rawMessage += `Content-Type: text/plain; charset=utf-8\r\n`;
+          }
+          
+          // Add custom headers if any
+          if (mailOptions.headers) {
+            for (const [key, value] of Object.entries(mailOptions.headers)) {
+              if (!key.toLowerCase().startsWith('content-')) {
+                rawMessage += `${key}: ${value}\r\n`;
+              }
+            }
+          }
+          
+          // Add blank line before body
+          rawMessage += `\r\n`;
+          
+          // Add body
+          rawMessage += mailOptions.html || mailOptions.text || '';
+          
+          // Append to Sent folder with Seen flag
+          await client.append(sentFolder, rawMessage, ['\\Seen']);
+          console.log('[Mail] Email saved to Sent folder successfully');
+          
+          await client.logout();
         }
-        
-        // Add blank line before body
-        rawMessage += `\r\n`;
-        
-        // Add body
-        rawMessage += mailOptions.html || mailOptions.text || '';
-        
-        // Append to Sent folder with Seen flag
-        await client.append(sentFolder, rawMessage, ['\\Seen']);
-        console.log('[Mail] Email saved to Sent folder successfully');
-        
-        await client.logout();
       } catch (saveError) {
         console.error('[Mail] Failed to save to Sent folder:', saveError.message);
         // Don't fail the send operation if we can't save to Sent

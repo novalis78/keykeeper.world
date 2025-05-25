@@ -12,7 +12,7 @@ import {
   PlusIcon,
   KeyIcon
 } from '@heroicons/react/24/outline';
-import { sendEmail } from '@/lib/mail/mailbox';
+// Email sending is handled through API routes
 import { getCurrentUserEmail } from '@/lib/auth/getCurrentUser';
 
 export default function ComposeEmail({ 
