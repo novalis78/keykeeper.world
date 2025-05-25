@@ -258,15 +258,40 @@ export async function sendEmail(emailData, options = {}) {
       };
     }
     
-    // Add PGP encryption headers if needed
-    if (options.pgpEncrypted) {
-      mailOptions.headers = { 
-        ...mailOptions.headers,
-        'X-PGP-Encrypted': 'true'
-      };
-      
-      // In a real implementation, we would encrypt the content here
-      // but for now we're just adding the header
+    // Add PGP encryption if recipient public key is provided
+    if (options.recipientPublicKey) {
+      try {
+        // Import OpenPGP
+        const openpgp = await import('openpgp');
+        
+        console.log('[Mail] Encrypting email with recipient public key');
+        
+        // Read the recipient's public key
+        const publicKey = await openpgp.readKey({ armoredKey: options.recipientPublicKey });
+        
+        // Encrypt the message
+        const encrypted = await openpgp.encrypt({
+          message: await openpgp.createMessage({ text: mailOptions.text || mailOptions.html }),
+          encryptionKeys: publicKey,
+          format: 'armored'
+        });
+        
+        // Replace the body with encrypted content
+        mailOptions.text = encrypted;
+        mailOptions.html = `<pre>${encrypted}</pre>`;
+        
+        // Add PGP headers
+        mailOptions.headers = { 
+          ...mailOptions.headers,
+          'X-PGP-Encrypted': 'true',
+          'Content-Type': 'multipart/encrypted; protocol="application/pgp-encrypted"'
+        };
+        
+        console.log('[Mail] Email encrypted successfully');
+      } catch (encryptError) {
+        console.error('[Mail] Failed to encrypt email:', encryptError);
+        // Continue sending unencrypted if encryption fails
+      }
     }
     
     // Log mail options for diagnostics (excluding sensitive content)
@@ -283,6 +308,96 @@ export async function sendEmail(emailData, options = {}) {
     
     // Send mail with defined transport object
     const info = await transporter.sendMail(mailOptions);
+    
+    console.log(`Email sent successfully: ${info.messageId}`);
+    
+    // Save to Sent folder if SMTP credentials are provided
+    if (options.smtpConfig && options.smtpConfig.auth) {
+      try {
+        console.log('[Mail] Attempting to save email to Sent folder');
+        
+        // Connect to IMAP to save the sent message
+        const { ImapFlow } = await import('imapflow');
+        
+        const client = new ImapFlow({
+          host: process.env.MAIL_SERVER_HOST || 'mail',
+          port: 993,
+          secure: true,
+          auth: {
+            user: options.smtpConfig.auth.user,
+            pass: options.smtpConfig.auth.pass
+          },
+          tls: {
+            rejectUnauthorized: false
+          },
+          logger: false
+        });
+        
+        await client.connect();
+        
+        // Find or create Sent folder
+        let sentFolder = 'Sent';
+        const mailboxes = await client.list();
+        
+        // Look for existing Sent folder
+        const sentNames = ['Sent', 'Sent Messages', 'Sent Items', 'INBOX.Sent'];
+        for (const name of sentNames) {
+          if (mailboxes.find(mb => mb.path === name)) {
+            sentFolder = name;
+            break;
+          }
+        }
+        
+        // Open or create the Sent folder
+        try {
+          await client.mailboxOpen(sentFolder);
+        } catch (e) {
+          console.log(`[Mail] Creating ${sentFolder} folder`);
+          await client.mailboxCreate(sentFolder);
+          await client.mailboxOpen(sentFolder);
+        }
+        
+        // Build the raw email message
+        const date = new Date().toUTCString();
+        let rawMessage = `Date: ${date}\r\n`;
+        rawMessage += `From: ${mailOptions.from}\r\n`;
+        rawMessage += `To: ${mailOptions.to}\r\n`;
+        if (mailOptions.cc) rawMessage += `Cc: ${mailOptions.cc}\r\n`;
+        rawMessage += `Subject: ${mailOptions.subject}\r\n`;
+        rawMessage += `Message-ID: ${info.messageId}\r\n`;
+        
+        // Add content type
+        if (mailOptions.html) {
+          rawMessage += `Content-Type: text/html; charset=utf-8\r\n`;
+        } else {
+          rawMessage += `Content-Type: text/plain; charset=utf-8\r\n`;
+        }
+        
+        // Add custom headers if any
+        if (mailOptions.headers) {
+          for (const [key, value] of Object.entries(mailOptions.headers)) {
+            if (!key.toLowerCase().startsWith('content-')) {
+              rawMessage += `${key}: ${value}\r\n`;
+            }
+          }
+        }
+        
+        // Add blank line before body
+        rawMessage += `\r\n`;
+        
+        // Add body
+        rawMessage += mailOptions.html || mailOptions.text || '';
+        
+        // Append to Sent folder with Seen flag
+        await client.append(sentFolder, rawMessage, ['\\Seen']);
+        console.log('[Mail] Email saved to Sent folder successfully');
+        
+        await client.logout();
+      } catch (saveError) {
+        console.error('[Mail] Failed to save to Sent folder:', saveError.message);
+        // Don't fail the send operation if we can't save to Sent
+      }
+    }
     
     return {
       success: true,
