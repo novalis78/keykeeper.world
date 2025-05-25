@@ -269,23 +269,29 @@ export async function sendEmail(emailData, options = {}) {
         // Read the recipient's public key
         const publicKey = await openpgp.readKey({ armoredKey: options.recipientPublicKey });
         
+        // Get the original message content (prefer text over HTML)
+        const originalMessage = mailOptions.text || mailOptions.html;
+        
         // Encrypt the message
         const encrypted = await openpgp.encrypt({
-          message: await openpgp.createMessage({ text: mailOptions.text || mailOptions.html }),
+          message: await openpgp.createMessage({ text: originalMessage }),
           encryptionKeys: publicKey,
           format: 'armored'
         });
         
-        // Replace the body with encrypted content
+        // Replace the body with properly formatted encrypted content
+        // Don't wrap in HTML tags to avoid double formatting
         mailOptions.text = encrypted;
-        mailOptions.html = `<pre>${encrypted}</pre>`;
+        mailOptions.html = null; // Let the mail client handle text-only display
         
         // Add PGP headers
         mailOptions.headers = { 
           ...mailOptions.headers,
-          'X-PGP-Encrypted': 'true',
-          'Content-Type': 'multipart/encrypted; protocol="application/pgp-encrypted"'
+          'X-PGP-Encrypted': 'true'
         };
+        
+        // For encrypted messages, use text/plain content type
+        delete mailOptions.html;
         
         console.log('[Mail] Email encrypted successfully');
       } catch (encryptError) {
@@ -313,6 +319,14 @@ export async function sendEmail(emailData, options = {}) {
     
     // Save to Sent folder if SMTP credentials are provided
     if (options.smtpConfig && options.smtpConfig.auth) {
+      console.log('[Mail] Checking Sent folder save conditions:', {
+        hasSmtpConfig: !!options.smtpConfig,
+        hasAuth: !!options.smtpConfig?.auth,
+        hasUser: !!options.smtpConfig?.auth?.user,
+        hasPass: !!options.smtpConfig?.auth?.pass,
+        isServerSide: typeof window === 'undefined'
+      });
+      
       try {
         console.log('[Mail] Attempting to save email to Sent folder');
         
