@@ -31,7 +31,7 @@ export async function GET(request) {
         fingerprint,
         source,
         verified,
-        trust_level,
+        trusted,
         created_at,
         last_used
       FROM public_keys 
