@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth/jwt';
-import pool from '@/lib/db';
+import db from '@/lib/db';
 
 export async function GET(request) {
   try {
@@ -22,7 +22,7 @@ export async function GET(request) {
     const userId = payload.userId;
 
     // Fetch contacts with public keys for this user
-    const [contacts] = await pool.execute(
+    const contacts = await db.query(
       `SELECT 
         id,
         email,

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth/jwt';
-import pool from '@/lib/db';
+import db from '@/lib/db';
 
 export async function POST(request) {
   try {
@@ -26,7 +26,7 @@ export async function POST(request) {
     }
 
     // Check if we have a public key for this email address
-    const [keys] = await pool.execute(
+    const keys = await db.query(
       `SELECT id, key_id, verified FROM public_keys 
        WHERE user_id = ? AND email = ? 
        LIMIT 1`,

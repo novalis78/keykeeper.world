@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth/jwt';
-import pool from '@/lib/db';
+import db from '@/lib/db';
 
 export async function POST(request) {
   try {
@@ -26,8 +26,8 @@ export async function POST(request) {
     }
 
     // Get the public key for this email address
-    const [keys] = await pool.execute(
-      `SELECT public_key, key_id, fingerprint, verified 
+    const keys = await db.query(
+      `SELECT id, public_key, key_id, fingerprint, verified 
        FROM public_keys 
        WHERE user_id = ? AND email = ? 
        ORDER BY verified DESC, last_used DESC 
@@ -43,7 +43,7 @@ export async function POST(request) {
     }
 
     // Update last_used timestamp
-    await pool.execute(
+    await db.query(
       `UPDATE public_keys SET last_used = NOW() WHERE id = ?`,
       [keys[0].id]
     );
