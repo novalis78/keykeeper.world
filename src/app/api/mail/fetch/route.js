@@ -1,110 +1,96 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { fetchEmails } from '@/lib/mail/mailbox';
+import { verifyToken, extractTokenFromHeader, extractTokenFromCookies } from '@/lib/auth/jwt';
+import passwordManager from '@/lib/users/passwordManager';
 
 /**
  * API route to fetch emails from a specific folder
- * Expects query parameters:
- * - email: the user's email address for authentication
- * - folder: (optional) the folder to fetch from (defaults to 'inbox')
- * - limit: (optional) number of emails to fetch
- * - offset: (optional) offset for pagination
- * - search: (optional) search term
+ * Uses JWT authentication and passwordManager to get credentials
  */
 
 // Mark this route as dynamically rendered
 export const dynamic = 'force-dynamic';
 
-export async function GET(request) {
-  try {
-    // Enable real mail server integration
-    process.env.USE_REAL_MAIL_SERVER = 'true';
-    
-    // Get the URL parameters
-    const { searchParams } = new URL(request.url);
-    const email = searchParams.get('email');
-    const folder = searchParams.get('folder') || 'inbox';
-    const limit = parseInt(searchParams.get('limit')) || 50;
-    const offset = parseInt(searchParams.get('offset')) || 0;
-    const search = searchParams.get('search') || '';
-    
-    // Basic validation
-    if (!email) {
-      return NextResponse.json(
-        { error: 'Email address is required' },
-        { status: 400 }
-      );
-    }
-    
-    const options = {
-      limit,
-      offset,
-      search: search || undefined,
-      fetchBody: true // Get preview text for each email
-    };
-    
-    const emails = await fetchEmails(email, folder, options);
-    
-    return NextResponse.json({
-      success: true,
-      emails,
-      meta: {
-        folder,
-        total: emails.length,
-        limit,
-        offset
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching emails:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * POST endpoint for fetching emails
- * This is used by the client side to fetch emails with a POST request
- * It's functionally identical to GET but accepts parameters in the request body
- */
 export async function POST(request) {
   try {
     // Enable real mail server integration
     process.env.USE_REAL_MAIL_SERVER = 'true';
     
-    // Parse the request body
-    const data = await request.json();
+    // Check for authentication token
+    let token = extractTokenFromHeader(request);
     
-    // Extract parameters from body
-    const email = data.email;
-    const folder = data.folder || 'inbox';
-    const limit = parseInt(data.limit) || 50;
-    const offset = parseInt(data.offset) || 0;
-    const search = data.search || '';
+    if (!token) {
+      const cookieStore = cookies();
+      token = extractTokenFromCookies(cookieStore);
+    }
     
-    // Basic validation
-    if (!email) {
+    if (!token) {
       return NextResponse.json(
-        { error: 'Email address is required' },
-        { status: 400 }
+        { error: 'Authentication required' },
+        { status: 401 }
       );
     }
     
-    console.log(`[Mail API] Fetching emails from '${folder}' folder for ${email}`);
+    // Verify the token
+    const tokenPayload = await verifyToken(token);
+    if (!tokenPayload) {
+      return NextResponse.json(
+        { error: 'Invalid authentication token' },
+        { status: 403 }
+      );
+    }
+    
+    const userId = tokenPayload.userId;
+    
+    // Get request body
+    const body = await request.json();
+    const { folder = 'inbox', limit = 50, offset = 0, search = '' } = body;
+    
+    console.log(`[Mail API] Fetching emails from '${folder}' folder for user ${userId}`);
+    
+    // Get the user's mail account
+    const mailAccount = await passwordManager.getPrimaryMailAccount(userId);
+    if (!mailAccount) {
+      console.log(`[Mail API] Could not retrieve mail account for user ${userId}`);
+      return NextResponse.json(
+        { error: 'Could not retrieve mail account information' },
+        { status: 500 }
+      );
+    }
+    
+    console.log(`[Mail API] Found mail account: ${mailAccount.email}`);
+    
+    // Get the password
+    const password = await passwordManager.getMailPassword(userId);
+    if (!password) {
+      console.log(`[Mail API] Could not retrieve mail password for user ${userId}`);
+      return NextResponse.json(
+        { error: 'Could not retrieve mail password' },
+        { status: 500 }
+      );
+    }
+    
+    console.log(`[Mail API] Retrieved password for ${mailAccount.email}`);
     
     const options = {
       limit,
       offset,
       search: search || undefined,
-      fetchBody: true // Get preview text for each email
+      fetchBody: true,
+      imapConfig: {
+        auth: {
+          user: mailAccount.email,
+          pass: password
+        }
+      }
     };
     
-    const folderName = folder.toLowerCase();
-    // Handle sent folder differently if needed
-    const targetFolder = folderName === 'sent' ? 'Sent' : folderName;
+    // Handle folder name case sensitivity
+    const targetFolder = folder.toLowerCase() === 'sent' ? 'Sent' : folder;
     
-    const emails = await fetchEmails(email, targetFolder, options);
+    console.log(`[Mail API] Fetching from folder: ${targetFolder}`);
+    const emails = await fetchEmails(mailAccount.email, targetFolder, options);
     
     console.log(`[Mail API] Found ${emails.length} emails in '${targetFolder}' folder`);
     
@@ -119,10 +105,32 @@ export async function POST(request) {
       }
     });
   } catch (error) {
-    console.error('Error fetching emails:', error);
+    console.error('[Mail API] Error fetching emails:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }
+}
+
+// Support GET method as well
+export async function GET(request) {
+  // Convert GET parameters to POST body format
+  const { searchParams } = new URL(request.url);
+  
+  const mockBody = {
+    folder: searchParams.get('folder') || 'inbox',
+    limit: parseInt(searchParams.get('limit')) || 50,
+    offset: parseInt(searchParams.get('offset')) || 0,
+    search: searchParams.get('search') || ''
+  };
+  
+  // Create a mock request with the body
+  const mockRequest = new Request(request.url, {
+    method: 'POST',
+    headers: request.headers,
+    body: JSON.stringify(mockBody)
+  });
+  
+  return POST(mockRequest);
 }

@@ -30,10 +30,9 @@ export default function SentPage() {
         setLoading(true);
         
         const token = localStorage.getItem('auth_token');
-        const userEmail = localStorage.getItem('user_email');
         
-        if (!token || !userEmail) {
-          console.error('Authentication data missing');
+        if (!token) {
+          console.error('Authentication token missing');
           setLoading(false);
           return;
         }
@@ -48,8 +47,7 @@ export default function SentPage() {
           body: JSON.stringify({
             folder: 'sent',
             limit: 50,
-            offset: 0,
-            email: userEmail
+            offset: 0
           })
         });
         
@@ -90,10 +88,9 @@ export default function SentPage() {
     // Reuse the effect logic for refreshing
     try {
       const token = localStorage.getItem('auth_token');
-      const userEmail = localStorage.getItem('user_email');
       
-      if (!token || !userEmail) {
-        console.error('Authentication data missing');
+      if (!token) {
+        console.error('Authentication token missing');
         setLoading(false);
         return;
       }
@@ -107,8 +104,7 @@ export default function SentPage() {
         body: JSON.stringify({
           folder: 'sent',
           limit: 50,
-          offset: 0,
-          email: userEmail
+          offset: 0
         })
       });
       
