@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { Shield, Mail, Calendar, CheckCircle } from 'lucide-react';
+import { ShieldCheckIcon, EnvelopeIcon, CalendarIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 
 export default function ContactsPage() {
   const [contacts, setContacts] = useState([]);
@@ -69,7 +69,7 @@ export default function ContactsPage() {
           </div>
         ) : contacts.length === 0 ? (
           <div className="bg-gray-50 rounded-lg p-8 text-center">
-            <Shield className="mx-auto h-12 w-12 text-gray-400" />
+            <ShieldCheckIcon className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No contacts yet</h3>
             <p className="mt-1 text-sm text-gray-500">
               Contacts will appear here when you receive emails with PGP public keys.
@@ -91,23 +91,23 @@ export default function ContactsPage() {
                     <p className="text-sm text-gray-500 mt-1">{contact.email}</p>
                   </div>
                   {contact.verified && (
-                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <CheckCircleIcon className="h-5 w-5 text-green-500 flex-shrink-0" />
                   )}
                 </div>
 
                 <div className="mt-4 space-y-2">
                   <div className="flex items-center text-sm text-gray-600">
-                    <Shield className="h-4 w-4 mr-2 text-purple-600" />
+                    <ShieldCheckIcon className="h-4 w-4 mr-2 text-purple-600" />
                     <span>Key ID: {contact.key_id?.substring(0, 16)}...</span>
                   </div>
                   
                   <div className="flex items-center text-sm text-gray-600">
-                    <Calendar className="h-4 w-4 mr-2 text-purple-600" />
+                    <CalendarIcon className="h-4 w-4 mr-2 text-purple-600" />
                     <span>Added: {formatDate(contact.created_at)}</span>
                   </div>
 
                   <div className="flex items-center text-sm text-gray-600">
-                    <Mail className="h-4 w-4 mr-2 text-purple-600" />
+                    <EnvelopeIcon className="h-4 w-4 mr-2 text-purple-600" />
                     <span>Source: {contact.source}</span>
                   </div>
                 </div>
