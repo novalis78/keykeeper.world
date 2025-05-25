@@ -138,17 +138,33 @@ export default function ComposePage() {
     }
   };
   
-  // Simulate checking if the recipient has a public key available
-  const checkEncryptionStatus = (email) => {
-    // In a real implementation, this would query the server for available public keys
-    // For mock data, we'll pretend certain domains have keys available
-    setTimeout(() => {
-      if (email.endsWith('@keykeeper.world') || email.endsWith('@phoneshield.ai') || email.includes('secure')) {
-        setEncryptionStatus('available');
+  // Check if the recipient has a public key available
+  const checkEncryptionStatus = async (email) => {
+    try {
+      const authToken = localStorage.getItem('auth_token');
+      const response = await fetch('/api/contacts/check-key', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ email })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.hasKey) {
+          setEncryptionStatus('available');
+        } else {
+          setEncryptionStatus('unavailable');
+        }
       } else {
         setEncryptionStatus('unavailable');
       }
-    }, 500);
+    } catch (error) {
+      console.error('Error checking encryption status:', error);
+      setEncryptionStatus('unavailable');
+    }
   };
   
   const handleSubmit = async (e) => {
@@ -397,6 +413,38 @@ export default function ComposePage() {
       };
       
       console.log(`Sending as: ${senderName} <${selectedAccount.email}>`);
+      
+      // If encryption is available, fetch the recipient's public key
+      let recipientPublicKey = null;
+      if (encryptionStatus === 'available') {
+        try {
+          const authToken = localStorage.getItem('auth_token');
+          const keyResponse = await fetch('/api/contacts/get-key', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ email: emailData.to.trim() })
+          });
+
+          if (keyResponse.ok) {
+            const keyData = await keyResponse.json();
+            if (keyData.publicKey) {
+              recipientPublicKey = keyData.publicKey;
+              console.log('Retrieved recipient public key for encryption');
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching recipient public key:', error);
+        }
+      }
+      
+      // Update email data with recipient public key if available
+      if (recipientPublicKey) {
+        emailApiData.recipientPublicKey = recipientPublicKey;
+        console.log('Email will be encrypted with recipient\'s public key');
+      }
       
       // Get the auth token from localStorage
       const authToken = localStorage.getItem('auth_token');

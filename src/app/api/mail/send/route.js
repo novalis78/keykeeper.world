@@ -132,6 +132,7 @@ export async function POST(request) {
     
     const result = await sendEmail(emailData, {
       pgpEncrypted: data.pgpEncrypted || false,
+      recipientPublicKey: data.recipientPublicKey || null,
       smtpConfig: smtpConfig
     });
     

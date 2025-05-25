@@ -13,7 +13,8 @@ import {
   PlusIcon,
   ArrowRightOnRectangleIcon,
   ArrowPathIcon,
-  PaperAirplaneIcon
+  PaperAirplaneIcon,
+  UsersIcon
 } from '@heroicons/react/24/outline';
 import { LockClosedIcon } from '@heroicons/react/24/solid';
 import { getCurrentUserId } from '@/lib/auth/getCurrentUser';
@@ -80,6 +81,7 @@ export default function DashboardLayout({ children }) {
   const navigation = [
     { name: 'Inbox', href: '/dashboard', icon: EnvelopeIcon, current: true },
     { name: 'Sent', href: '/dashboard/sent', icon: PaperAirplaneIcon, current: false },
+    { name: 'Contacts', href: '/dashboard/contacts', icon: UsersIcon, current: false },
     { name: 'Addresses', href: '/dashboard/addresses', icon: KeyIcon, current: false },
     { name: 'Analytics', href: '/dashboard/analytics', icon: ArrowPathIcon, current: false },
     { name: 'Security', href: '/dashboard/security', icon: ShieldCheckIcon, current: false },

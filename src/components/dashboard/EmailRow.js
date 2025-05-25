@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { LockClosedIcon, PaperClipIcon, StarIcon } from '@heroicons/react/20/solid';
+import { LockClosedIcon, PaperClipIcon, StarIcon, KeyIcon } from '@heroicons/react/20/solid';
 import { motion } from 'framer-motion';
 
 export default function EmailRow({ message, onClick, isSelected }) {
@@ -25,6 +25,12 @@ export default function EmailRow({ message, onClick, isSelected }) {
     e.stopPropagation();
     setIsStarred(!isStarred);
   };
+
+  // Check if message has PGP key attachment
+  const hasPgpKey = message.attachments?.some(att => 
+    att.filename?.endsWith('.asc') || 
+    att.contentType === 'application/pgp-keys'
+  );
 
   return (
     <motion.div 
@@ -69,8 +75,14 @@ export default function EmailRow({ message, onClick, isSelected }) {
             {message.from.name}
           </p>
           
-          {/* Email tags */}
+          {/* Email tags and PGP key indicator */}
           <div className="ml-auto sm:ml-2 flex space-x-1">
+            {hasPgpKey && (
+              <span className="inline-flex items-center rounded-full bg-green-900/30 px-2 py-0.5 text-xs font-medium text-green-300">
+                <KeyIcon className="h-3 w-3 mr-1" />
+                PGP Key
+              </span>
+            )}
             {message.labels?.map(label => (
               <span 
                 key={label} 

@@ -15,13 +15,16 @@ import {
   StarIcon,
   ArrowTopRightOnSquareIcon,
   EllipsisHorizontalIcon,
-  FolderIcon
+  FolderIcon,
+  KeyIcon
 } from '@heroicons/react/24/outline';
+import { useRouter } from 'next/navigation';
 
 export default function EmailDetail({ message, onBack, onDelete, onReply, onForward }) {
   const [decrypted, setDecrypted] = useState(false);
   const [isStarred, setIsStarred] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
   
   const formattedDate = (dateString) => {
     const date = new Date(dateString);
@@ -289,28 +292,59 @@ export default function EmailDetail({ message, onBack, onDelete, onReply, onForw
                   Attachments ({message.attachments.length})
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {message.attachments.map((attachment, index) => (
-                    <div 
-                      key={index}
-                      className="flex items-center p-3 rounded-md border border-gray-700 bg-dashboard/60 group hover:bg-dashboard transition-colors"
-                    >
-                      <div className="mr-3 p-2 rounded-md bg-primary-600/20">
-                        <DocumentTextIcon className="h-6 w-6 text-primary-400" />
-                      </div>
-                      <div className="flex-grow min-w-0">
-                        <p className="text-sm font-medium truncate text-white">{attachment.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {(attachment.size / 1000).toFixed(1)} KB
-                        </p>
-                      </div>
-                      <button 
-                        type="button"
-                        className="ml-2 inline-flex items-center p-1.5 rounded-md text-gray-400 hover:text-primary-400 transition-colors"
+                  {message.attachments.map((attachment, index) => {
+                    const isPgpKey = attachment.filename?.endsWith('.asc') || 
+                                    attachment.contentType === 'application/pgp-keys';
+                    
+                    return (
+                      <div 
+                        key={index}
+                        className={`flex items-center p-3 rounded-md border ${
+                          isPgpKey 
+                            ? 'border-green-700 bg-green-900/20 hover:bg-green-900/30 cursor-pointer' 
+                            : 'border-gray-700 bg-dashboard/60 hover:bg-dashboard'
+                        } group transition-colors`}
+                        onClick={isPgpKey ? () => router.push('/dashboard/contacts') : undefined}
                       >
-                        <ArrowTopRightOnSquareIcon className="h-5 w-5" />
-                      </button>
-                    </div>
-                  ))}
+                        <div className={`mr-3 p-2 rounded-md ${
+                          isPgpKey ? 'bg-green-600/20' : 'bg-primary-600/20'
+                        }`}>
+                          {isPgpKey ? (
+                            <KeyIcon className="h-6 w-6 text-green-400" />
+                          ) : (
+                            <DocumentTextIcon className="h-6 w-6 text-primary-400" />
+                          )}
+                        </div>
+                        <div className="flex-grow min-w-0">
+                          <p className={`text-sm font-medium truncate ${
+                            isPgpKey ? 'text-green-300' : 'text-white'
+                          }`}>
+                            {isPgpKey ? 'PGP Public Key' : attachment.filename}
+                          </p>
+                          <p className={`text-xs ${
+                            isPgpKey ? 'text-green-400' : 'text-gray-500'
+                          }`}>
+                            {isPgpKey 
+                              ? `From: ${message.from.email}` 
+                              : `${(attachment.size / 1000).toFixed(1)} KB`
+                            }
+                          </p>
+                        </div>
+                        {isPgpKey ? (
+                          <span className="ml-2 text-xs text-green-400">
+                            View Contact →
+                          </span>
+                        ) : (
+                          <button 
+                            type="button"
+                            className="ml-2 inline-flex items-center p-1.5 rounded-md text-gray-400 hover:text-primary-400 transition-colors"
+                          >
+                            <ArrowTopRightOnSquareIcon className="h-5 w-5" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
