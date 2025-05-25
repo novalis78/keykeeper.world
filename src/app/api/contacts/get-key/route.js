@@ -29,7 +29,7 @@ export async function POST(request) {
     const keys = await db.query(
       `SELECT id, public_key, key_id, fingerprint, verified 
        FROM public_keys 
-       WHERE user_id = ? AND email = ? 
+       WHERE (user_id = ? OR user_id IS NULL) AND email = ? 
        ORDER BY verified DESC, last_used DESC 
        LIMIT 1`,
       [userId, email]

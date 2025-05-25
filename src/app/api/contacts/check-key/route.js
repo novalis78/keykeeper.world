@@ -28,7 +28,7 @@ export async function POST(request) {
     // Check if we have a public key for this email address
     const keys = await db.query(
       `SELECT id, key_id, verified FROM public_keys 
-       WHERE user_id = ? AND email = ? 
+       WHERE (user_id = ? OR user_id IS NULL) AND email = ? 
        LIMIT 1`,
       [userId, email]
     );

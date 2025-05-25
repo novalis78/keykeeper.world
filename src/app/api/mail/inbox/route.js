@@ -424,7 +424,7 @@ export async function POST(request) {
                           fingerprint: keyInfo.fingerprint,
                           name: messageData.from.name || keyInfo.userIds[0]?.name,
                           source: 'attachment',
-                          userId: null // Not linked to a user account yet
+                          userId: userId // Associate with the inbox owner
                         });
                         
                         console.log(`[Mail API] Successfully stored public key for ${messageData.from.email}`);

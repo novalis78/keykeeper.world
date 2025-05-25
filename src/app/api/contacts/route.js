@@ -20,8 +20,10 @@ export async function GET(request) {
     }
 
     const userId = payload.userId;
+    console.log('[Contacts API] Fetching contacts for user:', userId);
 
     // Fetch contacts with public keys for this user
+    // Also include keys that haven't been assigned to any user yet (user_id IS NULL)
     const contacts = await db.query(
       `SELECT 
         id,
@@ -35,10 +37,15 @@ export async function GET(request) {
         created_at,
         last_used
       FROM public_keys 
-      WHERE user_id = ? 
+      WHERE user_id = ? OR user_id IS NULL
       ORDER BY last_used DESC, created_at DESC`,
       [userId]
     );
+
+    console.log('[Contacts API] Found contacts:', contacts.length);
+    if (contacts.length > 0) {
+      console.log('[Contacts API] First contact:', contacts[0]);
+    }
 
     return NextResponse.json({
       contacts: contacts,
