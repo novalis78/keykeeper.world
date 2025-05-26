@@ -227,12 +227,25 @@ export async function fetchEmail(emailId, markAsRead = true, folder = 'inbox', u
  */
 export async function sendEmail(emailData, options = {}) {
   try {
+    console.log('[Mailbox] sendEmail called with:', {
+      hasEmailData: !!emailData,
+      attachmentCount: emailData?.attachments?.length || 0,
+      attachmentDetails: emailData?.attachments?.map(a => ({
+        filename: a.filename || a.name,
+        hasContent: !!a.content,
+        contentLength: a.content?.length || 0,
+        encoding: a.encoding,
+        contentType: a.contentType || a.type
+      }))
+    });
+    
     // Import here to avoid circular dependencies
     const postfix = await import('./postfixConnector.js');
     
     // Use Postfix integration if USE_REAL_MAIL_SERVER flag is set
     if (process.env.USE_REAL_MAIL_SERVER === 'true') {
-      console.log('Sending email via Postfix server');
+      console.log('[Mailbox] Sending email via Postfix server');
+      console.log('[Mailbox] Passing emailData with attachments:', emailData?.attachments?.length || 0);
       return await postfix.default.sendEmail(emailData, options);
     } else {
       console.log('Using mock email sending (Postfix integration disabled)');

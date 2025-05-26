@@ -228,6 +228,18 @@ export async function sendEmail(emailData, options = {}) {
       return formatEmailAddress(addresses);
     };
     
+    // Log incoming attachments
+    console.log('[PostfixConnector] Incoming emailData.attachments:', {
+      count: emailData.attachments?.length || 0,
+      details: emailData.attachments?.map(a => ({
+        filename: a.filename || a.name,
+        hasContent: !!a.content,
+        contentLength: a.content?.length || 0,
+        encoding: a.encoding,
+        contentType: a.contentType || a.type
+      }))
+    });
+    
     // Prepare email data for nodemailer with optimal formatting for deliverability
     const mailOptions = {
       from: formatEmailAddress(emailData.from),
@@ -301,7 +313,7 @@ export async function sendEmail(emailData, options = {}) {
     }
     
     // Log mail options for diagnostics (excluding sensitive content)
-    console.log('SMTP Mail Options:', {
+    console.log('[PostfixConnector] Final SMTP Mail Options:', {
       from: mailOptions.from,
       to: mailOptions.to,
       subject: mailOptions.subject,
@@ -309,7 +321,8 @@ export async function sendEmail(emailData, options = {}) {
       hasText: !!mailOptions.text,
       headerKeys: Object.keys(mailOptions.headers || {}),
       hasAttachments: !!(mailOptions.attachments && mailOptions.attachments.length > 0),
-      attachmentCount: mailOptions.attachments ? mailOptions.attachments.length : 0
+      attachmentCount: mailOptions.attachments ? mailOptions.attachments.length : 0,
+      attachmentFilenames: mailOptions.attachments?.map(a => a.filename) || []
     });
     
     // Send mail with defined transport object
@@ -893,39 +906,85 @@ function convertHtmlToText(html) {
  */
 function formatAttachments(attachments) {
   if (!attachments || !attachments.length) {
+    console.log('[formatAttachments] No attachments to format');
     return [];
   }
   
-  return attachments.map(attachment => {
+  console.log(`[formatAttachments] Starting to format ${attachments.length} attachments`);
+  
+  const formatted = attachments.map((attachment, index) => {
+    const filename = attachment.filename || attachment.name;
+    const contentType = attachment.contentType || attachment.type || 'application/octet-stream';
+    
+    console.log(`[formatAttachments] Processing attachment ${index + 1}:`, {
+      filename,
+      hasContent: !!attachment.content,
+      contentLength: attachment.content?.length || 0,
+      encoding: attachment.encoding,
+      contentType
+    });
+    
+    // Special logging for public key attachments
+    if (filename && filename.includes('public_key.asc')) {
+      console.log('[formatAttachments] PUBLIC KEY ATTACHMENT DETECTED');
+      console.log('[formatAttachments] Key content preview:', attachment.content ? attachment.content.substring(0, 100) : 'NO CONTENT');
+      console.log('[formatAttachments] Key content length:', attachment.content?.length || 0);
+    }
+    
     // If attachment has a path, use that
     if (attachment.path) {
       return {
-        filename: attachment.name,
+        filename,
         path: attachment.path,
-        contentType: attachment.type
+        contentType
       };
     }
     
-    // If attachment has content (Buffer), use that
+    // If attachment has content, handle it based on encoding
     if (attachment.content) {
+      let content = attachment.content;
+      
+      // Handle different encodings
+      if (attachment.encoding && typeof content === 'string') {
+        console.log(`[formatAttachments] Using ${attachment.encoding} encoding for ${filename}`);
+        return {
+          filename,
+          content,
+          encoding: attachment.encoding,
+          contentType
+        };
+      }
+      
+      // Otherwise treat as buffer or string
+      console.log(`[formatAttachments] Using default handling for ${filename}`);
       return {
-        filename: attachment.name,
-        content: attachment.content,
-        contentType: attachment.type
+        filename,
+        content: content,
+        contentType
       };
     }
     
     // If attachment has a content string, convert to Buffer
     if (attachment.contentString) {
       return {
-        filename: attachment.name,
+        filename,
         content: Buffer.from(attachment.contentString),
-        contentType: attachment.type
+        contentType
       };
     }
     
-    return attachment;
+    console.warn(`[formatAttachments] WARNING: Attachment ${filename} has NO CONTENT!`);
+    return {
+      filename,
+      content: '', // Empty content instead of returning incomplete attachment
+      contentType
+    };
   });
+  
+  console.log('[formatAttachments] Finished formatting, returning', formatted.length, 'attachments');
+  console.log('[formatAttachments] Final attachment list:', formatted.map(a => a.filename));
+  
+  return formatted;
 }
 
 /**

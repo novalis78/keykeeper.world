@@ -237,20 +237,37 @@ function ComposeContent() {
         attachmentsToSend = attachmentsToSend.filter(Boolean);
       }
       
+      // Create a copy of attachments to send
+      const allAttachments = [...attachmentsToSend];
+      
+      console.log('[ComposeEmail] Attachments before adding public key:', allAttachments.length);
+      console.log('[ComposeEmail] Attachment filenames before:', allAttachments.map(a => a.filename));
+      
       // Automatically attach the user's public key as an attachment
       if (userPublicKey) {
-        console.log('Attaching user public key to email');
-        
-        // The public key will be automatically attached as a .asc file
-        // Use sender's email in filename for clarity
+        console.log('[ComposeEmail] Attaching public key:', {
+          hasPublicKey: !!userPublicKey,
+          keyLength: userPublicKey?.length,
+          keyPreview: userPublicKey?.substring(0, 100)
+        });
+
+        // Add the public key as an attachment
         const senderEmail = selectedAccount.email.replace('@', '_at_');
-        attachmentsToSend.push({
+        const keyAttachment = {
           filename: `${senderEmail}_public_key.asc`,
           content: userPublicKey,
+          encoding: 'utf8', // PGP keys are text, not base64
           contentType: 'application/pgp-keys'
-        });
+        };
+        
+        console.log('[ComposeEmail] Key attachment object:', JSON.stringify(keyAttachment, null, 2));
+        
+        allAttachments.push(keyAttachment);
+        
+        console.log('[ComposeEmail] Total attachments after adding key:', allAttachments.length);
+        console.log('[ComposeEmail] All attachment filenames:', allAttachments.map(a => a.filename));
       } else {
-        console.log('No public key available to attach');
+        console.log('[Compose] No public key available to attach');
         
         // Try one more time to get the public key from the API
         try {
@@ -271,8 +288,19 @@ function ComposeContent() {
               attachmentsToSend.push({
                 filename: `${senderEmail}_public_key.asc`,
                 content: pkData.publicKey,
+                encoding: 'utf8', // PGP keys are text, not base64
                 contentType: 'application/pgp-keys'
               });
+              
+              allAttachments.push({
+                filename: `${senderEmail}_public_key.asc`,
+                content: pkData.publicKey,
+                encoding: 'utf8',
+                contentType: 'application/pgp-keys'
+              });
+              
+              console.log('[ComposeEmail] Added public key from last-minute fetch');
+              console.log('[ComposeEmail] Total attachments after last-minute add:', allAttachments.length);
               
               // Also save for future use
               setUserPublicKey(pkData.publicKey);
@@ -422,12 +450,26 @@ function ComposeContent() {
         // Use formatted HTML template for the body
         body: formatEmailHTML(emailData.message, senderName, selectedAccount.email),
         pgpEncrypted: encryptionStatus === 'available',
-        attachments: attachmentsToSend,
+        attachments: allAttachments,
         // Include credentials if found
         credentials: credentials
       };
       
-      console.log(`Sending as: ${senderName} <${selectedAccount.email}>`);
+      console.log('[ComposeEmail] Sending email with attachments:', allAttachments.length);
+      console.log('[ComposeEmail] Request body preview:', {
+        to: emailApiData.to,
+        subject: emailApiData.subject,
+        bodyLength: emailApiData.body.length,
+        textLength: emailApiData.text.length,
+        pgpEncrypted: emailApiData.pgpEncrypted,
+        attachmentCount: allAttachments.length,
+        attachmentDetails: allAttachments.map(a => ({
+          filename: a.filename,
+          contentLength: a.content?.length || 0,
+          encoding: a.encoding,
+          contentType: a.contentType
+        }))
+      });
       
       // If encryption is available, fetch the recipient's public key
       let recipientPublicKey = null;

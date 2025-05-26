@@ -80,24 +80,39 @@ export async function POST(request) {
     // Prepare clean attachments array - preserve key attachment content
     let cleanAttachments = [];
     if (data.attachments && data.attachments.length > 0) {
+      console.log(`[Mail Send API] Processing ${data.attachments.length} attachments`);
       cleanAttachments = data.attachments.map(att => {
-        const cleanAtt = {
-          id: att.id,
+        console.log(`[Mail Send API] Processing attachment:`, {
+          filename: att.filename,
           name: att.name,
+          hasContent: !!att.content,
+          contentLength: att.content ? att.content.length : 0,
+          contentType: att.contentType || att.type
+        });
+        
+        const cleanAtt = {
+          filename: att.filename || att.name,
           size: att.size,
-          type: att.type
+          contentType: att.contentType || att.type
         };
         
-        // Preserve content for PGP key attachments
-        if (att.content && att.name === 'public_key.asc') {
+        // Preserve content for all attachments that have it
+        if (att.content) {
           cleanAtt.content = att.content;
-          // Set proper content type
-          cleanAtt.contentType = 'application/pgp-keys';
-          console.log(`Preserving public key attachment ${att.name} (${att.content.substring(0, 40)}...)`);
+          cleanAtt.encoding = att.encoding || 'base64';
+          console.log(`[Mail Send API] Preserving attachment content for ${cleanAtt.filename}`);
+        }
+        
+        // Special handling for PGP key attachments
+        if (att.filename && att.filename.includes('public_key.asc')) {
+          console.log(`[Mail Send API] Found public key attachment: ${att.filename}`);
+          console.log(`[Mail Send API] Key content preview: ${att.content ? att.content.substring(0, 100) : 'NO CONTENT'}`);
         }
         
         return cleanAtt;
       });
+    } else {
+      console.log(`[Mail Send API] No attachments in request`);
     }
     
     const emailData = {
