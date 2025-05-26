@@ -160,7 +160,10 @@ export default function YubiKeyDiagnostics() {
           addLog('Credential created:', {
             id: credential.id,
             type: credential.type,
-            authenticatorAttachment: credential.authenticatorAttachment
+            authenticatorAttachment: credential.authenticatorAttachment,
+            warning: credential.authenticatorAttachment === 'platform' ? 
+              'WARNING: Platform authenticator used (Touch ID/Windows Hello), not YubiKey!' : 
+              'SUCCESS: External authenticator used (likely YubiKey)'
           });
           
           // Get authenticator data
@@ -401,7 +404,7 @@ export default function YubiKeyDiagnostics() {
           </button>
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-3 gap-4 mb-6">
             <button
               onClick={async () => {
                 setLogs([]);
@@ -437,6 +440,57 @@ export default function YubiKeyDiagnostics() {
               className="px-4 py-2 bg-green-700 text-white rounded hover:bg-green-600"
             >
               Quick Register
+            </button>
+            <button
+              onClick={async () => {
+                setLogs([]);
+                addLog('YubiKey-only test: Forcing external authenticator...');
+                try {
+                  const challenge = new Uint8Array(32);
+                  crypto.getRandomValues(challenge);
+                  
+                  const credential = await navigator.credentials.create({
+                    publicKey: {
+                      challenge,
+                      rp: { 
+                        name: "KeyKeeper YubiKey",
+                        id: window.location.hostname
+                      },
+                      user: {
+                        id: crypto.getRandomValues(new Uint8Array(16)),
+                        name: `yubikey-${Date.now()}@test.com`,
+                        displayName: "YubiKey User"
+                      },
+                      pubKeyCredParams: [
+                        { alg: -7, type: "public-key" }  // ES256 only
+                      ],
+                      authenticatorSelection: {
+                        authenticatorAttachment: "cross-platform",
+                        residentKey: "discouraged",
+                        userVerification: "discouraged"
+                      },
+                      attestation: "none",
+                      timeout: 120000
+                    }
+                  });
+                  
+                  if (credential.authenticatorAttachment === 'platform') {
+                    addLog('❌ Platform authenticator was used instead of YubiKey');
+                    addLog('Try clicking "Use a different device" when prompted');
+                  } else {
+                    addLog('✅ YubiKey detected and working!');
+                    addLog('Authenticator type:', credential.authenticatorAttachment || 'cross-platform');
+                  }
+                } catch (e) {
+                  addLog('Error:', e.message);
+                  if (e.name === 'NotAllowedError') {
+                    addLog('Make sure your YubiKey is plugged in and you touch it when it blinks');
+                  }
+                }
+              }}
+              className="px-4 py-2 bg-purple-700 text-white rounded hover:bg-purple-600"
+            >
+              YubiKey Only
             </button>
           </div>
 

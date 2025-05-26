@@ -70,7 +70,7 @@ export class YubiKeyService {
     const challenge = new Uint8Array(32);
     crypto.getRandomValues(challenge);
 
-    // Create credential
+    // Create credential - specifically request USB security key
     const credential = await navigator.credentials.create({
       publicKey: {
         challenge,
@@ -84,16 +84,19 @@ export class YubiKeyService {
           displayName: userName || userEmail
         },
         pubKeyCredParams: [
-          { alg: -7, type: "public-key" },   // ES256
+          { alg: -7, type: "public-key" },   // ES256 (YubiKey supports this)
+          { alg: -8, type: "public-key" },   // EdDSA
           { alg: -257, type: "public-key" }  // RS256
         ],
         authenticatorSelection: {
-          authenticatorAttachment: "cross-platform",
+          authenticatorAttachment: "cross-platform", // This forces external authenticator
+          residentKey: "discouraged",
           requireResidentKey: false,
           userVerification: "discouraged"
         },
         attestation: "direct",
-        timeout: 60000
+        timeout: 120000,
+        excludeCredentials: [] // Don't exclude any credentials
       }
     });
 
@@ -124,13 +127,14 @@ export class YubiKeyService {
     const assertion = await navigator.credentials.get({
       publicKey: {
         challenge: new TextEncoder().encode(challenge),
+        rpId: window.location.hostname,
         allowCredentials: [{
           id: credentialIdBuffer,
           type: 'public-key',
-          transports: ['usb', 'nfc']
+          transports: ['usb', 'nfc', 'ble'] // YubiKey can use multiple transports
         }],
         userVerification: "discouraged",
-        timeout: 60000
+        timeout: 120000
       }
     });
 
