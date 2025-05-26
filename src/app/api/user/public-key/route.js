@@ -48,11 +48,15 @@ export async function GET(request) {
       );
     }
     
-    // Return the public key
+    console.log('[Public Key API] User data fields:', Object.keys(user));
+    console.log('[Public Key API] Has public_key:', !!user.public_key);
+    console.log('[Public Key API] Has publicKey:', !!user.publicKey);
+    
+    // Return the public key - handle both snake_case and camelCase field names
     return NextResponse.json({
       success: true,
-      publicKey: user.publicKey,
-      keyId: user.keyId,
+      publicKey: user.public_key || user.publicKey,
+      keyId: user.key_id || user.keyId,
       fingerprint: user.fingerprint
     });
     
@@ -123,11 +127,15 @@ export async function POST(request) {
       );
     }
     
-    // Return the public key
+    console.log('[Public Key API POST] User data fields:', Object.keys(user));
+    console.log('[Public Key API POST] Has public_key:', !!user.public_key);
+    console.log('[Public Key API POST] Has publicKey:', !!user.publicKey);
+    
+    // Return the public key - handle both snake_case and camelCase field names
     return NextResponse.json({
       success: true,
-      publicKey: user.publicKey,
-      keyId: user.keyId,
+      publicKey: user.public_key || user.publicKey,
+      keyId: user.key_id || user.keyId,
       fingerprint: user.fingerprint
     });
     
