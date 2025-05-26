@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { ShieldCheckIcon, KeyIcon, InformationCircleIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import * as openpgp from 'openpgp';
-import { yubiKeyService } from '@/lib/auth/yubikey';
 
 export default function YubiKeyDiagnostics() {
   const [results, setResults] = useState({});
@@ -233,6 +232,14 @@ export default function YubiKeyDiagnostics() {
     addLog('Testing KeyKeeper YubiKey integration...');
     
     try {
+      // Dynamically import YubiKey service to avoid SSR issues
+      const { yubiKeyService } = await import('@/lib/auth/yubikey');
+      
+      if (!yubiKeyService) {
+        addLog('YubiKey service not available (SSR environment)');
+        return;
+      }
+      
       // Step 1: Detect YubiKey
       addLog('Detecting YubiKey...');
       const detection = await yubiKeyService.detectYubiKey();
@@ -399,6 +406,11 @@ export default function YubiKeyDiagnostics() {
               onClick={async () => {
                 setLogs([]);
                 addLog('Quick test: Detecting YubiKey...');
+                const { yubiKeyService } = await import('@/lib/auth/yubikey');
+                if (!yubiKeyService) {
+                  addLog('YubiKey service not available');
+                  return;
+                }
                 const methods = await yubiKeyService.detectYubiKey();
                 addLog('Detection complete:', methods);
               }}
@@ -410,6 +422,11 @@ export default function YubiKeyDiagnostics() {
               onClick={async () => {
                 setLogs([]);
                 addLog('Quick test: WebAuthn registration...');
+                const { yubiKeyService } = await import('@/lib/auth/yubikey');
+                if (!yubiKeyService) {
+                  addLog('YubiKey service not available');
+                  return;
+                }
                 try {
                   await yubiKeyService.register('quick@test.com', 'Quick Test');
                   addLog('Success! YubiKey can be used with KeyKeeper');

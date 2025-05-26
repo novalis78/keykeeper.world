@@ -9,10 +9,13 @@ import * as openpgp from 'openpgp';
 
 export class YubiKeyService {
   constructor() {
-    this.isSupported = this.checkSupport();
+    // Only check support in browser environment
+    this.isSupported = typeof window !== 'undefined' ? this.checkSupport() : false;
   }
 
   checkSupport() {
+    // Guard against SSR
+    if (typeof window === 'undefined') return false;
     return !!(window.PublicKeyCredential && navigator.credentials);
   }
 
@@ -211,5 +214,5 @@ export class YubiKeyService {
   }
 }
 
-// Singleton instance
-export const yubiKeyService = new YubiKeyService();
+// Create singleton instance only in browser
+export const yubiKeyService = typeof window !== 'undefined' ? new YubiKeyService() : null;
