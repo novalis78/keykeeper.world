@@ -11,6 +11,20 @@ export default function YubicoWebAuthnTest() {
   const [success, setSuccess] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [platformAuthAvailable, setPlatformAuthAvailable] = useState('Checking...');
+
+  useEffect(() => {
+    // Check platform authenticator availability
+    if (typeof window !== 'undefined' && window.PublicKeyCredential) {
+      window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+        .then(available => {
+          setPlatformAuthAvailable(available ? 'Available' : 'Not Available');
+        })
+        .catch(() => {
+          setPlatformAuthAvailable('Unknown');
+        });
+    }
+  }, []);
 
   // Following Yubico's exact implementation pattern
   const handleRegister = async () => {
@@ -285,7 +299,9 @@ export default function YubicoWebAuthnTest() {
                 </span>
               </p>
               <p className="text-gray-400">
-                Platform Authenticator: <span id="platform-auth" className="text-gray-500">Checking...</span>
+                Platform Authenticator: <span className={platformAuthAvailable === 'Available' ? 'text-yellow-400' : 'text-gray-400'}>
+                  {platformAuthAvailable}
+                </span>
               </p>
             </div>
           </div>
@@ -295,14 +311,3 @@ export default function YubicoWebAuthnTest() {
   );
 }
 
-// Check platform authenticator on mount
-if (typeof window !== 'undefined') {
-  window.PublicKeyCredential?.isUserVerifyingPlatformAuthenticatorAvailable()
-    .then(available => {
-      const elem = document.getElementById('platform-auth');
-      if (elem) {
-        elem.textContent = available ? 'Available' : 'Not Available';
-        elem.className = available ? 'text-yellow-400' : 'text-gray-400';
-      }
-    });
-}

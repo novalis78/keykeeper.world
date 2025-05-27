@@ -478,14 +478,9 @@ const pgpUtils = {
       } catch (readError) {
         console.log('Error with modern OpenPGP syntax, trying legacy format:', readError);
         
-        // Fallback to openpgp.js v4.x syntax if that fails
-        const { keys: [pgpPrivateKey] } = await openpgp.key.readArmored(privateKey);
-        
-        // Always decrypt the private key
-        await pgpPrivateKey.decrypt(passphrase);
-        console.log('Private key successfully decrypted (legacy format)');
-        
-        privateKeyObj = pgpPrivateKey;
+        // If modern API fails, the key format might be incompatible
+        console.error('Failed to read private key with modern API');
+        throw keyError;
       }
       
       // Parse the encrypted message
@@ -496,9 +491,8 @@ const pgpUtils = {
           armoredMessage: encryptedMessage
         });
       } catch (msgError) {
-        console.log('Error with modern OpenPGP message reading, trying legacy format:', msgError);
-        // openpgp.js v4.x syntax
-        message = await openpgp.message.readArmored(encryptedMessage);
+        console.error('Failed to read encrypted message:', msgError);
+        throw msgError;
       }
       
       // Decrypt the message, handling both modern and legacy syntax

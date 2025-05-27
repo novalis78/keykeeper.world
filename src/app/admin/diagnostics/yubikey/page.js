@@ -19,35 +19,13 @@ export default function YubiKeyDiagnostics() {
   const testOpenPGPSmartCard = async () => {
     addLog('Testing OpenPGP.js smart card support...');
     try {
-      // Check if smart card support exists
-      if (openpgp.card) {
-        addLog('OpenPGP.js has card module');
-        
-        // Try to get available cards
-        if (openpgp.card.getAvailableCards) {
-          const cards = await openpgp.card.getAvailableCards();
-          addLog('Available cards:', cards);
-          setResults(prev => ({ ...prev, openpgpCards: cards }));
-        } else {
-          addLog('getAvailableCards method not found');
-        }
-
-        // Try to connect
-        if (openpgp.card.connect) {
-          try {
-            const card = await openpgp.card.connect();
-            addLog('Card connected:', card);
-            setResults(prev => ({ ...prev, openpgpConnected: true }));
-          } catch (e) {
-            addLog('Card connection failed:', e.message);
-          }
-        }
-      } else {
-        addLog('OpenPGP.js card module not available');
-        setResults(prev => ({ ...prev, openpgpSupport: false }));
-      }
+      // Note: OpenPGP.js card support is experimental and not included in standard builds
+      addLog('OpenPGP.js version:', openpgp.config?.versionString || 'unknown');
+      addLog('Note: Smart card support requires special OpenPGP.js build');
+      addLog('Standard OpenPGP.js does not include card module');
+      setResults(prev => ({ ...prev, openpgpSupport: false }));
     } catch (error) {
-      addLog('OpenPGP smart card test error:', error.message);
+      addLog('OpenPGP test error:', error.message);
     }
   };
 
