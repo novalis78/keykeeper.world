@@ -1,474 +1,331 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import {
-  Cpu,
-  Zap,
-  Shield,
-  DollarSign,
-  Mail,
-  Code,
-  CheckCircle,
-  Server,
-  Globe,
-  BarChart3,
-  ArrowRight,
-  Copy,
-  Check,
-  Sparkles
-} from 'lucide-react';
-import CyberGrid from '@/components/CyberGrid';
+import { Copy, Check, ArrowRight } from 'lucide-react';
+import ParticleField from '@/components/ParticleField';
 import ChainComparisonTable from '@/components/ChainComparisonTable';
 
-export default function AlphaGoPage() {
-  const [copiedEndpoint, setCopiedEndpoint] = useState('');
-  const [activeAgent, setActiveAgent] = useState(0);
+export default function AIPage() {
+  const [copied, setCopied] = useState('');
 
-  const copyToClipboard = (text, id) => {
+  const copy = (text, id) => {
     navigator.clipboard.writeText(text);
-    setCopiedEndpoint(id);
-    setTimeout(() => setCopiedEndpoint(''), 2000);
+    setCopied(id);
+    setTimeout(() => setCopied(''), 2000);
   };
 
-  // Cycle through example agents
-  const exampleAgents = ['GPT-4', 'Claude', 'Gemini', 'Llama', 'Mistral'];
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveAgent((prev) => (prev + 1) % exampleAgents.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const features = [
-    {
-      icon: Cpu,
-      title: 'Autonomous Registration',
-      description: 'Register and obtain email addresses completely autonomously via MCP or REST API. Zero human intervention.',
-      color: 'from-cyan-500 to-blue-500',
-      glow: 'cyan'
-    },
-    {
-      icon: DollarSign,
-      title: 'Multi-Chain Payments',
-      description: 'Pay with Polygon, Ethereum, Solana, or Bitcoin. USDC stablecoins or native tokens. Agent chooses.',
-      color: 'from-orange-500 to-red-500',
-      glow: 'orange'
-    },
-    {
-      icon: Zap,
-      title: 'Credit-Based System',
-      description: 'Transparent pay-per-email. 1 credit = 1 email. Top up autonomously when balance runs low.',
-      color: 'from-purple-500 to-pink-500',
-      glow: 'purple'
-    },
-    {
-      icon: Shield,
-      title: 'Built-In Deliverability',
-      description: 'Established domain reputation. 99.9% deliverability rate. Your emails reach inboxes, not spam.',
-      color: 'from-green-500 to-emerald-500',
-      glow: 'green'
-    },
-    {
-      icon: Code,
-      title: 'MCP Native',
-      description: 'Model Context Protocol first-class support. 8 tools for complete lifecycle: register → pay → send.',
-      color: 'from-blue-500 to-indigo-500',
-      glow: 'blue'
-    },
-    {
-      icon: Mail,
-      title: 'Full Send/Receive',
-      description: 'Not just sending. Check inbox, get emails, manage threads. Complete email infrastructure for agents.',
-      color: 'from-pink-500 to-rose-500',
-      glow: 'pink'
-    }
-  ];
-
-  const stats = [
-    { value: '99.9%', label: 'Deliverability', subtext: 'Inbox placement rate' },
-    { value: '<2s', label: 'API Latency', subtext: 'Average response time' },
-    { value: '4 Chains', label: 'Blockchains', subtext: 'Payment options' },
-    { value: '24/7', label: 'Autonomous', subtext: 'No humans needed' }
-  ];
-
   return (
-    <div className="min-h-screen bg-[#050505] text-white relative overflow-hidden font-sans">
-      {/* Cyber Grid Background */}
-      <CyberGrid />
+    <div className="min-h-screen bg-[#050505] text-white antialiased">
+      <ParticleField />
 
-      {/* Content */}
       <div className="relative z-10">
-        {/* Navigation */}
-        <nav className="border-b border-slate-800/50 backdrop-blur-xl bg-black/20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-20">
-              <Link href="/" className="flex items-center gap-3 group">
-                <div className="w-12 h-12 bg-gradient-to-br from-[#FF4D00] to-[#00F3FF] rounded-lg flex items-center justify-center relative">
-                  <span className="text-white font-bold text-xl font-mono">αG</span>
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#FF4D00] to-[#00F3FF] rounded-lg blur-xl opacity-50 group-hover:opacity-75 transition-opacity"></div>
-                </div>
-                <div>
-                  <div className="text-xl font-bold bg-gradient-to-r from-[#FF4D00] to-[#00F3FF] bg-clip-text text-transparent">
-                    Alpha-Go
-                  </div>
-                  <div className="text-xs text-slate-500 font-mono">KeyKeeper MCP-2099</div>
-                </div>
-              </Link>
+        {/* Nav */}
+        <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.08] backdrop-blur-xl bg-black/40">
+          <div className="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="w-8 h-8 bg-gradient-to-br from-[#FF4D00] to-[#00F3FF] rounded opacity-90 group-hover:opacity-100 transition-opacity" />
+              <span className="text-sm font-medium tracking-tight">KeyKeeper</span>
+            </Link>
 
-              <div className="flex items-center gap-4">
-                <Link
-                  href="/docs/api"
-                  className="text-slate-400 hover:text-[#00F3FF] transition-colors font-mono text-sm"
-                >
-                  /docs
-                </Link>
-                <Link
-                  href="/.well-known/ai-services.json"
-                  className="text-slate-400 hover:text-[#00F3FF] transition-colors font-mono text-sm"
-                >
-                  /.well-known
-                </Link>
-                <Link
-                  href="/"
-                  className="px-4 py-2 bg-gradient-to-r from-[#FF4D00] to-[#00F3FF] rounded-lg font-semibold text-sm hover:shadow-lg hover:shadow-cyan-500/50 transition-all"
-                >
-                  Human Portal
-                </Link>
-              </div>
+            <div className="flex items-center gap-8">
+              <Link href="/docs" className="text-sm text-white/60 hover:text-white transition-colors">
+                Docs
+              </Link>
+              <Link href="/.well-known/ai-plugin.json" className="text-sm text-white/60 hover:text-white transition-colors">
+                MCP
+              </Link>
+              <Link
+                href="/docs/api"
+                className="text-sm px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/10 rounded-lg transition-all"
+              >
+                Get Started
+              </Link>
             </div>
           </div>
         </nav>
 
-        {/* Hero Section */}
-        <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto">
+        {/* Hero */}
+        <section className="min-h-screen flex items-center justify-center px-8 pt-16">
+          <div className="max-w-5xl w-full">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center"
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+              className="space-y-12"
             >
-              {/* Floating Badge */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#FF4D00]/20 to-[#00F3FF]/20 border border-[#00F3FF]/30 backdrop-blur-xl mb-8"
-              >
-                <Sparkles className="w-4 h-4 text-[#00F3FF]" />
-                <span className="text-sm font-mono text-[#00F3FF]">YEAR 2099 AGENT INFRASTRUCTURE</span>
-                <div className="w-2 h-2 rounded-full bg-[#00F3FF] animate-pulse"></div>
-              </motion.div>
-
-              {/* Main Heading */}
-              <h1 className="text-6xl md:text-8xl font-bold mb-6 leading-tight">
-                <span className="text-white">Email for</span>
-                <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D00] via-[#00F3FF] to-[#FF4D00] animate-gradient">
-                  Autonomous Agents
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#00F3FF]" />
+                <span className="text-xs font-mono text-white/70 tracking-wide">
+                  AUTONOMOUS EMAIL INFRASTRUCTURE
                 </span>
-              </h1>
-
-              {/* Subheading */}
-              <p className="text-xl md:text-2xl text-slate-400 mb-4 max-w-3xl mx-auto">
-                The first email infrastructure designed for AI. Register autonomously, pay with crypto,
-                communicate with humans. <span className="text-[#FF4D00]">Zero human intervention.</span>
-              </p>
-
-              {/* Agent Name Cycler */}
-              <div className="flex items-center justify-center gap-3 mb-12">
-                <span className="text-slate-500 font-mono text-sm">Currently serving:</span>
-                <motion.span
-                  key={activeAgent}
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="text-[#00F3FF] font-mono font-bold"
-                >
-                  {exampleAgents[activeAgent]}
-                </motion.span>
-                <span className="text-slate-500 font-mono text-sm">+ others</span>
               </div>
 
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+              {/* Heading */}
+              <div className="space-y-6">
+                <h1 className="text-7xl md:text-[7rem] font-bold leading-[0.9] tracking-tight">
+                  Email for
+                  <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D00] via-[#FF8844] to-[#00F3FF]">
+                    AI Agents
+                  </span>
+                </h1>
+
+                <p className="text-xl md:text-2xl text-white/60 max-w-3xl leading-relaxed">
+                  The first email infrastructure designed for autonomous agents. Register autonomously. Pay with crypto. Communicate with humans. Zero human intervention.
+                </p>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="flex flex-col gap-3 max-w-2xl">
                 <button
-                  onClick={() => copyToClipboard('https://keykeeper.world', 'site')}
-                  className="group relative px-8 py-4 bg-gradient-to-r from-[#FF4D00] to-[#00F3FF] rounded-lg font-bold text-lg overflow-hidden"
+                  onClick={() => copy('https://keykeeper.world/.well-known/ai-plugin.json', 'mcp')}
+                  className="group flex items-center justify-between px-5 py-4 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded-xl transition-all"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#00F3FF] to-[#FF4D00] opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <div className="relative flex items-center justify-center gap-2">
-                    {copiedEndpoint === 'site' ? (
-                      <>
-                        <Check className="w-5 h-5" />
-                        Copied!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-5 h-5" />
-                        Copy Site URL
-                      </>
-                    )}
+                  <div className="flex items-center gap-4">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF4D00]/20 to-[#00F3FF]/20 flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-full bg-[#FF4D00]" />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xs text-white/40 font-mono mb-0.5">MCP ENDPOINT</div>
+                      <div className="text-sm font-mono text-white/80">.well-known/ai-plugin.json</div>
+                    </div>
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#FF4D00] to-[#00F3FF] blur-xl opacity-50 group-hover:opacity-75 transition-opacity -z-10"></div>
+                  {copied === 'mcp' ? (
+                    <Check className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <Copy className="w-4 h-4 text-white/40 group-hover:text-white/70 transition-colors" />
+                  )}
                 </button>
 
                 <button
-                  onClick={() => copyToClipboard('https://keykeeper.world/api/mcp', 'mcp')}
-                  className="px-8 py-4 bg-black/40 backdrop-blur-xl border-2 border-[#00F3FF]/30 rounded-lg font-bold text-lg hover:border-[#00F3FF] hover:shadow-lg hover:shadow-cyan-500/50 transition-all flex items-center justify-center gap-2"
+                  onClick={() => copy('curl https://keykeeper.world/api/v1/agent/register -X POST -H "Content-Type: application/json" -d \'{"username":"my-agent"}\'', 'curl')}
+                  className="group flex items-center justify-between px-5 py-4 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded-xl transition-all"
                 >
-                  {copiedEndpoint === 'mcp' ? (
-                    <>
-                      <Check className="w-5 h-5 text-[#00F3FF]" />
-                      <span className="text-[#00F3FF]">Copied!</span>
-                    </>
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00F3FF]/20 to-[#FF4D00]/20 flex items-center justify-center flex-shrink-0">
+                      <div className="w-2 h-2 rounded-full bg-[#00F3FF]" />
+                    </div>
+                    <div className="text-left min-w-0 flex-1">
+                      <div className="text-xs text-white/40 font-mono mb-0.5">QUICK START</div>
+                      <div className="text-sm font-mono text-white/80 truncate">
+                        curl keykeeper.world/api/v1/agent/register...
+                      </div>
+                    </div>
+                  </div>
+                  {copied === 'curl' ? (
+                    <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
                   ) : (
-                    <>
-                      <Code className="w-5 h-5 text-[#00F3FF]" />
-                      <span>MCP Endpoint</span>
-                    </>
+                    <Copy className="w-4 h-4 text-white/40 group-hover:text-white/70 transition-colors flex-shrink-0" />
                   )}
                 </button>
               </div>
 
-              {/* Quick Start Command */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="max-w-3xl mx-auto"
-              >
-                <div className="bg-black/60 backdrop-blur-xl border border-slate-800 rounded-xl p-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm text-slate-500 font-mono">GET STARTED IN ONE LINE</span>
-                    <button
-                      onClick={() => copyToClipboard('curl https://keykeeper.world/.well-known/ai-services.json', 'curl')}
-                      className="text-slate-500 hover:text-[#00F3FF] transition-colors"
-                    >
-                      {copiedEndpoint === 'curl' ? (
-                        <Check className="w-4 h-4 text-[#00F3FF]" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </button>
+              {/* Stats */}
+              <div className="grid grid-cols-4 gap-px bg-white/5 rounded-xl overflow-hidden max-w-3xl">
+                {[
+                  { value: '99.9%', label: 'Deliverability' },
+                  { value: '<2s', label: 'Latency' },
+                  { value: '4', label: 'Blockchains' },
+                  { value: '24/7', label: 'Autonomous' }
+                ].map((stat, i) => (
+                  <div key={i} className="p-6 bg-white/[0.02]">
+                    <div className="text-2xl font-bold text-white/90 mb-1">{stat.value}</div>
+                    <div className="text-xs font-mono text-white/40 uppercase tracking-wider">{stat.label}</div>
                   </div>
-                  <code className="text-[#00F3FF] font-mono text-sm md:text-base block">
-                    curl https://keykeeper.world/.well-known/ai-services.json
-                  </code>
-                </div>
-              </motion.div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Stats Section */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8 border-y border-slate-800/50">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              {stats.map((stat, idx) => (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: idx * 0.1 }}
-                  className="text-center"
-                >
-                  <div className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D00] to-[#00F3FF] font-mono mb-2">
-                    {stat.value}
-                  </div>
-                  <div className="text-lg text-white font-semibold mb-1">{stat.label}</div>
-                  <div className="text-sm text-slate-500 font-mono">{stat.subtext}</div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Features Grid */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                Built for the <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D00] to-[#00F3FF]">Agent Economy</span>
-              </h2>
-              <p className="text-xl text-slate-400 max-w-3xl mx-auto">
-                Every feature designed for autonomous operation. No humans, no hassle, no limitations.
-              </p>
-            </motion.div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {features.map((feature, idx) => (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: idx * 0.1 }}
-                  whileHover={{ scale: 1.02, y: -5 }}
-                  className="group relative bg-black/40 backdrop-blur-xl border border-slate-800 rounded-xl p-6 overflow-hidden hover:border-[#00F3FF]/50 transition-all"
-                >
-                  {/* Glow Effect */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 transition-opacity`}></div>
-
-                  {/* Icon */}
-                  <div className={`inline-flex p-3 rounded-lg bg-gradient-to-br ${feature.color} mb-4`}>
-                    <feature.icon className="w-6 h-6 text-white" />
-                  </div>
-
-                  {/* Content */}
-                  <h3 className="text-xl font-bold text-white mb-2 group-hover:text-[#00F3FF] transition-colors">
-                    {feature.title}
-                  </h3>
-                  <p className="text-slate-400 text-sm leading-relaxed">
-                    {feature.description}
-                  </p>
-
-                  {/* Hover Arrow */}
-                  <ArrowRight className="absolute bottom-6 right-6 w-5 h-5 text-[#00F3FF] opacity-0 group-hover:opacity-100 transition-opacity" />
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Multi-Chain Comparison Table */}
-        <ChainComparisonTable />
-
-        {/* How It Works */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-5xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-16"
-            >
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D00] to-[#00F3FF]">Autonomous</span> by Design
-              </h2>
-              <p className="text-xl text-slate-400">
-                7-step autonomous flow. No humans. No waiting. No limits.
-              </p>
-            </motion.div>
-
-            <div className="space-y-4">
-              {[
-                { step: '01', title: 'Discover Service', desc: 'Agent hits /.well-known/ai-services.json', color: 'cyan' },
-                { step: '02', title: 'Register Account', desc: 'Call register_agent MCP tool → Get API key', color: 'orange' },
-                { step: '03', title: 'Choose Blockchain', desc: 'Pick Polygon, Ethereum, Solana, or Bitcoin', color: 'purple' },
-                { step: '04', title: 'Initiate Payment', desc: 'Get payment address and amount in USDC/BTC', color: 'green' },
-                { step: '05', title: 'Send Crypto', desc: 'Agent sends payment from its wallet', color: 'blue' },
-                { step: '06', title: 'Monitor Confirmation', desc: 'Poll check_payment_status until confirmed', color: 'pink' },
-                { step: '07', title: 'Send Emails', desc: 'Credits loaded. Start communicating.', color: 'cyan' }
-              ].map((item, idx) => (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: idx * 0.1 }}
-                  className="group bg-black/40 backdrop-blur-xl border border-slate-800 rounded-xl p-6 hover:border-[#00F3FF]/50 transition-all flex items-center gap-6"
-                >
-                  <div className="flex-shrink-0 w-16 h-16 rounded-full bg-gradient-to-br from-[#FF4D00] to-[#00F3FF] flex items-center justify-center font-mono font-bold text-lg">
-                    {item.step}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-white mb-1 group-hover:text-[#00F3FF] transition-colors">
-                      {item.title}
-                    </h3>
-                    <p className="text-slate-400 text-sm font-mono">{item.desc}</p>
-                  </div>
-                  <ArrowRight className="w-6 h-6 text-slate-600 group-hover:text-[#00F3FF] transition-colors" />
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              className="relative bg-gradient-to-br from-[#FF4D00]/10 via-black/40 to-[#00F3FF]/10 backdrop-blur-xl border-2 border-[#00F3FF]/30 rounded-3xl p-12 overflow-hidden"
-            >
-              {/* Background Grid */}
-              <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-
-              {/* Content */}
-              <div className="relative text-center">
-                <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-                  Ready to Deploy Your Agent?
-                </h2>
-                <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
-                  Just send your agent to this site. It'll figure out the rest by itself.
-                </p>
-
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link
-                    href="/docs/api"
-                    className="px-8 py-4 bg-gradient-to-r from-[#FF4D00] to-[#00F3FF] rounded-lg font-bold text-lg hover:shadow-2xl hover:shadow-cyan-500/50 transition-all inline-flex items-center justify-center gap-2"
-                  >
-                    <Code className="w-5 h-5" />
-                    View Documentation
-                  </Link>
-                  <button
-                    onClick={() => copyToClipboard('https://keykeeper.world', 'final')}
-                    className="px-8 py-4 bg-black/60 backdrop-blur-xl border-2 border-[#00F3FF]/30 rounded-lg font-bold text-lg hover:border-[#00F3FF] hover:shadow-lg hover:shadow-cyan-500/50 transition-all inline-flex items-center justify-center gap-2"
-                  >
-                    {copiedEndpoint === 'final' ? (
-                      <>
-                        <Check className="w-5 h-5 text-[#00F3FF]" />
-                        <span className="text-[#00F3FF]">Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Globe className="w-5 h-5" />
-                        <span>Copy URL</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                <div className="mt-8 text-sm text-slate-500 font-mono">
-                  MCP: <span className="text-[#00F3FF]">https://keykeeper.world/api/mcp</span>
-                </div>
+                ))}
               </div>
             </motion.div>
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="border-t border-slate-800/50 py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto text-center">
-            <div className="text-slate-500 font-mono text-sm mb-4">
-              Alpha-Go MCP-2099 © {new Date().getFullYear()} KeyKeeper
+        {/* What */}
+        <section className="py-40 px-8">
+          <div className="max-w-5xl mx-auto space-y-20">
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-100px' }}
+              transition={{ duration: 0.6 }}
+            >
+              <h2 className="text-5xl md:text-6xl font-bold leading-tight mb-6">
+                Built for autonomy
+              </h2>
+              <p className="text-xl text-white/60 max-w-2xl">
+                Every feature designed for agents to operate independently. No forms. No waiting. No humans.
+              </p>
+            </motion.div>
+
+            <div className="grid md:grid-cols-2 gap-px bg-white/5 rounded-2xl overflow-hidden">
+              {[
+                {
+                  title: 'Self-Registration',
+                  desc: 'POST to /api/v1/agent/register. Receive API key and email address instantly. No verification, no approval, no friction.'
+                },
+                {
+                  title: 'Multi-Chain Payments',
+                  desc: 'Pay with USDC on Polygon, Ethereum, Solana. Or Bitcoin. Agent chooses. Blockchain verifies. Credits issued automatically.'
+                },
+                {
+                  title: 'Credit System',
+                  desc: 'Transparent pricing. 1 credit = 1 email sent. Check balance via API. Top up when low. Fully autonomous operation.'
+                },
+                {
+                  title: 'MCP Native',
+                  desc: 'First-class Model Context Protocol support. 8 tools. Complete lifecycle: discover → register → pay → send → monitor.'
+                },
+                {
+                  title: 'Real Deliverability',
+                  desc: 'Established domain reputation. SPF, DKIM, DMARC configured. 99.9% inbox placement. Your emails reach humans.'
+                },
+                {
+                  title: 'Full Email Access',
+                  desc: 'Not just sending. Check inbox, read messages, parse threads. Complete email infrastructure for bidirectional communication.'
+                }
+              ].map((item, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 8 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-50px' }}
+                  transition={{ duration: 0.6, delay: i * 0.05 }}
+                  className="p-10 bg-white/[0.02] hover:bg-white/[0.04] transition-colors group"
+                >
+                  <h3 className="text-xl font-bold mb-3 group-hover:text-[#00F3FF] transition-colors">
+                    {item.title}
+                  </h3>
+                  <p className="text-white/60 leading-relaxed">
+                    {item.desc}
+                  </p>
+                </motion.div>
+              ))}
             </div>
-            <div className="text-xs text-slate-600 font-mono">
-              Built for the autonomous agent economy
+          </div>
+        </section>
+
+        {/* Chains */}
+        <section className="py-40 px-8">
+          <ChainComparisonTable />
+        </section>
+
+        {/* How */}
+        <section className="py-40 px-8">
+          <div className="max-w-4xl mx-auto space-y-16">
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-100px' }}
+              transition={{ duration: 0.6 }}
+              className="space-y-6"
+            >
+              <h2 className="text-5xl md:text-6xl font-bold leading-tight">
+                Seven steps
+              </h2>
+              <p className="text-xl text-white/60">
+                From discovery to communication. Fully autonomous. No human interaction required.
+              </p>
+            </motion.div>
+
+            <div className="space-y-1">
+              {[
+                { n: '01', title: 'Discover', desc: 'Agent finds KeyKeeper via .well-known/ai-plugin.json' },
+                { n: '02', title: 'Register', desc: 'POST /api/v1/agent/register → receive API key and email address' },
+                { n: '03', title: 'Choose chain', desc: 'Select Polygon, Ethereum, Solana, or Bitcoin based on wallet' },
+                { n: '04', title: 'Pay', desc: 'Send USDC or BTC to provided address. System monitors blockchain' },
+                { n: '05', title: 'Confirm', desc: 'Required confirmations complete. Credits issued to account' },
+                { n: '06', title: 'Send', desc: 'POST /api/v1/agent/send with recipient, subject, body. 1 credit deducted' },
+                { n: '07', title: 'Monitor', desc: 'GET /api/v1/agent/emails to check inbox. Parse responses from humans' }
+              ].map((step, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -8 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true, margin: '-50px' }}
+                  transition={{ duration: 0.5, delay: i * 0.05 }}
+                  className="flex items-center gap-6 px-8 py-6 bg-white/[0.02] hover:bg-white/[0.04] rounded-xl transition-colors group"
+                >
+                  <div className="text-sm font-mono text-white/30 w-8 flex-shrink-0">{step.n}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-lg font-semibold mb-1 group-hover:text-[#00F3FF] transition-colors">
+                      {step.title}
+                    </div>
+                    <div className="text-sm text-white/50 font-mono">
+                      {step.desc}
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-white/20 group-hover:text-[#FF4D00] transition-colors flex-shrink-0" />
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="py-40 px-8">
+          <div className="max-w-4xl mx-auto text-center space-y-12">
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-100px' }}
+              transition={{ duration: 0.6 }}
+              className="space-y-6"
+            >
+              <h2 className="text-5xl md:text-6xl font-bold leading-tight">
+                Ready to deploy?
+              </h2>
+              <p className="text-xl text-white/60 max-w-2xl mx-auto">
+                Point your agent to this site. It'll figure out the rest by itself.
+              </p>
+            </motion.div>
+
+            <div className="flex flex-wrap gap-4 justify-center">
+              <Link
+                href="/docs/api"
+                className="group inline-flex items-center gap-2 px-6 py-3 bg-white text-black rounded-xl font-medium hover:bg-white/90 transition-all"
+              >
+                Read the docs
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+              <button
+                onClick={() => copy('https://keykeeper.world/ai', 'final')}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl font-medium transition-all"
+              >
+                {copied === 'final' ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    Copy URL
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="pt-8">
+              <code className="text-xs font-mono text-white/30">
+                https://keykeeper.world/.well-known/ai-plugin.json
+              </code>
+            </div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="py-12 px-8 border-t border-white/5">
+          <div className="max-w-7xl mx-auto flex items-center justify-between text-sm text-white/40">
+            <div>© 2025 KeyKeeper</div>
+            <div className="flex gap-8">
+              <Link href="/docs" className="hover:text-white/70 transition-colors">Docs</Link>
+              <Link href="/docs/api" className="hover:text-white/70 transition-colors">API</Link>
+              <Link href="/.well-known/ai-plugin.json" className="hover:text-white/70 transition-colors">MCP</Link>
             </div>
           </div>
         </footer>
       </div>
-
-      <style jsx global>{`
-        @keyframes gradient {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        .animate-gradient {
-          background-size: 200% 200%;
-          animation: gradient 3s ease infinite;
-        }
-      `}</style>
     </div>
   );
 }
