@@ -546,7 +546,7 @@ await mcp.call("send_email", {
             <Link href="/terms" className="hover:text-white transition-colors">
               Terms
             </Link>
-            <a href="https://docs.keykeeper.world" className="hover:text-white transition-colors">
+            <a href="/docs/api" className="hover:text-white transition-colors">
               Documentation
             </a>
             <a href="https://status.keykeeper.world" className="hover:text-white transition-colors">

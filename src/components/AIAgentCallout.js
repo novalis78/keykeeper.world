@@ -81,7 +81,7 @@ export default function AIAgentCallout() {
                   <ArrowRightIcon className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <a
-                  href="https://docs.keykeeper.world/agents"
+                  href="/docs/api"
                   className="inline-flex items-center justify-center bg-slate-800/80 backdrop-blur-sm border border-slate-700 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-slate-700 transition-all"
                 >
                   View API Docs

@@ -21,7 +21,7 @@ export async function GET(request) {
     description: 'AI-first email service with autonomous registration, crypto payments, and full send/receive capabilities',
     version: '1.0.0',
     homepage: `${baseUrl}/ai`,
-    documentation: 'https://docs.keykeeper.world/agents',
+    documentation: `${baseUrl}/docs/api`,
 
     // Service capabilities
     capabilities: [
@@ -166,7 +166,7 @@ export async function GET(request) {
 
     // Support and contact
     support: {
-      documentation: 'https://docs.keykeeper.world',
+      documentation: `${baseUrl}/docs/api`,
       apiStatus: 'https://status.keykeeper.world',
       email: 'support@keykeeper.world',
       github: 'https://github.com/novalis78/keykeeper.world'

@@ -680,7 +680,7 @@ We encourage community contributions! Submit your SDK via GitHub.
 
 ## Support
 
-- **Documentation:** https://docs.keykeeper.world
+- **Documentation:** https://keykeeper.world/docs/api
 - **API Status:** https://status.keykeeper.world
 - **Support Email:** support@keykeeper.world
 - **GitHub Issues:** https://github.com/novalis78/keykeeper.world/issues
