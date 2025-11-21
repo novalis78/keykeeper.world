@@ -349,6 +349,29 @@ export const users = {
   },
 
   /**
+   * Create a new agent account
+   * @param {Object} agent - Agent data
+   * @returns {Promise<string>} - New agent ID
+   */
+  async createAgent(agent) {
+    const sql = `
+      INSERT INTO users (
+        id, email, name, api_key, credits, account_type, status
+      ) VALUES (?, ?, ?, ?, ?, 'agent', 'active')
+    `;
+
+    await query(sql, [
+      agent.id,
+      agent.email,
+      agent.name || null,
+      agent.apiKey,
+      agent.credits || 0
+    ]);
+
+    return agent.id;
+  },
+
+  /**
    * Update TOTP secret for 2FA
    * @param {string} id - User ID
    * @param {string} secret - TOTP secret
