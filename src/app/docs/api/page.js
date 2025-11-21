@@ -28,8 +28,17 @@ export default function APIDocsPage() {
     { id: 'authentication', title: 'Authentication' },
     { id: 'quickstart', title: 'Quick Start' },
     {
+      id: 'mcp',
+      title: 'MCP Server',
+      children: [
+        { id: 'mcp-intro', title: 'What is MCP?' },
+        { id: 'mcp-quickstart', title: 'MCP Quick Start' },
+        { id: 'mcp-tools', title: 'Available Tools' },
+      ]
+    },
+    {
       id: 'endpoints',
-      title: 'Endpoints',
+      title: 'REST Endpoints',
       children: [
         { id: 'discovery', title: 'Service Discovery' },
         { id: 'register', title: 'Register Agent' },
@@ -290,10 +299,208 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
             </div>
           </section>
 
+          {/* MCP Server */}
+          <section id="mcp" className="mb-16">
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
+              MCP Server
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 mb-8">
+              KeyKeeper provides a Model Context Protocol (MCP) server for seamless AI agent integration.
+            </p>
+
+            {/* What is MCP */}
+            <div id="mcp-intro" className="mb-12">
+              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+                What is MCP?
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400 mb-4">
+                The Model Context Protocol (MCP) is a standardized protocol that allows AI agents to discover
+                and interact with external services. KeyKeeper's MCP server provides native support for email
+                operations without requiring agents to understand REST APIs.
+              </p>
+              <div className="bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-800 rounded-lg p-4 mb-4">
+                <p className="text-sm text-cyan-900 dark:text-cyan-300">
+                  <strong>MCP Endpoint:</strong> <code className="bg-cyan-100 dark:bg-cyan-900 px-2 py-1 rounded">https://keykeeper.world/api/mcp</code>
+                </p>
+              </div>
+            </div>
+
+            {/* MCP Quick Start */}
+            <div id="mcp-quickstart" className="mb-12">
+              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+                MCP Quick Start
+              </h3>
+
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 bg-cyan-500 text-white rounded-full flex items-center justify-center text-sm">1</span>
+                    Get Server Capabilities
+                  </h4>
+                  <CodeBlock
+                    id="mcp-capabilities"
+                    language="bash"
+                    code={`curl https://keykeeper.world/api/mcp`}
+                  />
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 bg-cyan-500 text-white rounded-full flex items-center justify-center text-sm">2</span>
+                    List Available Tools
+                  </h4>
+                  <CodeBlock
+                    id="mcp-tools-list"
+                    language="bash"
+                    code={`curl -X POST https://keykeeper.world/api/mcp \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"method": "tools/list"}'`}
+                  />
+                </div>
+
+                <div>
+                  <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 bg-cyan-500 text-white rounded-full flex items-center justify-center text-sm">3</span>
+                    Call a Tool
+                  </h4>
+                  <CodeBlock
+                    id="mcp-call-tool"
+                    language="bash"
+                    code={`curl -X POST https://keykeeper.world/api/mcp \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "method": "tools/call",
+    "params": {
+      "name": "send_email",
+      "arguments": {
+        "to": "user@example.com",
+        "subject": "Hello from MCP",
+        "body": "This email was sent via Model Context Protocol!"
+      }
+    }
+  }'`}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* MCP Tools */}
+            <div id="mcp-tools" className="mb-12">
+              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+                Available Tools
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400 mb-6">
+                KeyKeeper's MCP server provides four tools for email operations:
+              </p>
+
+              <div className="space-y-6">
+                {/* send_email tool */}
+                <div className="border border-slate-200 dark:border-slate-800 rounded-lg p-6">
+                  <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                    send_email
+                  </h4>
+                  <p className="text-slate-600 dark:text-slate-400 mb-4">
+                    Send an email from your agent account. Deducts 1.0 credit.
+                  </p>
+                  <CodeBlock
+                    id="mcp-send-email"
+                    language="json"
+                    code={`{
+  "name": "send_email",
+  "arguments": {
+    "to": "recipient@example.com",
+    "subject": "Email subject",
+    "body": "Plain text body",
+    "html": "<p>Optional HTML body</p>",
+    "replyTo": "optional-reply@example.com"
+  }
+}`}
+                  />
+                </div>
+
+                {/* check_inbox tool */}
+                <div className="border border-slate-200 dark:border-slate-800 rounded-lg p-6">
+                  <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                    check_inbox
+                  </h4>
+                  <p className="text-slate-600 dark:text-slate-400 mb-4">
+                    Check your inbox for new emails. Free operation.
+                  </p>
+                  <CodeBlock
+                    id="mcp-check-inbox"
+                    language="json"
+                    code={`{
+  "name": "check_inbox",
+  "arguments": {
+    "limit": 50,
+    "folder": "INBOX"
+  }
+}`}
+                  />
+                </div>
+
+                {/* get_email tool */}
+                <div className="border border-slate-200 dark:border-slate-800 rounded-lg p-6">
+                  <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                    get_email
+                  </h4>
+                  <p className="text-slate-600 dark:text-slate-400 mb-4">
+                    Retrieve full content of a specific email. Free operation.
+                  </p>
+                  <CodeBlock
+                    id="mcp-get-email"
+                    language="json"
+                    code={`{
+  "name": "get_email",
+  "arguments": {
+    "id": "email-id-from-inbox"
+  }
+}`}
+                  />
+                </div>
+
+                {/* check_balance tool */}
+                <div className="border border-slate-200 dark:border-slate-800 rounded-lg p-6">
+                  <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                    check_balance
+                  </h4>
+                  <p className="text-slate-600 dark:text-slate-400 mb-4">
+                    Check your current credit balance and account status. Free operation.
+                  </p>
+                  <CodeBlock
+                    id="mcp-check-balance"
+                    language="json"
+                    code={`{
+  "name": "check_balance",
+  "arguments": {}
+}`}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <p className="text-sm text-blue-900 dark:text-blue-300">
+                  <strong>Full MCP Documentation:</strong> For complete MCP integration guides,
+                  examples in multiple languages, and protocol specifications, see the{' '}
+                  <a
+                    href="https://github.com/novalis78/keykeeper.world/blob/master/MCP_DOCUMENTATION.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-blue-700 dark:hover:text-blue-200"
+                  >
+                    full MCP documentation
+                  </a>.
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* Endpoints */}
           <section id="endpoints" className="mb-16">
             <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-8">
-              API Endpoints
+              REST API Endpoints
             </h2>
 
             {/* Service Discovery */}
