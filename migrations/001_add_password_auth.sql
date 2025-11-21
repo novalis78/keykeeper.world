@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS crypto_payments (
   amount_usd DECIMAL(10,2) NULL COMMENT 'USD value at time of payment',
   credits_purchased DECIMAL(10,2) NOT NULL COMMENT 'Number of email credits purchased',
   transaction_id VARCHAR(255) NULL COMMENT 'Bitcoin transaction ID',
-  status ENUM('pending', 'confirmed', 'failed', 'refunded') DEFAULT 'pending',
+  status ENUM('pending', 'confirmed', 'claimed', 'failed', 'refunded') DEFAULT 'pending',
   confirmations INT DEFAULT 0 COMMENT 'Number of blockchain confirmations',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   confirmed_at TIMESTAMP NULL,
