@@ -1,338 +1,766 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import {
   DocumentTextIcon,
-  CodeBracketIcon,
-  CurrencyDollarIcon,
-  KeyIcon,
-  EnvelopeIcon,
-  ChartBarIcon,
-  ArrowRightIcon,
+  CheckIcon,
   ClipboardDocumentIcon,
-  CheckIcon
+  Bars3Icon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 export default function APIDocsPage() {
-  const [copiedEndpoint, setCopiedEndpoint] = useState('');
+  const [activeSection, setActiveSection] = useState('introduction');
+  const [copiedCode, setCopiedCode] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const copyToClipboard = (text, id) => {
     navigator.clipboard.writeText(text);
-    setCopiedEndpoint(id);
-    setTimeout(() => setCopiedEndpoint(''), 2000);
+    setCopiedCode(id);
+    setTimeout(() => setCopiedCode(''), 2000);
   };
 
-  const sections = [
+  const navigation = [
+    { id: 'introduction', title: 'Introduction', },
+    { id: 'authentication', title: 'Authentication' },
+    { id: 'quickstart', title: 'Quick Start' },
     {
-      id: 'discovery',
-      title: 'Service Discovery',
-      icon: DocumentTextIcon,
-      description: 'Find and discover KeyKeeper services',
-      color: 'from-blue-500 to-cyan-500'
-    },
-    {
-      id: 'registration',
-      title: 'Registration',
-      icon: KeyIcon,
-      description: 'Register agents and get API keys',
-      color: 'from-cyan-500 to-teal-500'
-    },
-    {
-      id: 'email',
-      title: 'Email Operations',
-      icon: EnvelopeIcon,
-      description: 'Send, receive, and manage emails',
-      color: 'from-teal-500 to-green-500'
+      id: 'endpoints',
+      title: 'Endpoints',
+      children: [
+        { id: 'discovery', title: 'Service Discovery' },
+        { id: 'register', title: 'Register Agent' },
+        { id: 'send-email', title: 'Send Email' },
+        { id: 'check-inbox', title: 'Check Inbox' },
+        { id: 'get-email', title: 'Get Email' },
+        { id: 'balance', title: 'Check Balance' },
+      ]
     },
     {
       id: 'payment',
-      title: 'Payment System',
-      icon: CurrencyDollarIcon,
-      description: 'Bitcoin payment and credit management',
-      color: 'from-green-500 to-emerald-500'
+      title: 'Payment',
+      children: [
+        { id: 'payment-init', title: 'Initiate Payment' },
+        { id: 'payment-status', title: 'Check Status' },
+        { id: 'payment-claim', title: 'Claim Credits' },
+      ]
     },
-    {
-      id: 'account',
-      title: 'Account Management',
-      icon: ChartBarIcon,
-      description: 'Check balance and manage settings',
-      color: 'from-emerald-500 to-blue-500'
-    }
+    { id: 'errors', title: 'Error Handling' },
+    { id: 'pricing', title: 'Pricing' },
   ];
 
-  const quickStartSteps = [
-    {
-      title: 'Discover Service',
-      code: `fetch('https://keykeeper.world/.well-known/ai-services.json')`
-    },
-    {
-      title: 'Register Agent',
-      code: `fetch('https://keykeeper.world/api/v1/agent/register', {
-  method: 'POST',
-  body: JSON.stringify({ agentId: 'my-agent' })
-})`
-    },
-    {
-      title: 'Send Email',
-      code: `fetch('https://keykeeper.world/api/v1/agent/send', {
-  method: 'POST',
-  headers: { 'Authorization': 'Bearer YOUR_API_KEY' },
-  body: JSON.stringify({
-    to: 'user@example.com',
-    subject: 'Hello',
-    body: 'From my AI agent!'
-  })
-})`
-    }
-  ];
+  const CodeBlock = ({ code, language = 'javascript', id }) => (
+    <div className="relative group">
+      <button
+        onClick={() => copyToClipboard(code, id)}
+        className="absolute right-3 top-3 p-2 rounded-md bg-slate-700 hover:bg-slate-600 transition-colors opacity-0 group-hover:opacity-100 z-10"
+      >
+        {copiedCode === id ? (
+          <CheckIcon className="w-4 h-4 text-green-400" />
+        ) : (
+          <ClipboardDocumentIcon className="w-4 h-4 text-slate-300" />
+        )}
+      </button>
+      <SyntaxHighlighter
+        language={language}
+        style={vscDarkPlus}
+        customStyle={{
+          margin: 0,
+          borderRadius: '0.5rem',
+          fontSize: '0.875rem',
+          padding: '1.5rem',
+        }}
+      >
+        {code}
+      </SyntaxHighlighter>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Navigation */}
-      <nav className="border-b border-slate-700 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-lg flex items-center justify-center">
+    <div className="min-h-screen bg-white dark:bg-slate-950">
+      {/* Top Navigation */}
+      <nav className="fixed top-0 left-0 right-0 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-50">
+        <div className="h-full px-6 flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">KK</span>
               </div>
-              <span className="text-white font-semibold text-xl">
-                KeyKeeper<span className="text-cyan-400">.world</span>
+              <span className="text-slate-900 dark:text-white font-semibold text-lg">
+                KeyKeeper
               </span>
             </Link>
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/ai"
-                className="text-slate-300 hover:text-white transition-colors"
-              >
-                For Agents
-              </Link>
-              <a
-                href="https://github.com/novalis78/keykeeper.world"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-slate-300 hover:text-white transition-colors"
-              >
-                GitHub
-              </a>
-              <Link
-                href="/signup"
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:from-cyan-600 hover:to-blue-600 transition-all"
-              >
-                Get Started
-              </Link>
-            </div>
+            <span className="text-slate-400 text-sm font-medium">API Documentation</span>
+          </div>
+
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden p-2 text-slate-600 dark:text-slate-400"
+          >
+            {mobileMenuOpen ? (
+              <XMarkIcon className="w-6 h-6" />
+            ) : (
+              <Bars3Icon className="w-6 h-6" />
+            )}
+          </button>
+
+          <div className="hidden lg:flex items-center gap-4">
+            <Link
+              href="/ai"
+              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors text-sm"
+            >
+              For Agents
+            </Link>
+            <Link
+              href="/signup"
+              className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-cyan-600 hover:to-blue-700 transition-all"
+            >
+              Get Started
+            </Link>
           </div>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="pt-20 pb-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center">
-            <div className="inline-flex items-center space-x-2 bg-cyan-500/10 border border-cyan-500/30 rounded-full px-4 py-2 mb-6">
-              <CodeBracketIcon className="w-5 h-5 text-cyan-400" />
-              <span className="text-cyan-400 text-sm font-medium">API Documentation</span>
-            </div>
-
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
-              Build with
-              <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400">
-                KeyKeeper API
-              </span>
-            </h1>
-
-            <p className="text-xl text-slate-300 mb-8 max-w-3xl mx-auto">
-              Complete REST API for AI agents and developers. Send and receive emails programmatically with Bitcoin-powered credits.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-              <a
-                href="#quick-start"
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:from-cyan-600 hover:to-blue-600 transition-all shadow-lg shadow-cyan-500/50"
-              >
-                Quick Start
-              </a>
-              <a
-                href="https://github.com/novalis78/keykeeper.world/blob/master/API_DOCUMENTATION.md"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-slate-800 border border-slate-700 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-slate-700 transition-all"
-              >
-                Full Documentation
-              </a>
-            </div>
-
-            {/* Base URL */}
-            <div className="max-w-2xl mx-auto">
-              <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
-                <h3 className="text-white font-semibold mb-3">Base URL</h3>
-                <div className="flex items-center justify-between bg-slate-900 rounded px-4 py-3">
-                  <code className="text-cyan-400 text-sm">
-                    https://keykeeper.world/api
-                  </code>
-                  <button
-                    onClick={() => copyToClipboard('https://keykeeper.world/api', 'baseurl')}
-                    className="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2"
-                  >
-                    {copiedEndpoint === 'baseurl' ? (
-                      <>
-                        <CheckIcon className="w-4 h-4" />
-                        Copied!
-                      </>
-                    ) : (
-                      <>
-                        <ClipboardDocumentIcon className="w-4 h-4" />
-                        Copy
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Quick Start */}
-      <section id="quick-start" className="py-16 px-4 sm:px-6 lg:px-8 bg-slate-800/30">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-white text-center mb-12">
-            Quick Start
-          </h2>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {quickStartSteps.map((step, index) => (
-              <div key={index} className="bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden">
-                <div className="bg-slate-900 px-6 py-3 border-b border-slate-700 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">{index + 1}</span>
-                    </div>
-                    <h3 className="text-white font-semibold">{step.title}</h3>
-                  </div>
-                </div>
-                <div className="p-6">
-                  <pre className="text-sm text-slate-300 overflow-x-auto bg-slate-900 rounded p-4">
-                    <code>{step.code}</code>
-                  </pre>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* API Sections */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-white text-center mb-12">
-            API Sections
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sections.map((section) => (
-              <a
-                key={section.id}
-                href={`https://github.com/novalis78/keykeeper.world/blob/master/API_DOCUMENTATION.md#${section.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 hover:border-cyan-500/50 transition-all group"
-              >
-                <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${section.color} flex items-center justify-center mb-4`}>
-                  <section.icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-cyan-400 transition-colors">
-                  {section.title}
-                </h3>
-                <p className="text-slate-400 text-sm mb-4">
-                  {section.description}
-                </p>
-                <div className="flex items-center text-cyan-400 text-sm font-medium">
-                  View documentation
-                  <ArrowRightIcon className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </a>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-slate-800/30">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-white text-center mb-4">
-            Simple Pricing
-          </h2>
-          <p className="text-xl text-slate-400 text-center mb-12">
-            Pay per use. No subscriptions. No hidden fees.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {[
-              { credits: '1,000', price: '$100', perEmail: '$0.10' },
-              { credits: '10,000', price: '$800', perEmail: '$0.08', popular: true },
-              { credits: '100,000', price: '$5,000', perEmail: '$0.05' }
-            ].map((tier, index) => (
-              <div
-                key={index}
-                className={`bg-slate-800/50 border rounded-lg p-8 ${
-                  tier.popular ? 'border-cyan-500 shadow-lg shadow-cyan-500/20' : 'border-slate-700'
-                }`}
-              >
-                {tier.popular && (
-                  <div className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-xs font-semibold px-3 py-1 rounded-full inline-block mb-4">
-                    Most Popular
+      <div className="pt-16 flex">
+        {/* Sidebar Navigation */}
+        <aside className={`fixed lg:sticky top-16 left-0 bottom-0 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 overflow-y-auto transition-transform lg:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:block z-40`}>
+          <nav className="p-6 space-y-1">
+            {navigation.map((item) => (
+              <div key={item.id}>
+                <a
+                  href={`#${item.id}`}
+                  onClick={() => {
+                    setActiveSection(item.id);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    activeSection === item.id
+                      ? 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  {item.title}
+                </a>
+                {item.children && (
+                  <div className="ml-4 mt-1 space-y-1">
+                    {item.children.map((child) => (
+                      <a
+                        key={child.id}
+                        href={`#${child.id}`}
+                        onClick={() => {
+                          setActiveSection(child.id);
+                          setMobileMenuOpen(false);
+                        }}
+                        className={`block px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                          activeSection === child.id
+                            ? 'text-cyan-600 dark:text-cyan-400'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        {child.title}
+                      </a>
+                    ))}
                   </div>
                 )}
-                <div className="text-4xl font-bold text-white mb-2">{tier.credits}</div>
-                <div className="text-slate-400 mb-4">emails</div>
-                <div className="text-2xl font-semibold text-cyan-400 mb-1">{tier.price}</div>
-                <div className="text-slate-400 text-sm">{tier.perEmail} per email</div>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
+          </nav>
+        </aside>
 
-      {/* CTA */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-2xl p-12">
-            <h2 className="text-4xl font-bold text-white mb-4">
-              Ready to Build?
-            </h2>
-            <p className="text-xl text-slate-300 mb-8">
-              Start integrating KeyKeeper API into your applications today.
+        {/* Main Content */}
+        <main className="flex-1 px-6 lg:px-12 py-12 max-w-4xl">
+          {/* Introduction */}
+          <section id="introduction" className="mb-16">
+            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">
+              KeyKeeper API
+            </h1>
+            <p className="text-lg text-slate-600 dark:text-slate-400 mb-6">
+              Welcome to the KeyKeeper API documentation. Build email functionality into your AI agents and applications with our simple REST API.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 rounded-lg p-4">
+              <p className="text-sm text-cyan-900 dark:text-cyan-300">
+                <strong>Base URL:</strong> <code className="bg-cyan-100 dark:bg-cyan-900/40 px-2 py-1 rounded">https://keykeeper.world/api</code>
+              </p>
+            </div>
+          </section>
+
+          {/* Authentication */}
+          <section id="authentication" className="mb-16">
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
+              Authentication
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
+              All API requests require authentication using an API key passed as a Bearer token in the Authorization header.
+            </p>
+            <CodeBlock
+              id="auth-example"
+              language="bash"
+              code={`curl https://keykeeper.world/api/v1/agent/balance \\
+  -H "Authorization: Bearer YOUR_API_KEY"`}
+            />
+          </section>
+
+          {/* Quick Start */}
+          <section id="quickstart" className="mb-16">
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
+              Quick Start
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
+              Get started with KeyKeeper in three simple steps:
+            </p>
+
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                  <span className="w-6 h-6 bg-cyan-500 text-white rounded-full flex items-center justify-center text-sm">1</span>
+                  Register Your Agent
+                </h3>
+                <CodeBlock
+                  id="quickstart-1"
+                  language="javascript"
+                  code={`const response = await fetch('https://keykeeper.world/api/v1/agent/register', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    agentId: 'my-agent',
+    name: 'My AI Assistant'
+  })
+});
+
+const { apiKey, email } = await response.json();
+// Store apiKey securely - you'll need it for all requests`}
+                />
+              </div>
+
+              <div>
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                  <span className="w-6 h-6 bg-cyan-500 text-white rounded-full flex items-center justify-center text-sm">2</span>
+                  Add Credits (Bitcoin Payment)
+                </h3>
+                <CodeBlock
+                  id="quickstart-2"
+                  language="javascript"
+                  code={`// Initiate payment
+const payment = await fetch('https://keykeeper.world/api/v1/agent/payment', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ credits: 10000 })
+});
+
+const { paymentToken, bitcoinAddress, amount } = await payment.json();
+
+// Send Bitcoin to the address, then poll for confirmation
+// Once confirmed, claim your credits
+const claim = await fetch(\`https://keykeeper.world/api/v1/agent/payment/claim/\${paymentToken}\`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ apiKey })
+});`}
+                />
+              </div>
+
+              <div>
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                  <span className="w-6 h-6 bg-cyan-500 text-white rounded-full flex items-center justify-center text-sm">3</span>
+                  Send Your First Email
+                </h3>
+                <CodeBlock
+                  id="quickstart-3"
+                  language="javascript"
+                  code={`const send = await fetch('https://keykeeper.world/api/v1/agent/send', {
+  method: 'POST',
+  headers: {
+    'Authorization': \`Bearer \${apiKey}\`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    to: 'user@example.com',
+    subject: 'Hello from KeyKeeper',
+    body: 'This email was sent autonomously by my AI agent!'
+  })
+});
+
+const result = await send.json();
+console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Endpoints */}
+          <section id="endpoints" className="mb-16">
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-8">
+              API Endpoints
+            </h2>
+
+            {/* Service Discovery */}
+            <div id="discovery" className="mb-12">
+              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+                Service Discovery
+              </h3>
+              <div className="bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 mb-4">
+                <code className="text-sm text-slate-900 dark:text-slate-100">
+                  GET /.well-known/ai-services.json
+                </code>
+              </div>
+              <p className="text-slate-600 dark:text-slate-400 mb-4">
+                Get comprehensive service information including API endpoints, pricing, and capabilities.
+              </p>
+              <CodeBlock
+                id="discovery-example"
+                language="bash"
+                code={`curl https://keykeeper.world/.well-known/ai-services.json`}
+              />
+            </div>
+
+            {/* Register Agent */}
+            <div id="register" className="mb-12">
+              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+                Register Agent
+              </h3>
+              <div className="bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 mb-4">
+                <code className="text-sm text-slate-900 dark:text-slate-100">
+                  POST /api/v1/agent/register
+                </code>
+              </div>
+              <p className="text-slate-600 dark:text-slate-400 mb-4">
+                Register a new AI agent account and receive an API key.
+              </p>
+
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Request Body</h4>
+              <CodeBlock
+                id="register-request"
+                language="json"
+                code={`{
+  "agentId": "my-agent-name",
+  "name": "My AI Assistant",
+  "email": "custom@example.com"  // optional
+}`}
+              />
+
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 mt-4">Response (201)</h4>
+              <CodeBlock
+                id="register-response"
+                language="json"
+                code={`{
+  "success": true,
+  "apiKey": "kk_abc123...",
+  "email": "agent-my-agent-name@keykeeper.world",
+  "userId": "uuid-here",
+  "credits": 0
+}`}
+              />
+            </div>
+
+            {/* Send Email */}
+            <div id="send-email" className="mb-12">
+              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+                Send Email
+              </h3>
+              <div className="bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 mb-4">
+                <code className="text-sm text-slate-900 dark:text-slate-100">
+                  POST /api/v1/agent/send
+                </code>
+              </div>
+              <p className="text-slate-600 dark:text-slate-400 mb-4">
+                Send an email. Deducts 1.0 credits from your balance. Requires authentication.
+              </p>
+
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Request Body</h4>
+              <CodeBlock
+                id="send-request"
+                language="json"
+                code={`{
+  "to": "recipient@example.com",
+  "subject": "Email Subject",
+  "body": "Plain text email body",
+  "html": "<p>HTML version</p>",  // optional
+  "replyTo": "reply@example.com"  // optional
+}`}
+              />
+
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 mt-4">Response (200)</h4>
+              <CodeBlock
+                id="send-response"
+                language="json"
+                code={`{
+  "success": true,
+  "messageId": "<abc123@keykeeper.world>",
+  "creditsRemaining": 999.0,
+  "message": "Email sent successfully"
+}`}
+              />
+
+              <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                <p className="text-sm text-yellow-900 dark:text-yellow-300">
+                  <strong>Cost:</strong> 1.0 credit per email
+                </p>
+              </div>
+            </div>
+
+            {/* Check Inbox */}
+            <div id="check-inbox" className="mb-12">
+              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+                Check Inbox
+              </h3>
+              <div className="bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 mb-4">
+                <code className="text-sm text-slate-900 dark:text-slate-100">
+                  GET /api/v1/agent/inbox?limit=50&folder=INBOX
+                </code>
+              </div>
+              <p className="text-slate-600 dark:text-slate-400 mb-4">
+                Retrieve list of recent emails from inbox. Free - no credits deducted.
+              </p>
+
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Query Parameters</h4>
+              <ul className="list-disc list-inside text-slate-600 dark:text-slate-400 mb-4 space-y-1">
+                <li><code className="text-sm bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">limit</code> - Number of emails to return (default: 50)</li>
+                <li><code className="text-sm bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">folder</code> - Mailbox folder (default: "INBOX")</li>
+              </ul>
+
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Response (200)</h4>
+              <CodeBlock
+                id="inbox-response"
+                language="json"
+                code={`{
+  "folder": "INBOX",
+  "totalMessages": 150,
+  "returnedMessages": 50,
+  "emails": [
+    {
+      "id": "12345",
+      "from": "sender@example.com",
+      "subject": "Message subject",
+      "date": "2025-01-21T10:30:00Z",
+      "hasAttachments": false
+    }
+  ]
+}`}
+              />
+            </div>
+
+            {/* Get Email */}
+            <div id="get-email" className="mb-12">
+              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+                Get Email
+              </h3>
+              <div className="bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 mb-4">
+                <code className="text-sm text-slate-900 dark:text-slate-100">
+                  GET /api/v1/agent/email/:id
+                </code>
+              </div>
+              <p className="text-slate-600 dark:text-slate-400 mb-4">
+                Retrieve full content of a specific email by ID. Free - no credits deducted.
+              </p>
+
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Response (200)</h4>
+              <CodeBlock
+                id="email-response"
+                language="json"
+                code={`{
+  "id": "12345",
+  "from": "sender@example.com",
+  "fromName": "Sender Name",
+  "to": ["you@keykeeper.world"],
+  "subject": "Message subject",
+  "date": "2025-01-21T10:30:00Z",
+  "body": {
+    "text": "Plain text content",
+    "html": "<p>HTML content</p>"
+  },
+  "attachments": [
+    {
+      "filename": "document.pdf",
+      "contentType": "application/pdf",
+      "size": 12345
+    }
+  ]
+}`}
+              />
+            </div>
+
+            {/* Check Balance */}
+            <div id="balance" className="mb-12">
+              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+                Check Balance
+              </h3>
+              <div className="bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 mb-4">
+                <code className="text-sm text-slate-900 dark:text-slate-100">
+                  GET /api/v1/agent/balance
+                </code>
+              </div>
+              <p className="text-slate-600 dark:text-slate-400 mb-4">
+                Check your current credit balance.
+              </p>
+
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Response (200)</h4>
+              <CodeBlock
+                id="balance-response"
+                language="json"
+                code={`{
+  "credits": 9999.0,
+  "email": "agent-my-agent@keykeeper.world",
+  "accountStatus": "active"
+}`}
+              />
+            </div>
+          </section>
+
+          {/* Payment Section */}
+          <section id="payment" className="mb-16">
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-8">
+              Payment System
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 mb-8">
+              KeyKeeper uses a self-service Bitcoin payment system. Send BTC, get credits - completely autonomous.
+            </p>
+
+            {/* Initiate Payment */}
+            <div id="payment-init" className="mb-12">
+              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+                Initiate Payment
+              </h3>
+              <div className="bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 mb-4">
+                <code className="text-sm text-slate-900 dark:text-slate-100">
+                  POST /api/v1/agent/payment
+                </code>
+              </div>
+              <p className="text-slate-600 dark:text-slate-400 mb-4">
+                Start a new Bitcoin payment. Returns a payment token and Bitcoin address.
+              </p>
+
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Request Body</h4>
+              <CodeBlock
+                id="payment-init-request"
+                language="json"
+                code={`{
+  "credits": 10000,  // 1000, 10000, or 100000
+  "apiKey": "kk_..."  // optional: add to existing account
+}`}
+              />
+
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 mt-4">Response (200)</h4>
+              <CodeBlock
+                id="payment-init-response"
+                language="json"
+                code={`{
+  "paymentToken": "pmt_abc123...",
+  "bitcoinAddress": "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+  "amount": {
+    "credits": 10000,
+    "usd": 800,
+    "btc": 0.008,
+    "sats": 800000
+  },
+  "statusUrl": "/v1/agent/payment/status/pmt_abc123...",
+  "claimUrl": "/v1/agent/payment/claim/pmt_abc123..."
+}`}
+              />
+            </div>
+
+            {/* Check Payment Status */}
+            <div id="payment-status" className="mb-12">
+              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+                Check Payment Status
+              </h3>
+              <div className="bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 mb-4">
+                <code className="text-sm text-slate-900 dark:text-slate-100">
+                  GET /api/v1/agent/payment/status/:token
+                </code>
+              </div>
+              <p className="text-slate-600 dark:text-slate-400 mb-4">
+                Poll this endpoint every 5-10 minutes to check payment confirmation status.
+              </p>
+
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Response (200)</h4>
+              <CodeBlock
+                id="payment-status-response"
+                language="json"
+                code={`{
+  "status": "confirmed",
+  "confirmations": 3,
+  "isConfirmed": true,
+  "canClaim": true,
+  "credits": 10000,
+  "received": {
+    "confirmedSats": 800000,
+    "btc": 0.008
+  },
+  "message": "Payment confirmed! You can now claim your credits."
+}`}
+              />
+            </div>
+
+            {/* Claim Credits */}
+            <div id="payment-claim" className="mb-12">
+              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+                Claim Credits
+              </h3>
+              <div className="bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 mb-4">
+                <code className="text-sm text-slate-900 dark:text-slate-100">
+                  POST /api/v1/agent/payment/claim/:token
+                </code>
+              </div>
+              <p className="text-slate-600 dark:text-slate-400 mb-4">
+                Claim credits after payment is confirmed. Can create a new account or add to existing.
+              </p>
+
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Request Body (New Account)</h4>
+              <CodeBlock
+                id="payment-claim-new"
+                language="json"
+                code={`{
+  "agentId": "my-agent"  // optional
+}`}
+              />
+
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 mt-4">Request Body (Existing Account)</h4>
+              <CodeBlock
+                id="payment-claim-existing"
+                language="json"
+                code={`{
+  "apiKey": "kk_existing..."
+}`}
+              />
+
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 mt-4">Response (200)</h4>
+              <CodeBlock
+                id="payment-claim-response"
+                language="json"
+                code={`{
+  "success": true,
+  "credits": 10000,
+  "apiKey": "kk_new_key...",  // if new account
+  "email": "agent-my-agent@keykeeper.world",
+  "message": "Successfully claimed 10000 credits"
+}`}
+              />
+            </div>
+          </section>
+
+          {/* Error Handling */}
+          <section id="errors" className="mb-16">
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
+              Error Handling
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
+              All errors follow a consistent format with HTTP status codes and descriptive messages.
+            </p>
+
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">
+              Error Response Format
+            </h3>
+            <CodeBlock
+              id="error-format"
+              language="json"
+              code={`{
+  "error": "Human-readable error message",
+  "details": {
+    "code": "ERROR_CODE",
+    "field": "fieldName"  // if applicable
+  }
+}`}
+            />
+
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3 mt-8">
+              HTTP Status Codes
+            </h3>
+            <div className="space-y-2">
+              {[
+                { code: '200', desc: 'Success' },
+                { code: '201', desc: 'Created (registration, payment)' },
+                { code: '400', desc: 'Bad Request (invalid input)' },
+                { code: '401', desc: 'Unauthorized (invalid API key)' },
+                { code: '402', desc: 'Payment Required (insufficient credits)' },
+                { code: '403', desc: 'Forbidden (2FA required, wrong account type)' },
+                { code: '404', desc: 'Not Found' },
+                { code: '409', desc: 'Conflict (email already exists)' },
+                { code: '500', desc: 'Internal Server Error' },
+              ].map(({ code, desc }) => (
+                <div key={code} className="flex items-center gap-4 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                  <code className="text-sm font-mono font-semibold text-slate-900 dark:text-white w-12">
+                    {code}
+                  </code>
+                  <span className="text-sm text-slate-600 dark:text-slate-400">{desc}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Pricing */}
+          <section id="pricing" className="mb-16">
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
+              Pricing
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
+              Simple, transparent pricing. Pay only for what you use.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              {[
+                { credits: '1,000', usd: '$100', btc: '~0.001 BTC', perEmail: '$0.10' },
+                { credits: '10,000', usd: '$800', btc: '~0.008 BTC', perEmail: '$0.08', popular: true },
+                { credits: '100,000', usd: '$5,000', btc: '~0.05 BTC', perEmail: '$0.05' },
+              ].map((tier) => (
+                <div key={tier.credits} className={`p-6 rounded-lg border-2 ${tier.popular ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'}`}>
+                  {tier.popular && (
+                    <span className="inline-block bg-cyan-500 text-white text-xs font-semibold px-2 py-1 rounded mb-3">
+                      Popular
+                    </span>
+                  )}
+                  <div className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
+                    {tier.credits}
+                  </div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400 mb-4">emails</div>
+                  <div className="text-xl font-semibold text-cyan-600 dark:text-cyan-400 mb-1">
+                    {tier.usd}
+                  </div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400 mb-2">{tier.btc}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-500">{tier.perEmail} per email</div>
+                </div>
+              ))}
+            </div>
+
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">
+              Credit Usage
+            </h3>
+            <div className="space-y-2">
+              {[
+                { action: 'Send Email', cost: '1.0 credits' },
+                { action: 'Check Inbox', cost: 'Free' },
+                { action: 'Get Email', cost: 'Free' },
+                { action: 'Check Balance', cost: 'Free' },
+              ].map(({ action, cost }) => (
+                <div key={action} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                  <span className="text-sm text-slate-700 dark:text-slate-300">{action}</span>
+                  <span className="text-sm font-semibold text-slate-900 dark:text-white">{cost}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Footer CTA */}
+          <div className="border-t border-slate-200 dark:border-slate-800 pt-12">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
+                Ready to Get Started?
+              </h2>
+              <p className="text-slate-600 dark:text-slate-400 mb-6">
+                Join the autonomous agent revolution.
+              </p>
               <Link
                 href="/signup"
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:from-cyan-600 hover:to-blue-600 transition-all shadow-lg shadow-cyan-500/50"
+                className="inline-block bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-700 transition-all"
               >
-                Get API Key
+                Get Your API Key
               </Link>
-              <a
-                href="https://github.com/novalis78/keykeeper.world/blob/master/API_DOCUMENTATION.md"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-slate-800 border border-slate-700 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-slate-700 transition-all"
-              >
-                Read Full Docs
-              </a>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-800 py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto text-center text-slate-400">
-          <p>&copy; 2025 KeyKeeper.world - Email Infrastructure for AI Agents</p>
-        </div>
-      </footer>
+        </main>
+      </div>
     </div>
   );
 }
