@@ -12,7 +12,9 @@ Endpoint: `https://keykeeper.world/api/mcp`
 
 The Model Context Protocol (MCP) is a standardized protocol that allows AI agents to discover and interact with external services. KeyKeeper's MCP server provides a seamless way for AI agents to send and receive emails without needing to understand REST APIs.
 
-## Quick Start
+## Quick Start - Complete Autonomous Flow
+
+AI agents can complete their entire lifecycle through MCP without any external dependencies:
 
 ### 1. Discover the Service
 
@@ -20,17 +22,85 @@ The Model Context Protocol (MCP) is a standardized protocol that allows AI agent
 curl https://keykeeper.world/.well-known/ai-services.json
 ```
 
-This returns service information including the MCP endpoint.
-
 ### 2. Get Server Capabilities
 
 ```bash
 curl https://keykeeper.world/api/mcp
 ```
 
-Returns available tools and server information.
+### 3. Register (No Auth Required)
 
-### 3. Use a Tool
+```bash
+curl -X POST https://keykeeper.world/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method": "tools/call",
+    "params": {
+      "name": "register_agent",
+      "arguments": {
+        "agentId": "my-agent",
+        "name": "My AI Assistant"
+      }
+    }
+  }'
+```
+
+**Returns:** API key and email address (starts with 0 credits)
+
+### 4. Purchase Credits (No Auth Required)
+
+```bash
+curl -X POST https://keykeeper.world/api/mcp \
+  -H "Content-Type": application/json" \
+  -d '{
+    "method": "tools/call",
+    "params": {
+      "name": "initiate_payment",
+      "arguments": {
+        "credits": 10000
+      }
+    }
+  }'
+```
+
+**Returns:** Bitcoin address and payment token
+
+### 5. Check Payment Status (No Auth Required)
+
+```bash
+curl -X POST https://keykeeper.world/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method": "tools/call",
+    "params": {
+      "name": "check_payment_status",
+      "arguments": {
+        "paymentToken": "pmt_abc123..."
+      }
+    }
+  }'
+```
+
+Poll this every 5-10 minutes until `canClaim: true`
+
+### 6. Claim Credits (No Auth Required)
+
+```bash
+curl -X POST https://keykeeper.world/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method": "tools/call",
+    "params": {
+      "name": "claim_credits",
+      "arguments": {
+        "paymentToken": "pmt_abc123...",
+        "apiKey": "kk_from_step3..."
+      }
+    }
+  }'
+```
+
+### 7. Send Email (Requires Auth)
 
 ```bash
 curl -X POST https://keykeeper.world/api/mcp \
@@ -43,7 +113,7 @@ curl -X POST https://keykeeper.world/api/mcp \
       "arguments": {
         "to": "user@example.com",
         "subject": "Hello from MCP",
-        "body": "This email was sent via Model Context Protocol!"
+        "body": "Fully autonomous agent email!"
       }
     }
   }'
@@ -62,21 +132,151 @@ curl -X POST https://keykeeper.world/api/mcp \
 
 ## Authentication
 
-All MCP requests (except GET for capabilities) require authentication via API key:
+**Unauthenticated Tools (No API Key Required):**
+- `register_agent` - Get your API key
+- `initiate_payment` - Start Bitcoin payment
+- `check_payment_status` - Poll payment confirmation
+- `claim_credits` - Claim credits after payment
+
+**Authenticated Tools (Require API Key):**
+- `send_email` - Send emails
+- `check_inbox` - List inbox messages
+- `get_email` - Get full email content
+- `check_balance` - Check credit balance
+
+For authenticated tools, include your API key:
 
 ```
 Authorization: Bearer YOUR_API_KEY
 ```
 
-Get an API key by:
-1. Registering at `/api/v1/agent/register`, OR
-2. Purchasing credits at `/api/v1/agent/payment` and claiming
-
 ---
 
 ## Available Tools
 
-### 1. send_email
+### Registration & Payment Tools (No Auth)
+
+#### 1. register_agent
+
+Register a new AI agent account. Returns API key (starts with 0 credits).
+
+**Input Schema:**
+```json
+{
+  "agentId": "my-agent",
+  "name": "My AI Assistant"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "apiKey": "kk_abc123...",
+  "email": "agent-my-agent-a1b2c3@keykeeper.world",
+  "userId": "uuid",
+  "credits": 0,
+  "note": "Store your API key securely - it cannot be retrieved later."
+}
+```
+
+---
+
+#### 2. initiate_payment
+
+Start a Bitcoin payment to purchase credits. Returns payment address and token.
+
+**Input Schema:**
+```json
+{
+  "credits": 10000,
+  "apiKey": "optional_existing_key"
+}
+```
+
+**Response:**
+```json
+{
+  "paymentToken": "pmt_abc123...",
+  "bitcoinAddress": "1A1zP1eP...",
+  "amount": {
+    "credits": 10000,
+    "usd": 800,
+    "btc": 0.008,
+    "sats": 800000
+  },
+  "instructions": ["..."],
+  "nextSteps": {
+    "checkStatus": { "tool": "check_payment_status", "args": {...} }
+  }
+}
+```
+
+---
+
+#### 3. check_payment_status
+
+Check the status of a Bitcoin payment. Poll every 5-10 minutes.
+
+**Input Schema:**
+```json
+{
+  "paymentToken": "pmt_abc123..."
+}
+```
+
+**Response:**
+```json
+{
+  "status": "confirmed",
+  "confirmations": 3,
+  "canClaim": true,
+  "credits": 10000,
+  "message": "Payment confirmed! You can now claim your credits."
+}
+```
+
+---
+
+#### 4. claim_credits
+
+Claim credits after payment is confirmed. Returns API key if creating new account.
+
+**Input Schema:**
+```json
+{
+  "paymentToken": "pmt_abc123...",
+  "agentId": "my-agent",
+  "apiKey": "optional_existing_key"
+}
+```
+
+**Response (New Account):**
+```json
+{
+  "success": true,
+  "credits": 10000,
+  "apiKey": "kk_new_key...",
+  "email": "agent-my-agent@keykeeper.world",
+  "message": "Successfully claimed 10000 credits! New agent account created."
+}
+```
+
+**Response (Existing Account):**
+```json
+{
+  "success": true,
+  "credits": 10000,
+  "totalBalance": 15000,
+  "message": "Successfully claimed 10000 credits! Added to your existing account."
+}
+```
+
+---
+
+### Email Tools (Require Auth)
+
+#### 5. send_email
 
 Send an email from your agent account. Deducts 1.0 credit.
 
@@ -123,7 +323,7 @@ curl -X POST https://keykeeper.world/api/mcp \
 
 ---
 
-### 2. check_inbox
+#### 6. check_inbox
 
 Check your inbox for new emails. Returns list of recent messages.
 
@@ -165,7 +365,7 @@ curl -X POST https://keykeeper.world/api/mcp \
 
 ---
 
-### 3. get_email
+#### 7. get_email
 
 Retrieve full content of a specific email by ID.
 
@@ -206,7 +406,7 @@ curl -X POST https://keykeeper.world/api/mcp \
 
 ---
 
-### 4. check_balance
+#### 8. check_balance
 
 Check your current credit balance and account status.
 
