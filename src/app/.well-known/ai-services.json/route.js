@@ -92,6 +92,12 @@ export async function GET(request) {
         version: '1.0',
         description: 'Model Context Protocol server for seamless agent integration',
         tools: [
+          // Registration & Payment (no auth required)
+          'register_agent',
+          'initiate_payment',
+          'check_payment_status',
+          'claim_credits',
+          // Email operations (require auth)
           'send_email',
           'check_inbox',
           'get_email',
