@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { 
   ArrowRightIcon, 
   LockClosedIcon, 
@@ -14,7 +14,7 @@ import { motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [token, setToken] = useState('');
@@ -41,39 +41,6 @@ export default function ResetPasswordPage() {
     }
   }, [searchParams]);
   
-  // Password strength validation
-  const [passwordStrength, setPasswordStrength] = useState({
-    score: 0,
-    feedback: []
-  });
-
-  useEffect(() => {
-    if (password.length === 0) {
-      setPasswordStrength({ score: 0, feedback: [] });
-      return;
-    }
-
-    const feedback = [];
-    let score = 0;
-
-    if (password.length >= 8) score += 1;
-    else feedback.push('At least 8 characters');
-
-    if (/[a-z]/.test(password)) score += 1;
-    else feedback.push('Lowercase letter');
-
-    if (/[A-Z]/.test(password)) score += 1;
-    else feedback.push('Uppercase letter');
-
-    if (/[0-9]/.test(password)) score += 1;
-    else feedback.push('Number');
-
-    if (/[^a-zA-Z0-9]/.test(password)) score += 1;
-    else feedback.push('Special character');
-
-    setPasswordStrength({ score, feedback });
-  }, [password]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -140,6 +107,39 @@ export default function ResetPasswordPage() {
     if (passwordStrength.score <= 3) return 'Fair';
     return 'Strong';
   };
+
+  // Password strength validation
+  const [passwordStrength, setPasswordStrength] = useState({
+    score: 0,
+    feedback: []
+  });
+
+  useEffect(() => {
+    if (password.length === 0) {
+      setPasswordStrength({ score: 0, feedback: [] });
+      return;
+    }
+
+    const feedback = [];
+    let score = 0;
+
+    if (password.length >= 8) score += 1;
+    else feedback.push('At least 8 characters');
+
+    if (/[a-z]/.test(password)) score += 1;
+    else feedback.push('Lowercase letter');
+
+    if (/[A-Z]/.test(password)) score += 1;
+    else feedback.push('Uppercase letter');
+
+    if (/[0-9]/.test(password)) score += 1;
+    else feedback.push('Number');
+
+    if (/[^a-zA-Z0-9]/.test(password)) score += 1;
+    else feedback.push('Special character');
+
+    setPasswordStrength({ score, feedback });
+  }, [password]);
 
   // Success state
   if (success) {
@@ -369,5 +369,13 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center"><div className="text-gray-600 dark:text-gray-400">Loading...</div></div>}>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
