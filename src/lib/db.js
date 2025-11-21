@@ -322,6 +322,87 @@ export const users = {
     const sql = `UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?`;
     const result = await query(sql, [id]);
     return result.affectedRows > 0;
+  },
+
+  /**
+   * Create a new user with simple password-based auth (for humans)
+   * @param {Object} user - User data
+   * @returns {Promise<string>} - New user ID
+   */
+  async createSimple(user) {
+    const sql = `
+      INSERT INTO users (
+        id, email, name, password_hash, account_type, status
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `;
+
+    await query(sql, [
+      user.id,
+      user.email,
+      user.name || null,
+      user.passwordHash,
+      user.accountType || 'human',
+      user.status || 'pending'
+    ]);
+
+    return user.id;
+  },
+
+  /**
+   * Update TOTP secret for 2FA
+   * @param {string} id - User ID
+   * @param {string} secret - TOTP secret
+   * @returns {Promise<boolean>} - Success status
+   */
+  async updateTOTPSecret(id, secret) {
+    const sql = `UPDATE users SET totp_secret = ? WHERE id = ?`;
+    const result = await query(sql, [secret, id]);
+    return result.affectedRows > 0;
+  },
+
+  /**
+   * Enable TOTP 2FA for a user
+   * @param {string} id - User ID
+   * @returns {Promise<boolean>} - Success status
+   */
+  async enableTOTP(id) {
+    const sql = `UPDATE users SET totp_enabled = TRUE WHERE id = ?`;
+    const result = await query(sql, [id]);
+    return result.affectedRows > 0;
+  },
+
+  /**
+   * Disable TOTP 2FA for a user
+   * @param {string} id - User ID
+   * @returns {Promise<boolean>} - Success status
+   */
+  async disableTOTP(id) {
+    const sql = `UPDATE users SET totp_enabled = FALSE, totp_secret = NULL WHERE id = ?`;
+    const result = await query(sql, [id]);
+    return result.affectedRows > 0;
+  },
+
+  /**
+   * Update user credits
+   * @param {string} id - User ID
+   * @param {number} amount - Amount to add (positive) or subtract (negative)
+   * @returns {Promise<boolean>} - Success status
+   */
+  async updateCredits(id, amount) {
+    const sql = `UPDATE users SET credits = credits + ? WHERE id = ?`;
+    const result = await query(sql, [amount, id]);
+    return result.affectedRows > 0;
+  },
+
+  /**
+   * Find a user by API key
+   * @param {string} apiKey - API key
+   * @returns {Promise<Object|null>} - User object or null if not found
+   */
+  async findByApiKey(apiKey) {
+    const sql = `SELECT * FROM users WHERE api_key = ?`;
+    const results = await query(sql, [apiKey]);
+    return results.length > 0 ? results[0] : null;
   }
 };
 
