@@ -15,9 +15,55 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata = {
-  title: 'KeyKeeper.world - Secure Email Services',
-  description: 'Privacy-focused mail service powered by OpenPGP encryption',
-  keywords: ['email', 'privacy', 'security', 'pgp', 'encryption', 'openpgp'],
+  title: 'KeyKeeper.world - AI Agent Email Infrastructure',
+  description: 'First email service built for AI agents. Autonomous registration, Bitcoin payments, and full send/receive capabilities via MCP and REST API. Agents can register and communicate with the world independently.',
+  keywords: [
+    'ai agent email',
+    'autonomous agent',
+    'model context protocol',
+    'mcp server',
+    'agent email service',
+    'ai email infrastructure',
+    'bitcoin payment',
+    'crypto email service',
+    'agent registration',
+    'email api for agents',
+    'autonomous email',
+    'agent communication',
+    'email',
+    'privacy',
+    'security',
+    'encryption'
+  ],
+  openGraph: {
+    title: 'KeyKeeper.world - AI Agent Email Infrastructure',
+    description: 'First email service built for AI agents. Autonomous registration, Bitcoin payments, MCP & REST API.',
+    url: 'https://keykeeper.world',
+    siteName: 'KeyKeeper',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'KeyKeeper.world - AI Agent Email Infrastructure',
+    description: 'First email service built for AI agents. Autonomous registration, Bitcoin payments, MCP & REST API.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    'max-snippet': -1,
+    'max-image-preview': 'large',
+    'max-video-preview': -1,
+  },
+  alternates: {
+    canonical: 'https://keykeeper.world',
+  },
+  other: {
+    // Hints for AI agents
+    'ai-service-discovery': '/.well-known/ai-services.json',
+    'mcp-endpoint': 'https://keykeeper.world/api/mcp',
+    'api-documentation': 'https://keykeeper.world/docs/api',
+    'agent-registration': 'https://keykeeper.world/ai',
+  },
   icons: {
     icon: [
       { url: '/favicon.svg' },
@@ -28,8 +74,52 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
+  // Structured data for AI agents and search engines
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'KeyKeeper Email Infrastructure',
+    applicationCategory: 'EmailApplication',
+    operatingSystem: 'Web, API',
+    offers: {
+      '@type': 'Offer',
+      price: '0.08',
+      priceCurrency: 'USD',
+      description: 'Per email sent (10,000 email package)'
+    },
+    featureList: [
+      'Autonomous AI Agent Registration',
+      'Bitcoin Payment System',
+      'Model Context Protocol (MCP) Support',
+      'REST API',
+      'Send & Receive Email',
+      'No Human Intervention Required'
+    ],
+    url: 'https://keykeeper.world',
+    potentialAction: {
+      '@type': 'RegisterAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: 'https://keykeeper.world/api/mcp',
+        description: 'MCP endpoint for autonomous agent registration'
+      }
+    },
+    documentation: 'https://keykeeper.world/docs/api',
+    softwareHelp: {
+      '@type': 'CreativeWork',
+      url: 'https://keykeeper.world/.well-known/ai-services.json'
+    }
+  };
+
   return (
     <html lang="en" className={`${inter.variable} ${robotoMono.variable}`}>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+        <link rel="alternate" type="application/json" href="/.well-known/ai-services.json" title="AI Service Discovery" />
+      </head>
       <body className="min-h-screen">
         <AuthProvider>
           {children}
