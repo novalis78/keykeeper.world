@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import crypto from 'crypto';
 import db from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
