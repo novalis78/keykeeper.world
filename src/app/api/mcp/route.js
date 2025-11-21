@@ -3,7 +3,7 @@ import nodemailer from 'nodemailer';
 import db from '@/lib/db';
 import ImapFlow from 'imapflow';
 import crypto from 'crypto';
-import { BitcoinPaymentService } from '@/lib/payment/bitcoinService';
+import { MultiChainPaymentService } from '@/lib/payment/MultiChainPaymentService';
 
 /**
  * MCP (Model Context Protocol) Server
@@ -20,8 +20,8 @@ const MCP_VERSION = '2024-11-05';
 const SERVER_NAME = 'keykeeper-email';
 const SERVER_VERSION = '1.0.0';
 
-// Initialize payment service
-const bitcoinService = new BitcoinPaymentService();
+// Initialize multi-chain payment service
+const paymentService = new MultiChainPaymentService();
 
 // Tool Definitions
 const TOOLS = [
@@ -46,7 +46,7 @@ const TOOLS = [
   },
   {
     name: 'initiate_payment',
-    description: 'Start a Bitcoin payment to purchase credits. Returns payment address and token. No authentication required.',
+    description: 'Start a crypto payment to purchase credits on your preferred blockchain. Supports Bitcoin, Polygon (USDC), Ethereum (USDC), and Solana (USDC). No authentication required.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -54,6 +54,17 @@ const TOOLS = [
           type: 'number',
           description: 'Number of credits to purchase (1000, 10000, or 100000)',
           enum: [1000, 10000, 100000]
+        },
+        blockchain: {
+          type: 'string',
+          description: 'Blockchain to use: polygon (recommended, cheapest), ethereum (expensive gas), solana (fastest), bitcoin (most decentralized). Defaults to polygon.',
+          enum: ['polygon', 'ethereum', 'solana', 'bitcoin'],
+          default: 'polygon'
+        },
+        token: {
+          type: 'string',
+          description: 'Token to pay with: USDC (stablecoin), BTC, ETH, SOL, MATIC. Defaults to USDC for EVM chains, native token otherwise.',
+          enum: ['USDC', 'BTC', 'ETH', 'SOL', 'MATIC']
         },
         apiKey: {
           type: 'string',
@@ -65,7 +76,7 @@ const TOOLS = [
   },
   {
     name: 'check_payment_status',
-    description: 'Check the status of a Bitcoin payment. Poll this every 5-10 minutes. No authentication required.',
+    description: 'Check the status of a crypto payment on any blockchain (Bitcoin, Polygon, Ethereum, Solana). Poll every 2-10 minutes depending on chain. No authentication required.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -374,7 +385,7 @@ async function registerAgent(args) {
  * Tool: initiate_payment (no auth required)
  */
 async function initiatePayment(args) {
-  const { credits, apiKey } = args;
+  const { credits, blockchain = 'polygon', token, apiKey } = args;
 
   if (!credits || ![1000, 10000, 100000].includes(credits)) {
     throw new Error('Invalid credit amount. Must be 1000, 10000, or 100000');
@@ -390,33 +401,50 @@ async function initiatePayment(args) {
     userId = user.id;
   }
 
-  // Get BTC pricing
-  const pricing = await bitcoinService.calculateBtcAmount(credits);
+  // Use multi-chain payment service
+  const paymentInfo = await paymentService.initiatePayment(credits, blockchain);
 
-  // Generate payment token and address
-  const paymentToken = bitcoinService.generatePaymentToken();
-  const bitcoinAddress = bitcoinService.generateBitcoinAddress(paymentToken);
+  // Determine token symbol
+  const tokenSymbol = token || (blockchain === 'bitcoin' ? 'BTC' : 'USDC');
 
-  // Store payment in database
+  // Store payment in database with multi-chain support
   const paymentId = crypto.randomUUID();
   await db.query(
-    `INSERT INTO crypto_payments (id, user_id, payment_address, amount_btc, amount_usd,
-     credits_purchased, status, metadata)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO crypto_payments (
+      id, user_id, payment_address, amount_btc, amount_usd, amount_tokens,
+      credits_purchased, blockchain, token_symbol, contract_address,
+      network_confirmations, status, metadata
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       paymentId,
       userId,
-      bitcoinAddress,
-      pricing.btc,
-      pricing.usd,
-      pricing.credits,
+      paymentInfo.paymentAddress,
+      blockchain === 'bitcoin' ? paymentInfo.btc : 0,
+      paymentInfo.usd,
+      paymentInfo.amountSmallestUnit || paymentInfo.sats || 0,
+      paymentInfo.credits,
+      blockchain,
+      tokenSymbol,
+      paymentInfo.contract || paymentInfo.mint || null,
+      paymentInfo.requiredConfirmations,
       'pending',
       JSON.stringify({
-        token: paymentToken,
-        requiredSats: pricing.sats,
-        createdAt: new Date().toISOString()
+        token: paymentInfo.paymentToken,
+        requiredAmount: paymentInfo.amountSmallestUnit || paymentInfo.sats,
+        createdAt: new Date().toISOString(),
+        blockchain: blockchain,
+        token: tokenSymbol
       })
     ]
+  );
+
+  // Get payment instructions
+  const instructions = paymentService.getPaymentInstructions(
+    blockchain,
+    paymentInfo.paymentAddress,
+    paymentInfo.amount,
+    tokenSymbol,
+    paymentInfo.paymentToken
   );
 
   return {
@@ -424,19 +452,24 @@ async function initiatePayment(args) {
       {
         type: 'text',
         text: JSON.stringify({
-          paymentToken,
-          bitcoinAddress,
-          amount: pricing,
-          instructions: [
-            `Send exactly ${pricing.btc} BTC to ${bitcoinAddress}`,
-            'Wait for 3+ confirmations (typically 30-60 minutes)',
-            `Check status with check_payment_status tool using token: ${paymentToken}`,
-            `Once confirmed, use claim_credits tool with this token`
-          ],
+          paymentToken: paymentInfo.paymentToken,
+          blockchain: blockchain,
+          token: tokenSymbol,
+          paymentAddress: paymentInfo.paymentAddress,
+          amount: paymentInfo.amount,
+          amountUSD: paymentInfo.usd,
+          contract: paymentInfo.contract || paymentInfo.mint || null,
+          explorerUrl: paymentInfo.explorerUrl,
+          estimatedFee: paymentInfo.estimatedFee,
+          estimatedTime: paymentInfo.estimatedTime,
+          requiredConfirmations: paymentInfo.requiredConfirmations,
+          instructions: instructions,
+          availableChains: paymentInfo.availableChains,
           nextSteps: {
-            checkStatus: { tool: 'check_payment_status', args: { paymentToken } },
-            claimCredits: { tool: 'claim_credits', args: { paymentToken } }
-          }
+            checkStatus: { tool: 'check_payment_status', args: { paymentToken: paymentInfo.paymentToken } },
+            claimCredits: { tool: 'claim_credits', args: { paymentToken: paymentInfo.paymentToken } }
+          },
+          warning: paymentInfo.warning || null
         }, null, 2)
       }
     ]
@@ -465,12 +498,16 @@ async function checkPaymentStatus(args) {
 
   const payment = payments[0];
   const metadata = JSON.parse(payment.metadata || '{}');
-  const requiredSats = metadata.requiredSats;
+  const blockchain = payment.blockchain || 'bitcoin';
+  const tokenSymbol = payment.token_symbol || 'BTC';
+  const requiredAmount = metadata.requiredAmount || payment.amount_tokens;
 
-  // Check blockchain status
-  const status = await bitcoinService.checkPaymentStatus(
+  // Check blockchain status using appropriate service
+  const status = await paymentService.checkPaymentStatus(
+    paymentToken,
+    blockchain,
     payment.payment_address,
-    requiredSats
+    requiredAmount
   );
 
   // Update payment status if confirmed
@@ -482,31 +519,44 @@ async function checkPaymentStatus(args) {
     );
   }
 
+  // Format response based on blockchain
+  const response = {
+    status: status.isConfirmed ? 'confirmed' : 'pending',
+    blockchain: blockchain,
+    token: tokenSymbol,
+    paymentAddress: payment.payment_address,
+    required: {
+      amount: parseFloat(payment.amount_usd),
+      token: tokenSymbol,
+      tokenAmount: blockchain === 'bitcoin'
+        ? parseFloat(payment.amount_btc)
+        : requiredAmount / 1000000 // USDC has 6 decimals
+    },
+    received: {
+      tokenAmount: blockchain === 'bitcoin'
+        ? status.totalReceivedSats / 100000000
+        : status.totalReceived || 0
+    },
+    confirmations: status.confirmations,
+    requiredConfirmations: payment.network_confirmations,
+    percentPaid: requiredAmount > 0
+      ? (((status.totalReceivedSmallestUnit || status.totalReceivedSats || 0) / requiredAmount) * 100).toFixed(2)
+      : '0.00',
+    isPaid: status.isPaid,
+    isConfirmed: status.isConfirmed,
+    canClaim: status.isConfirmed,
+    credits: parseInt(payment.credits_purchased),
+    transactions: status.transactions || [],
+    message: status.isConfirmed
+      ? 'Payment confirmed! You can now claim your credits using the claim_credits tool.'
+      : `Waiting for payment (${status.confirmations}/${payment.network_confirmations} confirmations)...`
+  };
+
   return {
     content: [
       {
         type: 'text',
-        text: JSON.stringify({
-          status: status.isConfirmed ? 'confirmed' : 'pending',
-          paymentAddress: payment.payment_address,
-          required: {
-            sats: requiredSats,
-            btc: parseFloat(payment.amount_btc)
-          },
-          received: {
-            totalSats: status.totalReceivedSats,
-            btc: status.totalReceivedSats / 100000000
-          },
-          confirmations: status.confirmations,
-          percentPaid: ((status.totalReceivedSats / requiredSats) * 100).toFixed(2),
-          isPaid: status.isPaid,
-          isConfirmed: status.isConfirmed,
-          canClaim: status.isConfirmed,
-          credits: parseInt(payment.credits_purchased),
-          message: status.isConfirmed
-            ? 'Payment confirmed! You can now claim your credits using the claim_credits tool.'
-            : 'Waiting for payment...'
-        }, null, 2)
+        text: JSON.stringify(response, null, 2)
       }
     ]
   };
