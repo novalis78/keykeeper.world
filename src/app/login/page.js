@@ -322,10 +322,17 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="mt-6">
+            <div className="mt-4 flex justify-between items-center">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300"
+              >
+                Forgot your password?
+              </Link>
+              
               <Link
                 href="/signup"
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                className="text-sm text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300"
               >
                 Create an account
               </Link>
