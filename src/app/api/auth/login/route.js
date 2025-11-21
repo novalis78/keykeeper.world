@@ -1,126 +1,151 @@
 import { NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import * as OTPAuth from 'otpauth';
 import jwt from '@/lib/auth/jwt';
-import pgpUtils from '@/lib/auth/pgp';
 import db from '@/lib/db';
+import { deriveMailPasswordFromHash } from '@/lib/auth/serverPgp';
 
-// Fix for static export by setting dynamic mode
 export const dynamic = 'force-dynamic';
 
 /**
- * Authenticate using PGP signature verification
- * 
- * The client should:
- * 1. Request a challenge from the server
- * 2. Sign it with their private key
- * 3. Send the signature, email, and challenge back to the server
+ * Simplified login using email/password + optional 2FA
  */
 export async function POST(request) {
   try {
-    console.log('Processing login request...');
-    
-    // Parse request body
     const body = await request.json();
-    const { challenge, signature, email } = body;
-    
+    const { email, password, totpCode } = body;
+
     // Validate required fields
-    if (!challenge || !signature || !email) {
-      console.error('Missing required fields:', { 
-        hasChallenge: !!challenge, 
-        hasSignature: !!signature, 
-        hasEmail: !!email 
-      });
-      
+    if (!email || !password) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Email and password are required' },
         { status: 400 }
       );
     }
-    
-    console.log('Login attempt for:', email);
-    
-    // Find the user by email to get their public key
+
+    // Find user by email
     const user = await db.users.findByEmail(email);
-    
+
     if (!user) {
-      console.error('User not found:', email);
       return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-    
-    console.log('Found user:', {
-      id: user.id,
-      email: user.email,
-      keyId: user.key_id,
-      fingerprint: user.fingerprint
-    });
-    
-    // Extract public key from user record
-    const publicKey = user.public_key;
-    
-    if (!publicKey) {
-      console.error('User does not have a public key:', email);
-      return NextResponse.json(
-        { error: 'User does not have a public key' },
-        { status: 400 }
-      );
-    }
-    
-    // Verify the PGP signature against the stored public key
-    console.log('Verifying signature with stored public key...');
-    try {
-      const isValid = await pgpUtils.verifySignature(challenge, signature, publicKey);
-      
-      if (!isValid) {
-        console.error('Invalid signature for user:', email);
-        return NextResponse.json(
-          { error: 'Invalid signature' },
-          { status: 401 }
-        );
-      }
-      
-      console.log('Signature verified successfully for user:', email);
-      
-      // Generate JWT token with user information
-      const token = await jwt.generateToken({
-        userId: user.id,
-        email: user.email,
-        keyId: user.key_id,
-        fingerprint: user.fingerprint
-      });
-      
-      // Update last login timestamp
-      await db.users.updateLastLogin(user.id);
-      
-      // Log successful login
-      await db.activityLogs.create(user.id, 'login_success', {
-        ipAddress: request.headers.get('x-forwarded-for') || request.ip,
-        userAgent: request.headers.get('user-agent')
-      });
-      
-      // Return the token and user info
-      return NextResponse.json({
-        token,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          keyId: user.key_id,
-          fingerprint: user.fingerprint
-        }
-      });
-    } catch (verifyError) {
-      console.error('Error during signature verification:', verifyError);
-      
-      return NextResponse.json(
-        { error: 'Signature verification error: ' + verifyError.message },
+        { error: 'Invalid email or password' },
         { status: 401 }
       );
     }
+
+    // Check if this is a password-based account
+    if (!user.password_hash) {
+      return NextResponse.json(
+        { error: 'This account uses a different authentication method' },
+        { status: 400 }
+      );
+    }
+
+    // Verify password
+    const passwordValid = await bcrypt.compare(password, user.password_hash);
+
+    if (!passwordValid) {
+      // Log failed login attempt
+      await db.activityLogs.create(user.id, 'login_failed', {
+        ipAddress: request.headers.get('x-forwarded-for') || request.ip,
+        reason: 'invalid_password'
+      });
+
+      return NextResponse.json(
+        { error: 'Invalid email or password' },
+        { status: 401 }
+      );
+    }
+
+    // Check if 2FA is enabled
+    if (user.totp_enabled) {
+      if (!totpCode) {
+        return NextResponse.json(
+          {
+            error: '2FA code required',
+            requires2FA: true
+          },
+          { status: 403 }
+        );
+      }
+
+      // Verify TOTP code
+      try {
+        const totp = new OTPAuth.TOTP({
+          secret: user.totp_secret,
+          digits: 6,
+          period: 30
+        });
+
+        const isValid = totp.validate({ token: totpCode, window: 1 }) !== null;
+
+        if (!isValid) {
+          await db.activityLogs.create(user.id, 'login_failed', {
+            ipAddress: request.headers.get('x-forwarded-for') || request.ip,
+            reason: 'invalid_2fa'
+          });
+
+          return NextResponse.json(
+            { error: 'Invalid 2FA code' },
+            { status: 401 }
+          );
+        }
+      } catch (totpError) {
+        console.error('2FA verification error:', totpError);
+        return NextResponse.json(
+          { error: '2FA verification failed' },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Generate JWT token
+    const token = await jwt.generateToken({
+      userId: user.id,
+      email: user.email,
+      accountType: user.account_type || 'human',
+      keyId: user.key_id,
+      fingerprint: user.fingerprint
+    });
+
+    // Update last login timestamp
+    await db.users.updateLastLogin(user.id);
+
+    // Log successful login
+    await db.activityLogs.create(user.id, 'login_success', {
+      ipAddress: request.headers.get('x-forwarded-for') || request.ip,
+      userAgent: request.headers.get('user-agent')
+    });
+
+    // Derive mail password for client-side credential storage
+    let mailPassword = null;
+    try {
+      if (user.password_hash) {
+        mailPassword = await deriveMailPasswordFromHash(email, user.password_hash);
+        console.log(`Derived mail password for ${email}`);
+      }
+    } catch (deriveError) {
+      console.error('Failed to derive mail password:', deriveError);
+      // Non-fatal - continue without mail password
+    }
+
+    // Return token and user info
+    return NextResponse.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        accountType: user.account_type || 'human',
+        totpEnabled: user.totp_enabled || false,
+        keyId: user.key_id,
+        fingerprint: user.fingerprint,
+        hasPgpKeys: !!(user.public_key && user.key_id && user.fingerprint)
+      },
+      mailPassword // Include derived mail password for client storage
+    });
   } catch (error) {
     console.error('Login error:', error);
-    
     return NextResponse.json(
       { error: 'Authentication failed: ' + error.message },
       { status: 500 }
