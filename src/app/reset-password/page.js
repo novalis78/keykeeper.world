@@ -141,6 +141,7 @@ export default function ResetPasswordPage() {
     return 'Strong';
   };
 
+  // Success state
   if (success) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -159,9 +160,11 @@ export default function ResetPasswordPage() {
             </div>
           </div>
         </div>
-      );
+      </div>
+    );
   }
 
+  // Invalid token state
   if (tokenValid === false) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -186,9 +189,11 @@ export default function ResetPasswordPage() {
             </div>
           </div>
         </div>
-      );
+      </div>
+    );
   }
 
+  // Main form
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       {/* Logo and brand */}

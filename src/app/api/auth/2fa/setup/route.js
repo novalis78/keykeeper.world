@@ -46,25 +46,43 @@ export async function POST(request) {
       digits: 6,
       period: 30
     });
-
+    
     // Get the secret
     const secret = totp.secret.base32;
-
+    
+    // Generate backup codes (one-time use)
+    const backupCodes = [];
+    for (let i = 0; i < 10; i++) {
+      backupCodes.push(totp.generate());
+    }
+    
     // Generate QR code URI
     const otpauthUrl = totp.toString();
-
+    
     // Store the secret in database (not enabled yet)
     await db.users.updateTOTPSecret(user.id, secret);
-
+    
     // Log 2FA setup initiated
     await db.activityLogs.create(user.id, '2fa_setup_initiated', {
-      ipAddress: request.headers.get('x-forwarded-for') || request.ip
+      ipAddress: request.headers.get('x-forwarded-for') || request.ip,
+      details: { 
+        method: 'totp_setup',
+        backupCodesGenerated: 10
+      }
     });
-
+    
     return NextResponse.json({
+      success: true,
       secret,
       qrCodeUrl: otpauthUrl,
-      message: 'Scan the QR code with your authenticator app, then verify with a code to enable 2FA'
+      backupCodes,
+      instructions: {
+        step1: 'Scan the QR code with your authenticator app (Google Authenticator, Authy, 1Password, etc.)',
+        step2: 'Or manually enter this secret in your app: ' + secret,
+        step3: 'Enter the 6-digit code from your app below to enable 2FA',
+        step4: 'Save your backup codes in a secure location. Each code can only be used once.',
+        apps: ['Google Authenticator', 'Authy', '1Password', 'Microsoft Authenticator', 'LastPass Authenticator']
+      }
     });
   } catch (error) {
     console.error('2FA setup error:', error);

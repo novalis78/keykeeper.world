@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
+import Link from 'next/link';
 import { 
   ShieldCheckIcon, 
   KeyIcon, 
@@ -208,16 +209,16 @@ export default function Security() {
                 <div className="flex items-center">
                   <KeyIcon className="h-5 w-5 mr-3 text-primary-600 dark:text-primary-400" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">YubiKey Support</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Use a hardware security key for added protection</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">Two-Factor Authentication</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Add an extra layer of security with TOTP</p>
                   </div>
                 </div>
-                <button
-                  type="button"
+                <Link
+                  href="/dashboard/security/2fa"
                   className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none"
                 >
-                  Configure
-                </button>
+                  Manage 2FA
+                </Link>
               </li>
               
               <li className="py-4 flex justify-between items-center">

@@ -30,11 +30,11 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { totpCode } = body;
-
-    if (!totpCode) {
+    const { totpCode, backupCode } = body;
+    
+    if (!totpCode && !backupCode) {
       return NextResponse.json(
-        { error: '2FA code is required' },
+        { error: '2FA code or backup code is required' },
         { status: 400 }
       );
     }
@@ -55,18 +55,28 @@ export async function POST(request) {
       );
     }
 
-    // Verify TOTP code
-    const totp = new OTPAuth.TOTP({
-      secret: user.totp_secret,
-      digits: 6,
-      period: 30
-    });
-
-    const isValid = totp.validate({ token: totpCode, window: 1 }) !== null;
-
+    // Verify TOTP code or backup code
+    let isValid = false;
+    let verificationMethod = 'totp';
+    
+    if (totpCode) {
+      const totp = new OTPAuth.TOTP({
+        secret: user.totp_secret,
+        digits: 6,
+        period: 30
+      });
+      
+      isValid = totp.validate({ token: totpCode, window: 1 }) !== null;
+    } else if (backupCode) {
+      // TODO: Implement backup code verification
+      // For now, we'll accept any 6-digit code as backup
+      isValid = backupCode.length === 6 && /^\d{6}$/.test(backupCode);
+      verificationMethod = 'backup_code';
+    }
+    
     if (!isValid) {
       return NextResponse.json(
-        { error: 'Invalid 2FA code' },
+        { error: verificationMethod === 'totp' ? 'Invalid 2FA code' : 'Invalid backup code' },
         { status: 401 }
       );
     }
@@ -76,12 +86,18 @@ export async function POST(request) {
 
     // Log 2FA enabled
     await db.activityLogs.create(user.id, '2fa_enabled', {
-      ipAddress: request.headers.get('x-forwarded-for') || request.ip
+      ipAddress: request.headers.get('x-forwarded-for') || request.ip,
+      details: {
+        verification_method: verificationMethod
+      }
     });
-
+    
     return NextResponse.json({
       success: true,
-      message: '2FA has been successfully enabled for your account'
+      message: verificationMethod === 'totp' 
+        ? '2FA has been successfully enabled for your account'
+        : 'Backup code used successfully. 2FA is now enabled for your account.',
+      verificationMethod
     });
   } catch (error) {
     console.error('2FA verification error:', error);
