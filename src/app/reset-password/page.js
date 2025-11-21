@@ -11,12 +11,11 @@ import {
   EyeSlashIcon
 } from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 function ResetPasswordContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [token, setToken] = useState('');
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
@@ -30,8 +29,10 @@ function ResetPasswordContent() {
   
   // Get token and userId from URL params
   useEffect(() => {
-    const urlToken = searchParams.get('token');
-    const urlUserId = searchParams.get('id');
+    // Parse URL parameters manually to avoid useSearchParams hook
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlToken = urlParams.get('token');
+    const urlUserId = urlParams.get('id');
     
     if (urlToken && urlUserId) {
       setToken(urlToken);
@@ -39,7 +40,7 @@ function ResetPasswordContent() {
       // TODO: Validate token with server
       setTokenValid(true);
     }
-  }, [searchParams]);
+  }, []);
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,8 +55,8 @@ function ResetPasswordContent() {
       return;
     }
 
-    if (passwordStrength.score < 3) {
-      setError('Please choose a stronger password.');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long.');
       return;
     }
     
@@ -95,51 +96,6 @@ function ResetPasswordContent() {
       setLoading(false);
     }
   };
-
-  const getPasswordStrengthColor = () => {
-    if (passwordStrength.score <= 2) return 'bg-red-500';
-    if (passwordStrength.score <= 3) return 'bg-yellow-500';
-    return 'bg-green-500';
-  };
-
-  const getPasswordStrengthText = () => {
-    if (passwordStrength.score <= 2) return 'Weak';
-    if (passwordStrength.score <= 3) return 'Fair';
-    return 'Strong';
-  };
-
-  // Password strength validation
-  const [passwordStrength, setPasswordStrength] = useState({
-    score: 0,
-    feedback: []
-  });
-
-  useEffect(() => {
-    if (password.length === 0) {
-      setPasswordStrength({ score: 0, feedback: [] });
-      return;
-    }
-
-    const feedback = [];
-    let score = 0;
-
-    if (password.length >= 8) score += 1;
-    else feedback.push('At least 8 characters');
-
-    if (/[a-z]/.test(password)) score += 1;
-    else feedback.push('Lowercase letter');
-
-    if (/[A-Z]/.test(password)) score += 1;
-    else feedback.push('Uppercase letter');
-
-    if (/[0-9]/.test(password)) score += 1;
-    else feedback.push('Number');
-
-    if (/[^a-zA-Z0-9]/.test(password)) score += 1;
-    else feedback.push('Special character');
-
-    setPasswordStrength({ score, feedback });
-  }, [password]);
 
   // Success state
   if (success) {
@@ -268,21 +224,21 @@ function ResetPasswordContent() {
                 <div className="mt-2">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm text-gray-600 dark:text-gray-400">
-                      Password strength: {getPasswordStrengthText()}
+                      Password strength: {password.length >= 8 ? 'Good' : 'Too short'}
                     </span>
                     <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {passwordStrength.score}/5
+                      {password.length >= 8 ? '✓' : '✗'}
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div 
-                      className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor()}`}
-                      style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+                      className={`h-2 rounded-full transition-all duration-300 ${password.length >= 8 ? 'bg-green-500' : 'bg-red-500'}`}
+                      style={{ width: `${Math.min(password.length / 12 * 100, 100)}%` }}
                     />
                   </div>
-                  {passwordStrength.feedback.length > 0 && (
+                  {password.length < 8 && (
                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      Add: {passwordStrength.feedback.join(', ')}
+                      Password must be at least 8 characters long
                     </p>
                   )}
                 </div>
@@ -334,7 +290,7 @@ function ResetPasswordContent() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 className="w-full flex items-center justify-center px-6 py-4 border border-transparent text-base font-medium rounded-lg shadow-lg text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 dark:from-primary-600 dark:to-primary-500 dark:hover:from-primary-500 dark:hover:to-primary-400 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={loading || !password || !confirmPassword || password !== confirmPassword || passwordStrength.score < 3}
+                disabled={loading || !password || !confirmPassword || password !== confirmPassword || password.length < 8}
               >
                 {loading ? (
                   <>
