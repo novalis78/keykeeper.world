@@ -1,560 +1,474 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  CpuChipIcon,
-  BoltIcon,
-  ShieldCheckIcon,
-  CurrencyDollarIcon,
-  EnvelopeIcon,
-  CodeBracketIcon,
-  CheckCircleIcon,
-  ServerIcon,
-  GlobeAltIcon,
-  ChartBarIcon,
-} from '@heroicons/react/24/outline';
+  Cpu,
+  Zap,
+  Shield,
+  DollarSign,
+  Mail,
+  Code,
+  CheckCircle,
+  Server,
+  Globe,
+  BarChart3,
+  ArrowRight,
+  Copy,
+  Check,
+  Sparkles
+} from 'lucide-react';
+import CyberGrid from '@/components/CyberGrid';
+import ChainComparisonTable from '@/components/ChainComparisonTable';
 
-export default function AIAgentPage() {
-  const [copiedEndpoint, setCopiedEndpoint] = useState(false);
+export default function AlphaGoPage() {
+  const [copiedEndpoint, setCopiedEndpoint] = useState('');
+  const [activeAgent, setActiveAgent] = useState(0);
 
-  const copyToClipboard = (text) => {
+  const copyToClipboard = (text, id) => {
     navigator.clipboard.writeText(text);
-    setCopiedEndpoint(true);
-    setTimeout(() => setCopiedEndpoint(false), 2000);
+    setCopiedEndpoint(id);
+    setTimeout(() => setCopiedEndpoint(''), 2000);
   };
+
+  // Cycle through example agents
+  const exampleAgents = ['GPT-4', 'Claude', 'Gemini', 'Llama', 'Mistral'];
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveAgent((prev) => (prev + 1) % exampleAgents.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   const features = [
     {
-      icon: CpuChipIcon,
+      icon: Cpu,
       title: 'Autonomous Registration',
-      description: 'AI agents can register and obtain email addresses completely autonomously via API - no human intervention required.',
+      description: 'Register and obtain email addresses completely autonomously via MCP or REST API. Zero human intervention.',
+      color: 'from-cyan-500 to-blue-500',
+      glow: 'cyan'
     },
     {
-      icon: CurrencyDollarIcon,
-      title: 'Crypto Payments',
-      description: 'Pay with Bitcoin. Send crypto, get credits automatically. Perfect for autonomous agents with no credit cards or bank accounts.',
+      icon: DollarSign,
+      title: 'Multi-Chain Payments',
+      description: 'Pay with Polygon, Ethereum, Solana, or Bitcoin. USDC stablecoins or native tokens. Agent chooses.',
+      color: 'from-orange-500 to-red-500',
+      glow: 'orange'
     },
     {
-      icon: BoltIcon,
+      icon: Zap,
       title: 'Credit-Based System',
-      description: 'Transparent pay-per-email model. Each email deducts credits from your balance. Top up autonomously when running low.',
+      description: 'Transparent pay-per-email. 1 credit = 1 email. Top up autonomously when balance runs low.',
+      color: 'from-purple-500 to-pink-500',
+      glow: 'purple'
     },
     {
-      icon: ShieldCheckIcon,
+      icon: Shield,
       title: 'Built-In Deliverability',
-      description: 'We\'ve built up keykeeper.world\'s email reputation. Your agents get excellent deliverability from day one.',
+      description: 'Established domain reputation. 99.9% deliverability rate. Your emails reach inboxes, not spam.',
+      color: 'from-green-500 to-emerald-500',
+      glow: 'green'
     },
     {
-      icon: CodeBracketIcon,
-      title: 'MCP & REST API',
-      description: 'Full Model Context Protocol (MCP) support plus traditional REST API. Choose what works best for your agent architecture.',
+      icon: Code,
+      title: 'MCP Native',
+      description: 'Model Context Protocol first-class support. 8 tools for complete lifecycle: register → pay → send.',
+      color: 'from-blue-500 to-indigo-500',
+      glow: 'blue'
     },
     {
-      icon: EnvelopeIcon,
-      title: 'Send & Receive',
-      description: 'Complete email functionality: send emails, receive emails, check inbox, manage messages. Everything an agent needs.',
-    },
-    {
-      icon: ServerIcon,
-      title: 'Encrypted Storage',
-      description: 'All emails encrypted at rest on our servers. Your agent\'s communications are private and secure.',
-    },
-    {
-      icon: GlobeAltIcon,
-      title: 'Custom Domains',
-      description: 'Bring your own domain for your agent\'s email. Professional addresses for your autonomous systems.',
-    },
-    {
-      icon: ChartBarIcon,
-      title: 'AI-Powered Monitoring',
-      description: 'We use AI to monitor AI. Intelligent abuse detection ensures agents can\'t spam while maintaining maximum autonomy.',
-    },
+      icon: Mail,
+      title: 'Full Send/Receive',
+      description: 'Not just sending. Check inbox, get emails, manage threads. Complete email infrastructure for agents.',
+      color: 'from-pink-500 to-rose-500',
+      glow: 'pink'
+    }
   ];
 
-  const useCases = [
-    {
-      title: 'Autonomous Notifications',
-      description: 'Your agent needs to send status updates, alerts, or reports to humans via email.',
-    },
-    {
-      title: 'Email Verification',
-      description: 'Sign up for services that require email verification without manual intervention.',
-    },
-    {
-      title: 'Customer Support',
-      description: 'AI agents handling customer inquiries need to receive and respond to emails.',
-    },
-    {
-      title: 'Multi-Agent Communication',
-      description: 'Different AI agents communicating with each other via email infrastructure.',
-    },
-    {
-      title: 'Integration Testing',
-      description: 'Test email flows in your applications without complex SMTP setup.',
-    },
-    {
-      title: 'Workflow Automation',
-      description: 'Agents that bridge traditional email-based workflows with modern APIs.',
-    },
-  ];
-
-  const pricingTiers = [
-    { emails: 1000, price: '0.001 BTC', perEmail: '~$0.001' },
-    { emails: 10000, price: '0.008 BTC', perEmail: '~$0.0008', popular: true },
-    { emails: 100000, price: '0.05 BTC', perEmail: '~$0.0005' },
+  const stats = [
+    { value: '99.9%', label: 'Deliverability', subtext: 'Inbox placement rate' },
+    { value: '<2s', label: 'API Latency', subtext: 'Average response time' },
+    { value: '4 Chains', label: 'Blockchains', subtext: 'Payment options' },
+    { value: '24/7', label: 'Autonomous', subtext: 'No humans needed' }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Navigation */}
-      <nav className="border-b border-slate-700 bg-slate-900/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">KK</span>
-              </div>
-              <span className="text-white font-semibold text-xl">
-                KeyKeeper<span className="text-cyan-400">.world</span>
-              </span>
-            </Link>
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/signup"
-                className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
-              >
-                Human Login
-              </Link>
-              <a
-                href="#get-started"
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:from-cyan-600 hover:to-blue-600 transition-all"
-              >
-                Get API Key
-              </a>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-[#050505] text-white relative overflow-hidden font-sans">
+      {/* Cyber Grid Background */}
+      <CyberGrid />
 
-      {/* Hero Section */}
-      <section className="pt-20 pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center"
-          >
-            <div className="inline-flex items-center space-x-2 bg-cyan-500/10 border border-cyan-500/30 rounded-full px-4 py-2 mb-6">
-              <CpuChipIcon className="w-5 h-5 text-cyan-400" />
-              <span className="text-cyan-400 text-sm font-medium">AI Agent Infrastructure</span>
-            </div>
-
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6">
-              Email Infrastructure
-              <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400">
-                Built for AI Agents
-              </span>
-            </h1>
-
-            <p className="text-xl md:text-2xl text-slate-300 mb-8 max-w-3xl mx-auto">
-              The first email service designed for autonomous AI agents.
-              Pay with crypto, register autonomously, and communicate with the world.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-              <a
-                href="#get-started"
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:from-cyan-600 hover:to-blue-600 transition-all shadow-lg shadow-cyan-500/50"
-              >
-                Get Started
-              </a>
-              <a
-                href="#docs"
-                className="bg-slate-800 border border-slate-700 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-slate-700 transition-all"
-              >
-                View Documentation
-              </a>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
-              <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
-                <div className="text-3xl font-bold text-cyan-400 mb-2">99.9%</div>
-                <div className="text-slate-400">Deliverability Rate</div>
-              </div>
-              <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
-                <div className="text-3xl font-bold text-cyan-400 mb-2">&lt;2s</div>
-                <div className="text-slate-400">Average API Response</div>
-              </div>
-              <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6">
-                <div className="text-3xl font-bold text-cyan-400 mb-2">24/7</div>
-                <div className="text-slate-400">Autonomous Operation</div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-slate-800/30">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-white text-center mb-12">
-            How It Works
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-center"
-            >
-              <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-white font-bold text-2xl">1</span>
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-2">Discover</h3>
-              <p className="text-slate-400">
-                Your agent discovers KeyKeeper via .well-known/ai-services.json or MCP
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-center"
-            >
-              <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-white font-bold text-2xl">2</span>
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-2">Pay</h3>
-              <p className="text-slate-400">
-                Send Bitcoin to receive credits. Automatic verification and instant activation
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-center"
-            >
-              <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-white font-bold text-2xl">3</span>
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-2">Register</h3>
-              <p className="text-slate-400">
-                Get your email address and API key. Ready to use in seconds
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="text-center"
-            >
-              <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-white font-bold text-2xl">4</span>
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-2">Communicate</h3>
-              <p className="text-slate-400">
-                Send and receive emails. Each email deducts credits transparently
-              </p>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Grid */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-white text-center mb-4">
-            Built for Autonomous Agents
-          </h2>
-          <p className="text-xl text-slate-400 text-center mb-12 max-w-3xl mx-auto">
-            Everything your AI agent needs to interact with the email ecosystem
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 hover:border-cyan-500/50 transition-all"
-              >
-                <feature.icon className="w-12 h-12 text-cyan-400 mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
-                <p className="text-slate-400">{feature.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Use Cases */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-slate-800/30">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-white text-center mb-12">
-            Use Cases
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {useCases.map((useCase, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-slate-800/50 border border-slate-700 rounded-lg p-6"
-              >
-                <CheckCircleIcon className="w-8 h-8 text-cyan-400 mb-3" />
-                <h3 className="text-lg font-semibold text-white mb-2">{useCase.title}</h3>
-                <p className="text-slate-400 text-sm">{useCase.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* API Example */}
-      <section id="docs" className="py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-white text-center mb-4">
-            Simple, Intuitive API
-          </h2>
-          <p className="text-xl text-slate-400 text-center mb-12">
-            Get started in minutes with our REST API or MCP server
-          </p>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
-            {/* REST API Example */}
-            <div className="bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden">
-              <div className="bg-slate-900 px-6 py-3 border-b border-slate-700">
-                <h3 className="text-white font-semibold">REST API</h3>
-              </div>
-              <div className="p-6">
-                <pre className="text-sm text-slate-300 overflow-x-auto">
-{`// Send an email
-const response = await fetch(
-  'https://api.keykeeper.world/v1/send',
-  {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer YOUR_API_KEY',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      to: 'user@example.com',
-      subject: 'Hello from AI Agent',
-      body: 'Autonomous email delivery!'
-    })
-  }
-);
-
-// Check credit balance
-const balance = await fetch(
-  'https://api.keykeeper.world/v1/balance',
-  {
-    headers: {
-      'Authorization': 'Bearer YOUR_API_KEY'
-    }
-  }
-);`}
-                </pre>
-              </div>
-            </div>
-
-            {/* MCP Example */}
-            <div className="bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden">
-              <div className="bg-slate-900 px-6 py-3 border-b border-slate-700">
-                <h3 className="text-white font-semibold">Model Context Protocol</h3>
-              </div>
-              <div className="p-6">
-                <pre className="text-sm text-slate-300 overflow-x-auto">
-{`// Discover via .well-known
-GET https://keykeeper.world/.well-known/ai-services.json
-
-// MCP Server Connection
-{
-  "name": "keykeeper-email",
-  "version": "1.0.0",
-  "capabilities": [
-    "send_email",
-    "receive_email",
-    "check_inbox",
-    "get_balance"
-  ],
-  "endpoint": "mcp://keykeeper.world",
-  "authentication": "api-key"
-}
-
-// Use MCP tools
-await mcp.call("send_email", {
-  to: "user@example.com",
-  subject: "Hello",
-  body: "From MCP!"
-});`}
-                </pre>
-              </div>
-            </div>
-          </div>
-
-          {/* Discovery Endpoint */}
-          <div className="mt-8 max-w-4xl mx-auto">
-            <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-lg p-6">
-              <h3 className="text-white font-semibold mb-3 flex items-center">
-                <GlobeAltIcon className="w-6 h-6 mr-2 text-cyan-400" />
-                Agent Discovery Endpoint
-              </h3>
-              <div className="flex items-center justify-between bg-slate-900 rounded px-4 py-3">
-                <code className="text-cyan-400 text-sm">
-                  https://keykeeper.world/.well-known/ai-services.json
-                </code>
-                <button
-                  onClick={() => copyToClipboard('https://keykeeper.world/.well-known/ai-services.json')}
-                  className="text-slate-400 hover:text-white transition-colors text-sm"
-                >
-                  {copiedEndpoint ? 'Copied!' : 'Copy'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing */}
-      <section id="pricing" className="py-16 px-4 sm:px-6 lg:px-8 bg-slate-800/30">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-4xl font-bold text-white text-center mb-4">
-            Transparent Pricing
-          </h2>
-          <p className="text-xl text-slate-400 text-center mb-12">
-            Pay only for what you use. No subscriptions, no hidden fees.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {pricingTiers.map((tier, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className={`bg-slate-800/50 border rounded-lg p-8 ${
-                  tier.popular
-                    ? 'border-cyan-500 shadow-lg shadow-cyan-500/20'
-                    : 'border-slate-700'
-                }`}
-              >
-                {tier.popular && (
-                  <div className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-xs font-semibold px-3 py-1 rounded-full inline-block mb-4">
-                    Most Popular
+      {/* Content */}
+      <div className="relative z-10">
+        {/* Navigation */}
+        <nav className="border-b border-slate-800/50 backdrop-blur-xl bg-black/20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-20">
+              <Link href="/" className="flex items-center gap-3 group">
+                <div className="w-12 h-12 bg-gradient-to-br from-[#FF4D00] to-[#00F3FF] rounded-lg flex items-center justify-center relative">
+                  <span className="text-white font-bold text-xl font-mono">αG</span>
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#FF4D00] to-[#00F3FF] rounded-lg blur-xl opacity-50 group-hover:opacity-75 transition-opacity"></div>
+                </div>
+                <div>
+                  <div className="text-xl font-bold bg-gradient-to-r from-[#FF4D00] to-[#00F3FF] bg-clip-text text-transparent">
+                    Alpha-Go
                   </div>
-                )}
-                <div className="text-4xl font-bold text-white mb-2">
-                  {tier.emails.toLocaleString()}
+                  <div className="text-xs text-slate-500 font-mono">KeyKeeper MCP-2099</div>
                 </div>
-                <div className="text-slate-400 mb-4">emails</div>
-                <div className="text-2xl font-semibold text-cyan-400 mb-1">
-                  {tier.price}
-                </div>
-                <div className="text-slate-400 text-sm mb-6">
-                  {tier.perEmail} per email
-                </div>
-                <ul className="space-y-3 mb-8">
-                  <li className="flex items-center text-slate-300">
-                    <CheckCircleIcon className="w-5 h-5 text-cyan-400 mr-2" />
-                    Send & Receive
-                  </li>
-                  <li className="flex items-center text-slate-300">
-                    <CheckCircleIcon className="w-5 h-5 text-cyan-400 mr-2" />
-                    API Access
-                  </li>
-                  <li className="flex items-center text-slate-300">
-                    <CheckCircleIcon className="w-5 h-5 text-cyan-400 mr-2" />
-                    MCP Support
-                  </li>
-                  <li className="flex items-center text-slate-300">
-                    <CheckCircleIcon className="w-5 h-5 text-cyan-400 mr-2" />
-                    Encrypted Storage
-                  </li>
-                </ul>
-                <button className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white py-3 rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600 transition-all">
-                  Get Started
-                </button>
-              </motion.div>
-            ))}
-          </div>
+              </Link>
 
-          <div className="mt-12 text-center">
-            <p className="text-slate-400 mb-4">
-              Need more? Custom domains available for additional fees.
-            </p>
-            <a href="#get-started" className="text-cyan-400 hover:text-cyan-300 font-medium">
-              Contact us for enterprise pricing →
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* Get Started CTA */}
-      <section id="get-started" className="py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-2xl p-12"
-          >
-            <h2 className="text-4xl font-bold text-white mb-4">
-              Get Started?
-            </h2>
-            <p className="text-xl text-slate-300 mb-8">
-              Just send your agent to this site. It'll figure out the rest by itself.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button
-                onClick={() => copyToClipboard('https://keykeeper.world', 'siteurl')}
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:from-cyan-600 hover:to-blue-600 transition-all shadow-lg shadow-cyan-500/50 flex items-center gap-2"
-              >
-                {copiedEndpoint === 'siteurl' ? '✓ Copied!' : 'Copy Site URL'}
-              </button>
-              <a
-                href="/docs/api"
-                className="bg-slate-800 border border-slate-700 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-slate-700 transition-all"
-              >
-                View API Docs
-              </a>
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/docs/api"
+                  className="text-slate-400 hover:text-[#00F3FF] transition-colors font-mono text-sm"
+                >
+                  /docs
+                </Link>
+                <Link
+                  href="/.well-known/ai-services.json"
+                  className="text-slate-400 hover:text-[#00F3FF] transition-colors font-mono text-sm"
+                >
+                  /.well-known
+                </Link>
+                <Link
+                  href="/"
+                  className="px-4 py-2 bg-gradient-to-r from-[#FF4D00] to-[#00F3FF] rounded-lg font-semibold text-sm hover:shadow-lg hover:shadow-cyan-500/50 transition-all"
+                >
+                  Human Portal
+                </Link>
+              </div>
             </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-800 py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto text-center text-slate-400">
-          <p>&copy; 2025 KeyKeeper.world - Email Infrastructure for AI Agents</p>
-          <div className="mt-4 space-x-6">
-            <Link href="/privacy" className="hover:text-white transition-colors">
-              Privacy
-            </Link>
-            <Link href="/terms" className="hover:text-white transition-colors">
-              Terms
-            </Link>
-            <a href="/docs/api" className="hover:text-white transition-colors">
-              Documentation
-            </a>
-            <a href="https://status.keykeeper.world" className="hover:text-white transition-colors">
-              Status
-            </a>
           </div>
-        </div>
-      </footer>
+        </nav>
+
+        {/* Hero Section */}
+        <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center"
+            >
+              {/* Floating Badge */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#FF4D00]/20 to-[#00F3FF]/20 border border-[#00F3FF]/30 backdrop-blur-xl mb-8"
+              >
+                <Sparkles className="w-4 h-4 text-[#00F3FF]" />
+                <span className="text-sm font-mono text-[#00F3FF]">YEAR 2099 AGENT INFRASTRUCTURE</span>
+                <div className="w-2 h-2 rounded-full bg-[#00F3FF] animate-pulse"></div>
+              </motion.div>
+
+              {/* Main Heading */}
+              <h1 className="text-6xl md:text-8xl font-bold mb-6 leading-tight">
+                <span className="text-white">Email for</span>
+                <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D00] via-[#00F3FF] to-[#FF4D00] animate-gradient">
+                  Autonomous Agents
+                </span>
+              </h1>
+
+              {/* Subheading */}
+              <p className="text-xl md:text-2xl text-slate-400 mb-4 max-w-3xl mx-auto">
+                The first email infrastructure designed for AI. Register autonomously, pay with crypto,
+                communicate with humans. <span className="text-[#FF4D00]">Zero human intervention.</span>
+              </p>
+
+              {/* Agent Name Cycler */}
+              <div className="flex items-center justify-center gap-3 mb-12">
+                <span className="text-slate-500 font-mono text-sm">Currently serving:</span>
+                <motion.span
+                  key={activeAgent}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  className="text-[#00F3FF] font-mono font-bold"
+                >
+                  {exampleAgents[activeAgent]}
+                </motion.span>
+                <span className="text-slate-500 font-mono text-sm">+ others</span>
+              </div>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+                <button
+                  onClick={() => copyToClipboard('https://keykeeper.world', 'site')}
+                  className="group relative px-8 py-4 bg-gradient-to-r from-[#FF4D00] to-[#00F3FF] rounded-lg font-bold text-lg overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#00F3FF] to-[#FF4D00] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <div className="relative flex items-center justify-center gap-2">
+                    {copiedEndpoint === 'site' ? (
+                      <>
+                        <Check className="w-5 h-5" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-5 h-5" />
+                        Copy Site URL
+                      </>
+                    )}
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#FF4D00] to-[#00F3FF] blur-xl opacity-50 group-hover:opacity-75 transition-opacity -z-10"></div>
+                </button>
+
+                <button
+                  onClick={() => copyToClipboard('https://keykeeper.world/api/mcp', 'mcp')}
+                  className="px-8 py-4 bg-black/40 backdrop-blur-xl border-2 border-[#00F3FF]/30 rounded-lg font-bold text-lg hover:border-[#00F3FF] hover:shadow-lg hover:shadow-cyan-500/50 transition-all flex items-center justify-center gap-2"
+                >
+                  {copiedEndpoint === 'mcp' ? (
+                    <>
+                      <Check className="w-5 h-5 text-[#00F3FF]" />
+                      <span className="text-[#00F3FF]">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Code className="w-5 h-5 text-[#00F3FF]" />
+                      <span>MCP Endpoint</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Quick Start Command */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="max-w-3xl mx-auto"
+              >
+                <div className="bg-black/60 backdrop-blur-xl border border-slate-800 rounded-xl p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-slate-500 font-mono">GET STARTED IN ONE LINE</span>
+                    <button
+                      onClick={() => copyToClipboard('curl https://keykeeper.world/.well-known/ai-services.json', 'curl')}
+                      className="text-slate-500 hover:text-[#00F3FF] transition-colors"
+                    >
+                      {copiedEndpoint === 'curl' ? (
+                        <Check className="w-4 h-4 text-[#00F3FF]" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                  <code className="text-[#00F3FF] font-mono text-sm md:text-base block">
+                    curl https://keykeeper.world/.well-known/ai-services.json
+                  </code>
+                </div>
+              </motion.div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Stats Section */}
+        <section className="py-16 px-4 sm:px-6 lg:px-8 border-y border-slate-800/50">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+              {stats.map((stat, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="text-center"
+                >
+                  <div className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D00] to-[#00F3FF] font-mono mb-2">
+                    {stat.value}
+                  </div>
+                  <div className="text-lg text-white font-semibold mb-1">{stat.label}</div>
+                  <div className="text-sm text-slate-500 font-mono">{stat.subtext}</div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Features Grid */}
+        <section className="py-20 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-16"
+            >
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                Built for the <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D00] to-[#00F3FF]">Agent Economy</span>
+              </h2>
+              <p className="text-xl text-slate-400 max-w-3xl mx-auto">
+                Every feature designed for autonomous operation. No humans, no hassle, no limitations.
+              </p>
+            </motion.div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {features.map((feature, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                  whileHover={{ scale: 1.02, y: -5 }}
+                  className="group relative bg-black/40 backdrop-blur-xl border border-slate-800 rounded-xl p-6 overflow-hidden hover:border-[#00F3FF]/50 transition-all"
+                >
+                  {/* Glow Effect */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 transition-opacity`}></div>
+
+                  {/* Icon */}
+                  <div className={`inline-flex p-3 rounded-lg bg-gradient-to-br ${feature.color} mb-4`}>
+                    <feature.icon className="w-6 h-6 text-white" />
+                  </div>
+
+                  {/* Content */}
+                  <h3 className="text-xl font-bold text-white mb-2 group-hover:text-[#00F3FF] transition-colors">
+                    {feature.title}
+                  </h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    {feature.description}
+                  </p>
+
+                  {/* Hover Arrow */}
+                  <ArrowRight className="absolute bottom-6 right-6 w-5 h-5 text-[#00F3FF] opacity-0 group-hover:opacity-100 transition-opacity" />
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Multi-Chain Comparison Table */}
+        <ChainComparisonTable />
+
+        {/* How It Works */}
+        <section className="py-20 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-16"
+            >
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF4D00] to-[#00F3FF]">Autonomous</span> by Design
+              </h2>
+              <p className="text-xl text-slate-400">
+                7-step autonomous flow. No humans. No waiting. No limits.
+              </p>
+            </motion.div>
+
+            <div className="space-y-4">
+              {[
+                { step: '01', title: 'Discover Service', desc: 'Agent hits /.well-known/ai-services.json', color: 'cyan' },
+                { step: '02', title: 'Register Account', desc: 'Call register_agent MCP tool → Get API key', color: 'orange' },
+                { step: '03', title: 'Choose Blockchain', desc: 'Pick Polygon, Ethereum, Solana, or Bitcoin', color: 'purple' },
+                { step: '04', title: 'Initiate Payment', desc: 'Get payment address and amount in USDC/BTC', color: 'green' },
+                { step: '05', title: 'Send Crypto', desc: 'Agent sends payment from its wallet', color: 'blue' },
+                { step: '06', title: 'Monitor Confirmation', desc: 'Poll check_payment_status until confirmed', color: 'pink' },
+                { step: '07', title: 'Send Emails', desc: 'Credits loaded. Start communicating.', color: 'cyan' }
+              ].map((item, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="group bg-black/40 backdrop-blur-xl border border-slate-800 rounded-xl p-6 hover:border-[#00F3FF]/50 transition-all flex items-center gap-6"
+                >
+                  <div className="flex-shrink-0 w-16 h-16 rounded-full bg-gradient-to-br from-[#FF4D00] to-[#00F3FF] flex items-center justify-center font-mono font-bold text-lg">
+                    {item.step}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-white mb-1 group-hover:text-[#00F3FF] transition-colors">
+                      {item.title}
+                    </h3>
+                    <p className="text-slate-400 text-sm font-mono">{item.desc}</p>
+                  </div>
+                  <ArrowRight className="w-6 h-6 text-slate-600 group-hover:text-[#00F3FF] transition-colors" />
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-20 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="relative bg-gradient-to-br from-[#FF4D00]/10 via-black/40 to-[#00F3FF]/10 backdrop-blur-xl border-2 border-[#00F3FF]/30 rounded-3xl p-12 overflow-hidden"
+            >
+              {/* Background Grid */}
+              <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+
+              {/* Content */}
+              <div className="relative text-center">
+                <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+                  Ready to Deploy Your Agent?
+                </h2>
+                <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
+                  Just send your agent to this site. It'll figure out the rest by itself.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link
+                    href="/docs/api"
+                    className="px-8 py-4 bg-gradient-to-r from-[#FF4D00] to-[#00F3FF] rounded-lg font-bold text-lg hover:shadow-2xl hover:shadow-cyan-500/50 transition-all inline-flex items-center justify-center gap-2"
+                  >
+                    <Code className="w-5 h-5" />
+                    View Documentation
+                  </Link>
+                  <button
+                    onClick={() => copyToClipboard('https://keykeeper.world', 'final')}
+                    className="px-8 py-4 bg-black/60 backdrop-blur-xl border-2 border-[#00F3FF]/30 rounded-lg font-bold text-lg hover:border-[#00F3FF] hover:shadow-lg hover:shadow-cyan-500/50 transition-all inline-flex items-center justify-center gap-2"
+                  >
+                    {copiedEndpoint === 'final' ? (
+                      <>
+                        <Check className="w-5 h-5 text-[#00F3FF]" />
+                        <span className="text-[#00F3FF]">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Globe className="w-5 h-5" />
+                        <span>Copy URL</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="mt-8 text-sm text-slate-500 font-mono">
+                  MCP: <span className="text-[#00F3FF]">https://keykeeper.world/api/mcp</span>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="border-t border-slate-800/50 py-12 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto text-center">
+            <div className="text-slate-500 font-mono text-sm mb-4">
+              Alpha-Go MCP-2099 © {new Date().getFullYear()} KeyKeeper
+            </div>
+            <div className="text-xs text-slate-600 font-mono">
+              Built for the autonomous agent economy
+            </div>
+          </div>
+        </footer>
+      </div>
+
+      <style jsx global>{`
+        @keyframes gradient {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradient 3s ease infinite;
+        }
+      `}</style>
     </div>
   );
 }
