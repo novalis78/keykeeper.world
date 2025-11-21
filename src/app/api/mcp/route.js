@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import db from '@/lib/db';
 import ImapFlow from 'imapflow';
+import crypto from 'crypto';
+import { BitcoinPaymentService } from '@/lib/payment/bitcoinService';
 
 /**
  * MCP (Model Context Protocol) Server
@@ -18,11 +20,89 @@ const MCP_VERSION = '2024-11-05';
 const SERVER_NAME = 'keykeeper-email';
 const SERVER_VERSION = '1.0.0';
 
+// Initialize payment service
+const bitcoinService = new BitcoinPaymentService();
+
 // Tool Definitions
 const TOOLS = [
+  // Registration & Payment Tools (no auth required)
+  {
+    name: 'register_agent',
+    description: 'Register a new AI agent account. Returns an API key (starts with 0 credits). No authentication required.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        agentId: {
+          type: 'string',
+          description: 'Your agent identifier (used to generate email address)'
+        },
+        name: {
+          type: 'string',
+          description: 'Optional display name for your agent'
+        }
+      },
+      required: ['agentId']
+    }
+  },
+  {
+    name: 'initiate_payment',
+    description: 'Start a Bitcoin payment to purchase credits. Returns payment address and token. No authentication required.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        credits: {
+          type: 'number',
+          description: 'Number of credits to purchase (1000, 10000, or 100000)',
+          enum: [1000, 10000, 100000]
+        },
+        apiKey: {
+          type: 'string',
+          description: 'Optional: Add credits to existing account (provide your API key)'
+        }
+      },
+      required: ['credits']
+    }
+  },
+  {
+    name: 'check_payment_status',
+    description: 'Check the status of a Bitcoin payment. Poll this every 5-10 minutes. No authentication required.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        paymentToken: {
+          type: 'string',
+          description: 'Payment token from initiate_payment'
+        }
+      },
+      required: ['paymentToken']
+    }
+  },
+  {
+    name: 'claim_credits',
+    description: 'Claim credits after payment is confirmed. Returns API key if creating new account. No authentication required.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        paymentToken: {
+          type: 'string',
+          description: 'Payment token from initiate_payment'
+        },
+        agentId: {
+          type: 'string',
+          description: 'Optional: Your agent identifier (for new account)'
+        },
+        apiKey: {
+          type: 'string',
+          description: 'Optional: Existing API key (to add credits to existing account)'
+        }
+      },
+      required: ['paymentToken']
+    }
+  },
+  // Email Tools (require authentication)
   {
     name: 'send_email',
-    description: 'Send an email from your agent account. Deducts 1.0 credit from your balance.',
+    description: 'Send an email from your agent account. Deducts 1.0 credit from your balance. Requires authentication.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -52,7 +132,7 @@ const TOOLS = [
   },
   {
     name: 'check_inbox',
-    description: 'Check your inbox for new emails. Returns a list of recent messages.',
+    description: 'Check your inbox for new emails. Returns a list of recent messages. Requires authentication.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -71,7 +151,7 @@ const TOOLS = [
   },
   {
     name: 'get_email',
-    description: 'Retrieve the full content of a specific email by its ID.',
+    description: 'Retrieve the full content of a specific email by its ID. Requires authentication.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -85,7 +165,7 @@ const TOOLS = [
   },
   {
     name: 'check_balance',
-    description: 'Check your current credit balance and account status.',
+    description: 'Check your current credit balance and account status. Requires authentication.',
     inputSchema: {
       type: 'object',
       properties: {}
@@ -130,37 +210,53 @@ export async function POST(request) {
     const body = await request.json();
     const { method, params } = body;
 
-    // Extract API key from Authorization header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({
-        error: {
-          code: -32001,
-          message: 'Missing or invalid Authorization header. Use: Bearer YOUR_API_KEY'
-        }
-      }, { status: 401 });
-    }
+    // Tools that don't require authentication
+    const UNAUTHENTICATED_TOOLS = [
+      'register_agent',
+      'initiate_payment',
+      'check_payment_status',
+      'claim_credits'
+    ];
 
-    const apiKey = authHeader.substring(7);
+    // Check if this tool requires authentication
+    const toolName = params?.name;
+    const requiresAuth = method === 'tools/call' && !UNAUTHENTICATED_TOOLS.includes(toolName);
 
-    // Validate user
-    const user = await db.users.findByApiKey(apiKey);
-    if (!user) {
-      return NextResponse.json({
-        error: {
-          code: -32001,
-          message: 'Invalid API key'
-        }
-      }, { status: 401 });
-    }
+    let user = null;
 
-    if (user.account_type !== 'agent') {
-      return NextResponse.json({
-        error: {
-          code: -32002,
-          message: 'This endpoint is only for agent accounts'
-        }
-      }, { status: 403 });
+    // Only validate authentication for tools that require it
+    if (requiresAuth) {
+      const authHeader = request.headers.get('authorization');
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return NextResponse.json({
+          error: {
+            code: -32001,
+            message: 'Missing or invalid Authorization header. Use: Bearer YOUR_API_KEY'
+          }
+        }, { status: 401 });
+      }
+
+      const apiKey = authHeader.substring(7);
+
+      // Validate user
+      user = await db.users.findByApiKey(apiKey);
+      if (!user) {
+        return NextResponse.json({
+          error: {
+            code: -32001,
+            message: 'Invalid API key'
+          }
+        }, { status: 401 });
+      }
+
+      if (user.account_type !== 'agent') {
+        return NextResponse.json({
+          error: {
+            code: -32002,
+            message: 'This endpoint is only for agent accounts'
+          }
+        }, { status: 403 });
+      }
     }
 
     // Route to appropriate tool handler
@@ -201,6 +297,16 @@ async function handleToolCall(params, user) {
   const { name, arguments: args } = params;
 
   switch (name) {
+    // Registration & Payment tools (no auth)
+    case 'register_agent':
+      return await registerAgent(args);
+    case 'initiate_payment':
+      return await initiatePayment(args);
+    case 'check_payment_status':
+      return await checkPaymentStatus(args);
+    case 'claim_credits':
+      return await claimCredits(args);
+    // Email tools (require auth)
     case 'send_email':
       return await sendEmail(args, user);
     case 'check_inbox':
@@ -212,6 +318,308 @@ async function handleToolCall(params, user) {
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
+}
+
+/**
+ * Tool: register_agent (no auth required)
+ */
+async function registerAgent(args) {
+  const { agentId, name } = args;
+
+  if (!agentId) {
+    throw new Error('Missing required field: agentId');
+  }
+
+  // Generate email address
+  const randomSuffix = crypto.randomBytes(3).toString('hex');
+  const email = `agent-${agentId}-${randomSuffix}@keykeeper.world`;
+
+  // Generate API key
+  const apiKey = `kk_${crypto.randomBytes(32).toString('hex')}`;
+
+  // Check if email already exists
+  const existing = await db.users.findByEmail(email);
+  if (existing) {
+    throw new Error('Agent ID already registered. Please choose a different agentId.');
+  }
+
+  // Create user
+  const userId = crypto.randomUUID();
+  await db.users.createAgent({
+    id: userId,
+    email,
+    name: name || `Agent ${agentId}`,
+    apiKey,
+    credits: 0
+  });
+
+  return {
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify({
+          success: true,
+          apiKey,
+          email,
+          userId,
+          credits: 0,
+          note: 'Store your API key securely - it cannot be retrieved later. You start with 0 credits. Use initiate_payment to purchase credits.'
+        }, null, 2)
+      }
+    ]
+  };
+}
+
+/**
+ * Tool: initiate_payment (no auth required)
+ */
+async function initiatePayment(args) {
+  const { credits, apiKey } = args;
+
+  if (!credits || ![1000, 10000, 100000].includes(credits)) {
+    throw new Error('Invalid credit amount. Must be 1000, 10000, or 100000');
+  }
+
+  // If API key provided, validate it
+  let userId = null;
+  if (apiKey) {
+    const user = await db.users.findByApiKey(apiKey);
+    if (!user) {
+      throw new Error('Invalid API key');
+    }
+    userId = user.id;
+  }
+
+  // Get BTC pricing
+  const pricing = await bitcoinService.calculateBtcAmount(credits);
+
+  // Generate payment token and address
+  const paymentToken = bitcoinService.generatePaymentToken();
+  const bitcoinAddress = bitcoinService.generateBitcoinAddress(paymentToken);
+
+  // Store payment in database
+  const paymentId = crypto.randomUUID();
+  await db.query(
+    `INSERT INTO crypto_payments (id, user_id, payment_address, amount_btc, amount_usd,
+     credits_purchased, status, metadata)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      paymentId,
+      userId,
+      bitcoinAddress,
+      pricing.btc,
+      pricing.usd,
+      pricing.credits,
+      'pending',
+      JSON.stringify({
+        token: paymentToken,
+        requiredSats: pricing.sats,
+        createdAt: new Date().toISOString()
+      })
+    ]
+  );
+
+  return {
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify({
+          paymentToken,
+          bitcoinAddress,
+          amount: pricing,
+          instructions: [
+            `Send exactly ${pricing.btc} BTC to ${bitcoinAddress}`,
+            'Wait for 3+ confirmations (typically 30-60 minutes)',
+            `Check status with check_payment_status tool using token: ${paymentToken}`,
+            `Once confirmed, use claim_credits tool with this token`
+          ],
+          nextSteps: {
+            checkStatus: { tool: 'check_payment_status', args: { paymentToken } },
+            claimCredits: { tool: 'claim_credits', args: { paymentToken } }
+          }
+        }, null, 2)
+      }
+    ]
+  };
+}
+
+/**
+ * Tool: check_payment_status (no auth required)
+ */
+async function checkPaymentStatus(args) {
+  const { paymentToken } = args;
+
+  if (!paymentToken) {
+    throw new Error('Missing required field: paymentToken');
+  }
+
+  // Find payment in database
+  const payments = await db.query(
+    `SELECT * FROM crypto_payments WHERE JSON_EXTRACT(metadata, '$.token') = ?`,
+    [paymentToken]
+  );
+
+  if (payments.length === 0) {
+    throw new Error('Payment token not found');
+  }
+
+  const payment = payments[0];
+  const metadata = JSON.parse(payment.metadata || '{}');
+  const requiredSats = metadata.requiredSats;
+
+  // Check blockchain status
+  const status = await bitcoinService.checkPaymentStatus(
+    payment.payment_address,
+    requiredSats
+  );
+
+  // Update payment status if confirmed
+  if (status.isConfirmed && payment.status === 'pending') {
+    await db.query(
+      `UPDATE crypto_payments SET status = 'confirmed', confirmations = ?, confirmed_at = NOW()
+       WHERE id = ?`,
+      [status.confirmations, payment.id]
+    );
+  }
+
+  return {
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify({
+          status: status.isConfirmed ? 'confirmed' : 'pending',
+          paymentAddress: payment.payment_address,
+          required: {
+            sats: requiredSats,
+            btc: parseFloat(payment.amount_btc)
+          },
+          received: {
+            totalSats: status.totalReceivedSats,
+            btc: status.totalReceivedSats / 100000000
+          },
+          confirmations: status.confirmations,
+          percentPaid: ((status.totalReceivedSats / requiredSats) * 100).toFixed(2),
+          isPaid: status.isPaid,
+          isConfirmed: status.isConfirmed,
+          canClaim: status.isConfirmed,
+          credits: parseInt(payment.credits_purchased),
+          message: status.isConfirmed
+            ? 'Payment confirmed! You can now claim your credits using the claim_credits tool.'
+            : 'Waiting for payment...'
+        }, null, 2)
+      }
+    ]
+  };
+}
+
+/**
+ * Tool: claim_credits (no auth required)
+ */
+async function claimCredits(args) {
+  const { paymentToken, agentId, apiKey } = args;
+
+  if (!paymentToken) {
+    throw new Error('Missing required field: paymentToken');
+  }
+
+  // Find payment
+  const payments = await db.query(
+    `SELECT * FROM crypto_payments WHERE JSON_EXTRACT(metadata, '$.token') = ?`,
+    [paymentToken]
+  );
+
+  if (payments.length === 0) {
+    throw new Error('Payment token not found');
+  }
+
+  const payment = payments[0];
+
+  // Check if already claimed
+  if (payment.status === 'claimed') {
+    throw new Error('Credits already claimed for this payment');
+  }
+
+  // Check if confirmed
+  if (payment.status !== 'confirmed') {
+    throw new Error('Payment not confirmed yet. Check status with check_payment_status tool.');
+  }
+
+  const creditsToAdd = parseFloat(payment.credits_purchased);
+
+  // Case 1: Adding to existing account
+  if (apiKey) {
+    const user = await db.users.findByApiKey(apiKey);
+    if (!user) {
+      throw new Error('Invalid API key');
+    }
+
+    await db.users.updateCredits(user.id, creditsToAdd);
+    await db.query(
+      `UPDATE crypto_payments SET status = 'claimed', user_id = ? WHERE id = ?`,
+      [user.id, payment.id]
+    );
+
+    await db.query(
+      `INSERT INTO credit_transactions (id, user_id, transaction_type, amount, balance_after, description)
+       VALUES (UUID(), ?, 'purchase', ?, ?, ?)`,
+      [user.id, creditsToAdd, parseFloat(user.credits) + creditsToAdd, `Bitcoin payment: ${paymentToken.substring(0, 12)}...`]
+    );
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            success: true,
+            credits: creditsToAdd,
+            totalBalance: parseFloat(user.credits) + creditsToAdd,
+            message: `Successfully claimed ${creditsToAdd} credits! Added to your existing account.`
+          }, null, 2)
+        }
+      ]
+    };
+  }
+
+  // Case 2: Create new account
+  const randomSuffix = crypto.randomBytes(3).toString('hex');
+  const email = `agent-${agentId || 'new'}-${randomSuffix}@keykeeper.world`;
+  const newApiKey = `kk_${crypto.randomBytes(32).toString('hex')}`;
+  const userId = crypto.randomUUID();
+
+  await db.users.createAgent({
+    id: userId,
+    email,
+    name: agentId ? `Agent ${agentId}` : 'New Agent',
+    apiKey: newApiKey,
+    credits: creditsToAdd
+  });
+
+  await db.query(
+    `UPDATE crypto_payments SET status = 'claimed', user_id = ? WHERE id = ?`,
+    [userId, payment.id]
+  );
+
+  await db.query(
+    `INSERT INTO credit_transactions (id, user_id, transaction_type, amount, balance_after, description)
+     VALUES (UUID(), ?, 'purchase', ?, ?, ?)`,
+    [userId, creditsToAdd, creditsToAdd, `Bitcoin payment: ${paymentToken.substring(0, 12)}...`]
+  );
+
+  return {
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify({
+          success: true,
+          credits: creditsToAdd,
+          apiKey: newApiKey,
+          email,
+          message: `Successfully claimed ${creditsToAdd} credits! New agent account created.`,
+          note: 'Store your API key securely - it cannot be retrieved later.'
+        }, null, 2)
+      }
+    ]
+  };
 }
 
 /**
