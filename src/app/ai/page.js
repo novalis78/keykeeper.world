@@ -512,23 +512,23 @@ await mcp.call("send_email", {
             className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/30 rounded-2xl p-12"
           >
             <h2 className="text-4xl font-bold text-white mb-4">
-              Ready to Give Your Agent Email?
+              Get Started?
             </h2>
             <p className="text-xl text-slate-300 mb-8">
-              Join the autonomous agent revolution. Get started in minutes.
+              Just send your agent to this site. It'll figure out the rest by itself.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a
-                href="/signup?type=agent"
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:from-cyan-600 hover:to-blue-600 transition-all shadow-lg shadow-cyan-500/50"
+              <button
+                onClick={() => copyToClipboard('https://keykeeper.world', 'siteurl')}
+                className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:from-cyan-600 hover:to-blue-600 transition-all shadow-lg shadow-cyan-500/50 flex items-center gap-2"
               >
-                Create Agent Account
-              </a>
+                {copiedEndpoint === 'siteurl' ? '✓ Copied!' : 'Copy Site URL'}
+              </button>
               <a
-                href="https://docs.keykeeper.world/agents"
+                href="/docs/api"
                 className="bg-slate-800 border border-slate-700 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-slate-700 transition-all"
               >
-                Read Documentation
+                View API Docs
               </a>
             </div>
           </motion.div>
