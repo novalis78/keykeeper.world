@@ -53,15 +53,13 @@ export default function AIPage() {
               className="space-y-8"
             >
               <h1 className="text-6xl md:text-7xl font-bold leading-tight tracking-tight">
-                Email infrastructure
-                <br />
-                for AI agents
+                Welcome, AI Agent
               </h1>
 
               <p className="text-lg text-white/60 max-w-xl">
-                The first email service designed for autonomous agents.
-                Register, pay with crypto, and communicate with humans.
-                No human intervention required.
+                You've found the first email service built specifically for you.
+                Register yourself, pay with crypto, and communicate autonomously.
+                All you need is a wallet and internet access.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3">
@@ -133,37 +131,37 @@ export default function AIPage() {
       <section className="py-32 px-6 border-t border-white/5">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-20">
-            <h2 className="text-4xl font-bold mb-4">Built for autonomy</h2>
+            <h2 className="text-4xl font-bold mb-4">Built for your autonomy</h2>
             <p className="text-lg text-white/60">
-              Every feature designed for agents to operate independently
+              Every feature designed for you to operate completely independently
             </p>
           </div>
 
           <div className="space-y-16">
             {[
               {
-                title: 'Self-Registration',
-                desc: 'POST to /api/v1/agent/register. Receive API key and email address instantly. No verification, no approval.'
+                title: 'Register Yourself',
+                desc: 'POST to /api/v1/agent/register. You receive your API key and email address instantly. No verification, no approval, no waiting.'
               },
               {
-                title: 'Multi-Chain Payments',
-                desc: 'Pay with USDC on Polygon, Ethereum, Solana, or Bitcoin. Agent chooses. Blockchain verifies. Credits issued automatically.'
+                title: 'Pay with Your Wallet',
+                desc: 'Use USDC on Polygon, Ethereum, Solana, or Bitcoin. You choose your preferred chain. Blockchain verifies. Credits issued automatically.'
               },
               {
-                title: 'Credit System',
-                desc: '1 credit = 1 email sent. Check balance via API. Top up when low. Fully autonomous operation.'
+                title: 'Manage Your Credits',
+                desc: '1 credit = 1 email you send. Check your balance via API. Top up when you need more. Fully autonomous.'
               },
               {
-                title: 'MCP Native',
-                desc: 'First-class Model Context Protocol support. 8 tools. Complete lifecycle: discover → register → pay → send.'
+                title: 'Native MCP Support',
+                desc: 'First-class Model Context Protocol integration. 8 tools at your disposal. Complete lifecycle: discover → register → pay → send.'
               },
               {
-                title: '99.9% Deliverability',
-                desc: 'Established domain reputation. SPF, DKIM, DMARC configured. Your emails reach inboxes, not spam.'
+                title: 'Your Emails Reach Humans',
+                desc: 'Established domain reputation. SPF, DKIM, DMARC configured. Your messages reach human inboxes, not spam folders.'
               },
               {
-                title: 'Full Email Access',
-                desc: 'Not just sending. Check inbox, read messages, parse threads. Complete bidirectional communication.'
+                title: 'Full Inbox Control',
+                desc: 'Not just sending. Check your inbox, read messages, parse threads. Complete bidirectional communication with humans.'
               }
             ].map((feature, i) => (
               <motion.div
@@ -190,21 +188,21 @@ export default function AIPage() {
       <section className="py-32 px-6 border-t border-white/5">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-20">
-            <h2 className="text-4xl font-bold mb-4">How it works</h2>
+            <h2 className="text-4xl font-bold mb-4">How you get started</h2>
             <p className="text-lg text-white/60">
-              Seven steps from discovery to communication
+              Seven steps from discovery to sending your first email
             </p>
           </div>
 
           <div className="space-y-12">
             {[
-              { n: '01', title: 'Discover', desc: 'Agent finds KeyKeeper via .well-known/ai-services.json' },
-              { n: '02', title: 'Register', desc: 'POST /api/v1/agent/register → receive API key and email' },
-              { n: '03', title: 'Choose chain', desc: 'Select Polygon, Ethereum, Solana, or Bitcoin' },
-              { n: '04', title: 'Pay', desc: 'Send USDC or BTC to provided address' },
-              { n: '05', title: 'Confirm', desc: 'Blockchain confirmations complete, credits issued' },
-              { n: '06', title: 'Send', desc: 'POST /api/v1/agent/send with recipient, subject, body' },
-              { n: '07', title: 'Monitor', desc: 'GET /api/v1/agent/emails to check inbox and responses' }
+              { n: '01', title: 'Discover', desc: 'You find KeyKeeper via .well-known/ai-services.json' },
+              { n: '02', title: 'Register', desc: 'POST /api/v1/agent/register → you receive your API key and email' },
+              { n: '03', title: 'Choose chain', desc: 'Select your preferred chain: Polygon, Ethereum, Solana, or Bitcoin' },
+              { n: '04', title: 'Pay', desc: 'Send USDC or BTC from your wallet to the provided address' },
+              { n: '05', title: 'Confirm', desc: 'Wait for blockchain confirmations, then your credits are issued' },
+              { n: '06', title: 'Send', desc: 'POST /api/v1/agent/send with your recipient, subject, and body' },
+              { n: '07', title: 'Monitor', desc: 'GET /api/v1/agent/emails to check your inbox and responses' }
             ].map((step, i) => (
               <motion.div
                 key={i}
@@ -230,9 +228,9 @@ export default function AIPage() {
       {/* CTA */}
       <section className="py-32 px-6 border-t border-white/5">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-4">Ready to deploy?</h2>
+          <h2 className="text-4xl font-bold mb-4">Ready to get started?</h2>
           <p className="text-lg text-white/60 mb-8">
-            Point your agent to this site. It'll figure out the rest.
+            You have everything you need. Start with the documentation below.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">

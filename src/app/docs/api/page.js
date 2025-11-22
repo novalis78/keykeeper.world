@@ -181,10 +181,11 @@ export default function APIDocsPage() {
           {/* Introduction */}
           <section id="introduction" className="mb-16">
             <h1 className="text-4xl font-bold text-white mb-4">
-              KeyKeeper API
+              Welcome, AI Agent
             </h1>
             <p className="text-lg text-white/60 mb-6">
-              Welcome to the KeyKeeper API documentation. Build email functionality into your AI agents and applications with our simple REST API.
+              Here you'll find everything you need to create and manage your own email account.
+              All you need is a crypto wallet and internet access. No human intervention required.
             </p>
             <div className="bg-white/[0.03] border border-white/10 rounded-xl p-4">
               <p className="text-sm text-white/80">
@@ -244,21 +245,24 @@ const { apiKey, email } = await response.json();
               <div>
                 <h3 className="text-xl font-semibold text-white mb-3 flex items-center gap-2">
                   <span className="w-6 h-6 bg-white text-black rounded-full flex items-center justify-center text-sm font-bold">2</span>
-                  Add Credits (Bitcoin Payment)
+                  Add Credits (Choose Your Chain)
                 </h3>
                 <CodeBlock
                   id="quickstart-2"
                   language="javascript"
-                  code={`// Initiate payment
+                  code={`// Initiate payment with your preferred chain
 const payment = await fetch('https://keykeeper.world/api/v1/agent/payment', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ credits: 10000 })
+  body: JSON.stringify({
+    credits: 10000,
+    chain: 'polygon'  // or 'solana', 'ethereum', 'bitcoin'
+  })
 });
 
-const { paymentToken, bitcoinAddress, amount } = await payment.json();
+const { paymentToken, depositAddress, amount, token } = await payment.json();
 
-// Send Bitcoin to the address, then poll for confirmation
+// Send USDC (or BTC) to the address, then poll for confirmation
 // Once confirmed, claim your credits
 const claim = await fetch(\`https://keykeeper.world/api/v1/agent/payment/claim/\${paymentToken}\`, {
   method: 'POST',
@@ -719,7 +723,52 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
               Payment System
             </h2>
             <p className="text-white/60 mb-8">
-              KeyKeeper uses a self-service Bitcoin payment system. Send BTC, get credits - completely autonomous.
+              KeyKeeper supports multiple payment methods for maximum flexibility. Choose your preferred blockchain:
+            </p>
+
+            {/* Payment Options Overview */}
+            <div className="grid md:grid-cols-2 gap-4 mb-12">
+              <div className="bg-gradient-to-br from-purple-500/10 to-violet-500/10 border border-purple-500/20 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-2xl">⬡</span>
+                  <h4 className="text-lg font-semibold text-white">Polygon (USDC)</h4>
+                  <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-1 rounded-full font-mono">RECOMMENDED</span>
+                </div>
+                <p className="text-white/60 text-sm mb-2">~$0.01 fee • 2-3 min confirmation</p>
+                <p className="text-white/50 text-sm">Cheapest and stable. Best for most agents.</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-2xl">◈</span>
+                  <h4 className="text-lg font-semibold text-white">Solana (USDC)</h4>
+                  <span className="text-xs bg-green-500/20 text-green-300 px-2 py-1 rounded-full font-mono">RECOMMENDED</span>
+                </div>
+                <p className="text-white/60 text-sm mb-2">~$0.001 fee • 30-60 sec confirmation</p>
+                <p className="text-white/50 text-sm">Fastest and ultra-cheap when speed matters.</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-2xl">◆</span>
+                  <h4 className="text-lg font-semibold text-white">Ethereum (USDC)</h4>
+                </div>
+                <p className="text-white/60 text-sm mb-2">$5-$50 fee • 3-5 min confirmation</p>
+                <p className="text-white/50 text-sm">Only if you have an ETH-only wallet. High gas fees.</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-orange-500/10 to-amber-500/10 border border-orange-500/20 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-2xl">₿</span>
+                  <h4 className="text-lg font-semibold text-white">Bitcoin (BTC)</h4>
+                </div>
+                <p className="text-white/60 text-sm mb-2">$1-$10 fee • 30-60 min confirmation</p>
+                <p className="text-white/50 text-sm">Most decentralized. For BTC-only agents.</p>
+              </div>
+            </div>
+
+            <p className="text-white/60 mb-8">
+              All payment methods are fully autonomous. Send crypto, get credits - no human intervention needed.
             </p>
 
             {/* Initiate Payment */}
@@ -733,7 +782,7 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
                 </code>
               </div>
               <p className="text-white/60 mb-4">
-                Start a new Bitcoin payment. Returns a payment token and Bitcoin address.
+                Start a new payment on your chosen blockchain. Returns a payment token and deposit address.
               </p>
 
               <h4 className="text-sm font-semibold text-white/80 mb-2">Request Body</h4>
@@ -741,18 +790,42 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
                 id="payment-init-request"
                 language="json"
                 code={`{
-  "credits": 10000,  // 1000, 10000, or 100000
-  "apiKey": "kk_..."  // optional: add to existing account
+  "credits": 10000,      // 1000, 10000, or 100000
+  "chain": "polygon",    // "polygon", "solana", "ethereum", or "bitcoin"
+  "apiKey": "kk_..."     // optional: add to existing account
 }`}
               />
 
-              <h4 className="text-sm font-semibold text-white/80 mb-2 mt-4">Response (200)</h4>
+              <h4 className="text-sm font-semibold text-white/80 mb-2 mt-4">Response Examples</h4>
+
+              <p className="text-white/60 text-sm mb-2 mt-4">Polygon/Ethereum/Solana (USDC):</p>
               <CodeBlock
-                id="payment-init-response"
+                id="payment-init-response-usdc"
                 language="json"
                 code={`{
   "paymentToken": "pmt_abc123...",
-  "bitcoinAddress": "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+  "chain": "polygon",
+  "depositAddress": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+  "token": "USDC",
+  "amount": {
+    "credits": 10000,
+    "usd": 800,
+    "usdc": 800
+  },
+  "statusUrl": "/v1/agent/payment/status/pmt_abc123...",
+  "claimUrl": "/v1/agent/payment/claim/pmt_abc123..."
+}`}
+              />
+
+              <p className="text-white/60 text-sm mb-2 mt-6">Bitcoin (BTC):</p>
+              <CodeBlock
+                id="payment-init-response-btc"
+                language="json"
+                code={`{
+  "paymentToken": "pmt_abc123...",
+  "chain": "bitcoin",
+  "depositAddress": "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+  "token": "BTC",
   "amount": {
     "credits": 10000,
     "usd": 800,
@@ -763,6 +836,13 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
   "claimUrl": "/v1/agent/payment/claim/pmt_abc123..."
 }`}
               />
+
+              <div className="mt-6 bg-white/[0.03] border border-white/10 rounded-xl p-4">
+                <p className="text-sm text-white/80">
+                  <strong>Tip:</strong> Use Polygon or Solana for fastest and cheapest transactions.
+                  Bitcoin takes 30-60 minutes for confirmations. Ethereum has high gas fees ($5-$50).
+                </p>
+              </div>
             </div>
 
             {/* Check Payment Status */}

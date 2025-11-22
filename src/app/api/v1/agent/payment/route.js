@@ -1,20 +1,22 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import bitcoinService from '@/lib/payment/bitcoinService';
+import { MultiChainPaymentService } from '@/lib/payment/MultiChainPaymentService';
 import db from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
+const multiChain = new MultiChainPaymentService();
+
 /**
- * Initiate Bitcoin Payment for Credits
+ * Initiate Multi-Chain Payment for Credits
  *
- * Returns a payment token and Bitcoin address
- * Agent sends BTC, then polls status endpoint
+ * Supports: Polygon (USDC), Solana (USDC), Ethereum (USDC), Bitcoin (BTC)
+ * Returns payment token and deposit address
  */
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { credits, apiKey } = body;
+    const { credits, chain, apiKey } = body;
 
     // Validate credits amount
     const validAmounts = [1000, 10000, 100000];
@@ -22,7 +24,24 @@ export async function POST(request) {
       return NextResponse.json(
         {
           error: 'Invalid credit amount',
-          validAmounts
+          validAmounts,
+          availableChains: multiChain.getAvailableChains()
+        },
+        { status: 400 }
+      );
+    }
+
+    // Default to polygon if no chain specified
+    const blockchain = chain || 'polygon';
+
+    // Validate blockchain
+    try {
+      multiChain.getService(blockchain);
+    } catch (error) {
+      return NextResponse.json(
+        {
+          error: error.message,
+          availableChains: multiChain.getAvailableChains()
         },
         { status: 400 }
       );
@@ -37,54 +56,57 @@ export async function POST(request) {
       }
     }
 
-    // Calculate BTC amount required
-    const pricing = await bitcoinService.calculateBtcAmount(credits);
-
-    // Generate payment token
-    const paymentToken = bitcoinService.generatePaymentToken();
-
-    // Generate deterministic Bitcoin address
-    const bitcoinAddress = bitcoinService.generateBitcoinAddress(paymentToken);
+    // Initiate payment on chosen blockchain
+    const payment = await multiChain.initiatePayment(credits, blockchain);
+    const service = multiChain.getService(blockchain);
 
     // Store payment request in database
     const paymentId = crypto.randomUUID();
     await db.query(
       `INSERT INTO crypto_payments (
         id, user_id, payment_address, amount_btc, amount_usd,
-        credits_purchased, status, metadata
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        credits_purchased, status, metadata, blockchain
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         paymentId,
         userId,
-        bitcoinAddress,
-        pricing.btc,
-        pricing.usd,
-        pricing.credits,
+        payment.depositAddress,
+        blockchain === 'bitcoin' ? payment.amount.btc : 0,
+        payment.amount.usd,
+        payment.amount.credits,
         'pending',
-        JSON.stringify({ token: paymentToken, requiredSats: pricing.sats })
+        JSON.stringify({
+          token: payment.paymentToken,
+          chain: blockchain,
+          token: payment.token,
+          requiredAmount: payment.amount
+        }),
+        blockchain
       ]
     );
 
-    console.log(`[Payment] Created payment request: ${paymentId} for ${credits} credits`);
+    console.log(`[Payment] Created ${blockchain} payment request: ${paymentId} for ${credits} credits`);
 
-    // Return payment instructions
+    // Get payment instructions
+    const instructions = multiChain.getPaymentInstructions(
+      blockchain,
+      payment.depositAddress,
+      blockchain === 'bitcoin' ? payment.amount.btc : payment.amount.usdc,
+      payment.token,
+      payment.paymentToken
+    );
+
+    // Return payment details
     return NextResponse.json({
-      paymentToken,
-      bitcoinAddress,
-      amount: {
-        credits: pricing.credits,
-        usd: pricing.usd,
-        btc: pricing.btc,
-        sats: pricing.sats
-      },
-      instructions: [
-        `Send exactly ${pricing.btc.toFixed(8)} BTC to ${bitcoinAddress}`,
-        `Wait for 3+ confirmations (typically 30-60 minutes)`,
-        `Check status at /v1/agent/payment/status/${paymentToken}`,
-        `Once confirmed, claim credits at /v1/agent/payment/claim/${paymentToken}`
-      ],
-      statusUrl: `/v1/agent/payment/status/${paymentToken}`,
-      claimUrl: `/v1/agent/payment/claim/${paymentToken}`
+      paymentToken: payment.paymentToken,
+      chain: blockchain,
+      depositAddress: payment.depositAddress,
+      token: payment.token,
+      amount: payment.amount,
+      instructions,
+      statusUrl: `/v1/agent/payment/status/${payment.paymentToken}`,
+      claimUrl: `/v1/agent/payment/claim/${payment.paymentToken}`,
+      availableChains: payment.availableChains
     });
   } catch (error) {
     console.error('Payment initiation error:', error);
