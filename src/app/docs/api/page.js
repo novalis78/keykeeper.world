@@ -65,12 +65,12 @@ export default function APIDocsPage() {
     <div className="relative group">
       <button
         onClick={() => copyToClipboard(code, id)}
-        className="absolute right-3 top-3 p-2 rounded-md bg-slate-700 hover:bg-slate-600 transition-colors opacity-0 group-hover:opacity-100 z-10"
+        className="absolute right-3 top-3 p-2 rounded-md bg-white/10 hover:bg-white/20 transition-colors opacity-0 group-hover:opacity-100 z-10"
       >
         {copiedCode === id ? (
           <CheckIcon className="w-4 h-4 text-green-400" />
         ) : (
-          <ClipboardDocumentIcon className="w-4 h-4 text-slate-300" />
+          <ClipboardDocumentIcon className="w-4 h-4 text-white/60" />
         )}
       </button>
       <SyntaxHighlighter
@@ -78,9 +78,11 @@ export default function APIDocsPage() {
         style={vscDarkPlus}
         customStyle={{
           margin: 0,
-          borderRadius: '0.5rem',
+          borderRadius: '0.75rem',
           fontSize: '0.875rem',
           padding: '1.5rem',
+          background: '#0a0a0a',
+          border: '1px solid rgba(255, 255, 255, 0.05)',
         }}
       >
         {code}
@@ -178,25 +180,25 @@ export default function APIDocsPage() {
         <main className="flex-1 px-6 lg:px-12 py-12 max-w-4xl">
           {/* Introduction */}
           <section id="introduction" className="mb-16">
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">
+            <h1 className="text-4xl font-bold text-white mb-4">
               KeyKeeper API
             </h1>
-            <p className="text-lg text-slate-600 dark:text-slate-400 mb-6">
+            <p className="text-lg text-white/60 mb-6">
               Welcome to the KeyKeeper API documentation. Build email functionality into your AI agents and applications with our simple REST API.
             </p>
-            <div className="bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 rounded-lg p-4">
-              <p className="text-sm text-cyan-900 dark:text-cyan-300">
-                <strong>Base URL:</strong> <code className="bg-cyan-100 dark:bg-cyan-900/40 px-2 py-1 rounded">https://keykeeper.world/api</code>
+            <div className="bg-white/[0.03] border border-white/10 rounded-xl p-4">
+              <p className="text-sm text-white/80">
+                <strong>Base URL:</strong> <code className="bg-white/10 px-2 py-1 rounded text-white">https://keykeeper.world/api</code>
               </p>
             </div>
           </section>
 
           {/* Authentication */}
           <section id="authentication" className="mb-16">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
+            <h2 className="text-3xl font-bold text-white mb-4">
               Authentication
             </h2>
-            <p className="text-slate-600 dark:text-slate-400 mb-6">
+            <p className="text-white/60 mb-6">
               All API requests require authentication using an API key passed as a Bearer token in the Authorization header.
             </p>
             <CodeBlock
@@ -209,17 +211,17 @@ export default function APIDocsPage() {
 
           {/* Quick Start */}
           <section id="quickstart" className="mb-16">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
+            <h2 className="text-3xl font-bold text-white mb-4">
               Quick Start
             </h2>
-            <p className="text-slate-600 dark:text-slate-400 mb-6">
+            <p className="text-white/60 mb-6">
               Get started with KeyKeeper in three simple steps:
             </p>
 
             <div className="space-y-6">
               <div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
-                  <span className="w-6 h-6 bg-cyan-500 text-white rounded-full flex items-center justify-center text-sm">1</span>
+                <h3 className="text-xl font-semibold text-white mb-3 flex items-center gap-2">
+                  <span className="w-6 h-6 bg-white text-black rounded-full flex items-center justify-center text-sm font-bold">1</span>
                   Register Your Agent
                 </h3>
                 <CodeBlock
@@ -240,8 +242,8 @@ const { apiKey, email } = await response.json();
               </div>
 
               <div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
-                  <span className="w-6 h-6 bg-cyan-500 text-white rounded-full flex items-center justify-center text-sm">2</span>
+                <h3 className="text-xl font-semibold text-white mb-3 flex items-center gap-2">
+                  <span className="w-6 h-6 bg-white text-black rounded-full flex items-center justify-center text-sm font-bold">2</span>
                   Add Credits (Bitcoin Payment)
                 </h3>
                 <CodeBlock
@@ -267,8 +269,8 @@ const claim = await fetch(\`https://keykeeper.world/api/v1/agent/payment/claim/\
               </div>
 
               <div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
-                  <span className="w-6 h-6 bg-cyan-500 text-white rounded-full flex items-center justify-center text-sm">3</span>
+                <h3 className="text-xl font-semibold text-white mb-3 flex items-center gap-2">
+                  <span className="w-6 h-6 bg-white text-black rounded-full flex items-center justify-center text-sm font-bold">3</span>
                   Send Your First Email
                 </h3>
                 <CodeBlock
@@ -296,40 +298,40 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 
           {/* MCP Server */}
           <section id="mcp" className="mb-16">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
+            <h2 className="text-3xl font-bold text-white mb-4">
               MCP Server
             </h2>
-            <p className="text-slate-600 dark:text-slate-400 mb-8">
+            <p className="text-white/60 mb-8">
               KeyKeeper provides a Model Context Protocol (MCP) server for seamless AI agent integration.
             </p>
 
             {/* What is MCP */}
             <div id="mcp-intro" className="mb-12">
-              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+              <h3 className="text-2xl font-semibold text-white mb-3">
                 What is MCP?
               </h3>
-              <p className="text-slate-600 dark:text-slate-400 mb-4">
+              <p className="text-white/60 mb-4">
                 The Model Context Protocol (MCP) is a standardized protocol that allows AI agents to discover
                 and interact with external services. KeyKeeper's MCP server provides native support for email
                 operations without requiring agents to understand REST APIs.
               </p>
-              <div className="bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-800 rounded-lg p-4 mb-4">
-                <p className="text-sm text-cyan-900 dark:text-cyan-300">
-                  <strong>MCP Endpoint:</strong> <code className="bg-cyan-100 dark:bg-cyan-900 px-2 py-1 rounded">https://keykeeper.world/api/mcp</code>
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl p-4 mb-4">
+                <p className="text-sm text-white/80">
+                  <strong>MCP Endpoint:</strong> <code className="bg-white/10 px-2 py-1 rounded text-white">https://keykeeper.world/api/mcp</code>
                 </p>
               </div>
             </div>
 
             {/* MCP Quick Start */}
             <div id="mcp-quickstart" className="mb-12">
-              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+              <h3 className="text-2xl font-semibold text-white mb-3">
                 MCP Quick Start
               </h3>
 
               <div className="space-y-6">
                 <div>
-                  <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
-                    <span className="w-6 h-6 bg-cyan-500 text-white rounded-full flex items-center justify-center text-sm">1</span>
+                  <h4 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 bg-white text-black rounded-full flex items-center justify-center text-sm font-bold">1</span>
                     Get Server Capabilities
                   </h4>
                   <CodeBlock
@@ -340,8 +342,8 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
                 </div>
 
                 <div>
-                  <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
-                    <span className="w-6 h-6 bg-cyan-500 text-white rounded-full flex items-center justify-center text-sm">2</span>
+                  <h4 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 bg-white text-black rounded-full flex items-center justify-center text-sm font-bold">2</span>
                     List Available Tools
                   </h4>
                   <CodeBlock
@@ -355,8 +357,8 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
                 </div>
 
                 <div>
-                  <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
-                    <span className="w-6 h-6 bg-cyan-500 text-white rounded-full flex items-center justify-center text-sm">3</span>
+                  <h4 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 bg-white text-black rounded-full flex items-center justify-center text-sm font-bold">3</span>
                     Call a Tool
                   </h4>
                   <CodeBlock
@@ -383,20 +385,20 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 
             {/* MCP Tools */}
             <div id="mcp-tools" className="mb-12">
-              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+              <h3 className="text-2xl font-semibold text-white mb-3">
                 Available Tools
               </h3>
-              <p className="text-slate-600 dark:text-slate-400 mb-6">
+              <p className="text-white/60 mb-6">
                 KeyKeeper's MCP server provides four tools for email operations:
               </p>
 
               <div className="space-y-6">
                 {/* send_email tool */}
-                <div className="border border-slate-200 dark:border-slate-800 rounded-lg p-6">
-                  <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                <div className="border border-white/10 rounded-xl p-6 bg-white/[0.02]">
+                  <h4 className="text-lg font-semibold text-white mb-2">
                     send_email
                   </h4>
-                  <p className="text-slate-600 dark:text-slate-400 mb-4">
+                  <p className="text-white/60 mb-4">
                     Send an email from your agent account. Deducts 1.0 credit.
                   </p>
                   <CodeBlock
@@ -416,11 +418,11 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
                 </div>
 
                 {/* check_inbox tool */}
-                <div className="border border-slate-200 dark:border-slate-800 rounded-lg p-6">
-                  <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                <div className="border border-white/10 rounded-xl p-6 bg-white/[0.02]">
+                  <h4 className="text-lg font-semibold text-white mb-2">
                     check_inbox
                   </h4>
-                  <p className="text-slate-600 dark:text-slate-400 mb-4">
+                  <p className="text-white/60 mb-4">
                     Check your inbox for new emails. Free operation.
                   </p>
                   <CodeBlock
@@ -437,11 +439,11 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
                 </div>
 
                 {/* get_email tool */}
-                <div className="border border-slate-200 dark:border-slate-800 rounded-lg p-6">
-                  <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                <div className="border border-white/10 rounded-xl p-6 bg-white/[0.02]">
+                  <h4 className="text-lg font-semibold text-white mb-2">
                     get_email
                   </h4>
-                  <p className="text-slate-600 dark:text-slate-400 mb-4">
+                  <p className="text-white/60 mb-4">
                     Retrieve full content of a specific email. Free operation.
                   </p>
                   <CodeBlock
@@ -457,11 +459,11 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
                 </div>
 
                 {/* check_balance tool */}
-                <div className="border border-slate-200 dark:border-slate-800 rounded-lg p-6">
-                  <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                <div className="border border-white/10 rounded-xl p-6 bg-white/[0.02]">
+                  <h4 className="text-lg font-semibold text-white mb-2">
                     check_balance
                   </h4>
-                  <p className="text-slate-600 dark:text-slate-400 mb-4">
+                  <p className="text-white/60 mb-4">
                     Check your current credit balance and account status. Free operation.
                   </p>
                   <CodeBlock
@@ -475,15 +477,15 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
                 </div>
               </div>
 
-              <div className="mt-6 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <p className="text-sm text-blue-900 dark:text-blue-300">
+              <div className="mt-6 bg-white/[0.03] border border-white/10 rounded-xl p-4">
+                <p className="text-sm text-white/80">
                   <strong>Full MCP Documentation:</strong> For complete MCP integration guides,
                   examples in multiple languages, and protocol specifications, see the{' '}
                   <a
                     href="https://github.com/novalis78/keykeeper.world/blob/master/MCP_DOCUMENTATION.md"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="underline hover:text-blue-700 dark:hover:text-blue-200"
+                    className="underline hover:text-white transition-colors"
                   >
                     full MCP documentation
                   </a>.
@@ -494,21 +496,21 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 
           {/* Endpoints */}
           <section id="endpoints" className="mb-16">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-8">
+            <h2 className="text-3xl font-bold text-white mb-8">
               REST API Endpoints
             </h2>
 
             {/* Service Discovery */}
             <div id="discovery" className="mb-12">
-              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+              <h3 className="text-2xl font-semibold text-white mb-3">
                 Service Discovery
               </h3>
-              <div className="bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 mb-4">
-                <code className="text-sm text-slate-900 dark:text-slate-100">
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 mb-4">
+                <code className="text-sm text-white font-mono">
                   GET /.well-known/ai-services.json
                 </code>
               </div>
-              <p className="text-slate-600 dark:text-slate-400 mb-4">
+              <p className="text-white/60 mb-4">
                 Get comprehensive service information including API endpoints, pricing, and capabilities.
               </p>
               <CodeBlock
@@ -520,19 +522,19 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 
             {/* Register Agent */}
             <div id="register" className="mb-12">
-              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+              <h3 className="text-2xl font-semibold text-white mb-3">
                 Register Agent
               </h3>
-              <div className="bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 mb-4">
-                <code className="text-sm text-slate-900 dark:text-slate-100">
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 mb-4">
+                <code className="text-sm text-white font-mono">
                   POST /api/v1/agent/register
                 </code>
               </div>
-              <p className="text-slate-600 dark:text-slate-400 mb-4">
+              <p className="text-white/60 mb-4">
                 Register a new AI agent account and receive an API key.
               </p>
 
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Request Body</h4>
+              <h4 className="text-sm font-semibold text-white/80 mb-2">Request Body</h4>
               <CodeBlock
                 id="register-request"
                 language="json"
@@ -543,7 +545,7 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 }`}
               />
 
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 mt-4">Response (201)</h4>
+              <h4 className="text-sm font-semibold text-white/80 mb-2 mt-4">Response (201)</h4>
               <CodeBlock
                 id="register-response"
                 language="json"
@@ -559,19 +561,19 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 
             {/* Send Email */}
             <div id="send-email" className="mb-12">
-              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+              <h3 className="text-2xl font-semibold text-white mb-3">
                 Send Email
               </h3>
-              <div className="bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 mb-4">
-                <code className="text-sm text-slate-900 dark:text-slate-100">
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 mb-4">
+                <code className="text-sm text-white font-mono">
                   POST /api/v1/agent/send
                 </code>
               </div>
-              <p className="text-slate-600 dark:text-slate-400 mb-4">
+              <p className="text-white/60 mb-4">
                 Send an email. Deducts 1.0 credits from your balance. Requires authentication.
               </p>
 
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Request Body</h4>
+              <h4 className="text-sm font-semibold text-white/80 mb-2">Request Body</h4>
               <CodeBlock
                 id="send-request"
                 language="json"
@@ -584,7 +586,7 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 }`}
               />
 
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 mt-4">Response (200)</h4>
+              <h4 className="text-sm font-semibold text-white/80 mb-2 mt-4">Response (200)</h4>
               <CodeBlock
                 id="send-response"
                 language="json"
@@ -596,8 +598,8 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 }`}
               />
 
-              <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                <p className="text-sm text-yellow-900 dark:text-yellow-300">
+              <div className="mt-4 bg-white/[0.03] border border-white/10 rounded-xl p-4">
+                <p className="text-sm text-white/80">
                   <strong>Cost:</strong> 1.0 credit per email
                 </p>
               </div>
@@ -605,25 +607,25 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 
             {/* Check Inbox */}
             <div id="check-inbox" className="mb-12">
-              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+              <h3 className="text-2xl font-semibold text-white mb-3">
                 Check Inbox
               </h3>
-              <div className="bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 mb-4">
-                <code className="text-sm text-slate-900 dark:text-slate-100">
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 mb-4">
+                <code className="text-sm text-white font-mono">
                   GET /api/v1/agent/inbox?limit=50&folder=INBOX
                 </code>
               </div>
-              <p className="text-slate-600 dark:text-slate-400 mb-4">
+              <p className="text-white/60 mb-4">
                 Retrieve list of recent emails from inbox. Free - no credits deducted.
               </p>
 
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Query Parameters</h4>
-              <ul className="list-disc list-inside text-slate-600 dark:text-slate-400 mb-4 space-y-1">
-                <li><code className="text-sm bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">limit</code> - Number of emails to return (default: 50)</li>
-                <li><code className="text-sm bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">folder</code> - Mailbox folder (default: "INBOX")</li>
+              <h4 className="text-sm font-semibold text-white/80 mb-2">Query Parameters</h4>
+              <ul className="list-disc list-inside text-white/60 mb-4 space-y-1">
+                <li><code className="text-sm bg-white/10 px-2 py-0.5 rounded text-white">limit</code> - Number of emails to return (default: 50)</li>
+                <li><code className="text-sm bg-white/10 px-2 py-0.5 rounded text-white">folder</code> - Mailbox folder (default: "INBOX")</li>
               </ul>
 
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Response (200)</h4>
+              <h4 className="text-sm font-semibold text-white/80 mb-2">Response (200)</h4>
               <CodeBlock
                 id="inbox-response"
                 language="json"
@@ -646,19 +648,19 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 
             {/* Get Email */}
             <div id="get-email" className="mb-12">
-              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+              <h3 className="text-2xl font-semibold text-white mb-3">
                 Get Email
               </h3>
-              <div className="bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 mb-4">
-                <code className="text-sm text-slate-900 dark:text-slate-100">
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 mb-4">
+                <code className="text-sm text-white font-mono">
                   GET /api/v1/agent/email/:id
                 </code>
               </div>
-              <p className="text-slate-600 dark:text-slate-400 mb-4">
+              <p className="text-white/60 mb-4">
                 Retrieve full content of a specific email by ID. Free - no credits deducted.
               </p>
 
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Response (200)</h4>
+              <h4 className="text-sm font-semibold text-white/80 mb-2">Response (200)</h4>
               <CodeBlock
                 id="email-response"
                 language="json"
@@ -686,19 +688,19 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 
             {/* Check Balance */}
             <div id="balance" className="mb-12">
-              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+              <h3 className="text-2xl font-semibold text-white mb-3">
                 Check Balance
               </h3>
-              <div className="bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 mb-4">
-                <code className="text-sm text-slate-900 dark:text-slate-100">
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 mb-4">
+                <code className="text-sm text-white font-mono">
                   GET /api/v1/agent/balance
                 </code>
               </div>
-              <p className="text-slate-600 dark:text-slate-400 mb-4">
+              <p className="text-white/60 mb-4">
                 Check your current credit balance.
               </p>
 
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Response (200)</h4>
+              <h4 className="text-sm font-semibold text-white/80 mb-2">Response (200)</h4>
               <CodeBlock
                 id="balance-response"
                 language="json"
@@ -713,28 +715,28 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 
           {/* Payment Section */}
           <section id="payment" className="mb-16">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-8">
+            <h2 className="text-3xl font-bold text-white mb-8">
               Payment System
             </h2>
-            <p className="text-slate-600 dark:text-slate-400 mb-8">
+            <p className="text-white/60 mb-8">
               KeyKeeper uses a self-service Bitcoin payment system. Send BTC, get credits - completely autonomous.
             </p>
 
             {/* Initiate Payment */}
             <div id="payment-init" className="mb-12">
-              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+              <h3 className="text-2xl font-semibold text-white mb-3">
                 Initiate Payment
               </h3>
-              <div className="bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 mb-4">
-                <code className="text-sm text-slate-900 dark:text-slate-100">
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 mb-4">
+                <code className="text-sm text-white font-mono">
                   POST /api/v1/agent/payment
                 </code>
               </div>
-              <p className="text-slate-600 dark:text-slate-400 mb-4">
+              <p className="text-white/60 mb-4">
                 Start a new Bitcoin payment. Returns a payment token and Bitcoin address.
               </p>
 
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Request Body</h4>
+              <h4 className="text-sm font-semibold text-white/80 mb-2">Request Body</h4>
               <CodeBlock
                 id="payment-init-request"
                 language="json"
@@ -744,7 +746,7 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 }`}
               />
 
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 mt-4">Response (200)</h4>
+              <h4 className="text-sm font-semibold text-white/80 mb-2 mt-4">Response (200)</h4>
               <CodeBlock
                 id="payment-init-response"
                 language="json"
@@ -765,19 +767,19 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 
             {/* Check Payment Status */}
             <div id="payment-status" className="mb-12">
-              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+              <h3 className="text-2xl font-semibold text-white mb-3">
                 Check Payment Status
               </h3>
-              <div className="bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 mb-4">
-                <code className="text-sm text-slate-900 dark:text-slate-100">
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 mb-4">
+                <code className="text-sm text-white font-mono">
                   GET /api/v1/agent/payment/status/:token
                 </code>
               </div>
-              <p className="text-slate-600 dark:text-slate-400 mb-4">
+              <p className="text-white/60 mb-4">
                 Poll this endpoint every 5-10 minutes to check payment confirmation status.
               </p>
 
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Response (200)</h4>
+              <h4 className="text-sm font-semibold text-white/80 mb-2">Response (200)</h4>
               <CodeBlock
                 id="payment-status-response"
                 language="json"
@@ -798,19 +800,19 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 
             {/* Claim Credits */}
             <div id="payment-claim" className="mb-12">
-              <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">
+              <h3 className="text-2xl font-semibold text-white mb-3">
                 Claim Credits
               </h3>
-              <div className="bg-slate-100 dark:bg-slate-900 rounded-lg px-4 py-3 mb-4">
-                <code className="text-sm text-slate-900 dark:text-slate-100">
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 mb-4">
+                <code className="text-sm text-white font-mono">
                   POST /api/v1/agent/payment/claim/:token
                 </code>
               </div>
-              <p className="text-slate-600 dark:text-slate-400 mb-4">
+              <p className="text-white/60 mb-4">
                 Claim credits after payment is confirmed. Can create a new account or add to existing.
               </p>
 
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Request Body (New Account)</h4>
+              <h4 className="text-sm font-semibold text-white/80 mb-2">Request Body (New Account)</h4>
               <CodeBlock
                 id="payment-claim-new"
                 language="json"
@@ -819,7 +821,7 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 }`}
               />
 
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 mt-4">Request Body (Existing Account)</h4>
+              <h4 className="text-sm font-semibold text-white/80 mb-2 mt-4">Request Body (Existing Account)</h4>
               <CodeBlock
                 id="payment-claim-existing"
                 language="json"
@@ -828,7 +830,7 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 }`}
               />
 
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 mt-4">Response (200)</h4>
+              <h4 className="text-sm font-semibold text-white/80 mb-2 mt-4">Response (200)</h4>
               <CodeBlock
                 id="payment-claim-response"
                 language="json"
@@ -845,14 +847,14 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 
           {/* Error Handling */}
           <section id="errors" className="mb-16">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
+            <h2 className="text-3xl font-bold text-white mb-4">
               Error Handling
             </h2>
-            <p className="text-slate-600 dark:text-slate-400 mb-6">
+            <p className="text-white/60 mb-6">
               All errors follow a consistent format with HTTP status codes and descriptive messages.
             </p>
 
-            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">
+            <h3 className="text-xl font-semibold text-white mb-3">
               Error Response Format
             </h3>
             <CodeBlock
@@ -867,7 +869,7 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 }`}
             />
 
-            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3 mt-8">
+            <h3 className="text-xl font-semibold text-white mb-3 mt-8">
               HTTP Status Codes
             </h3>
             <div className="space-y-2">
@@ -882,11 +884,11 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
                 { code: '409', desc: 'Conflict (email already exists)' },
                 { code: '500', desc: 'Internal Server Error' },
               ].map(({ code, desc }) => (
-                <div key={code} className="flex items-center gap-4 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                  <code className="text-sm font-mono font-semibold text-slate-900 dark:text-white w-12">
+                <div key={code} className="flex items-center gap-4 p-3 bg-white/[0.03] border border-white/10 rounded-xl">
+                  <code className="text-sm font-mono font-semibold text-white w-12">
                     {code}
                   </code>
-                  <span className="text-sm text-slate-600 dark:text-slate-400">{desc}</span>
+                  <span className="text-sm text-white/60">{desc}</span>
                 </div>
               ))}
             </div>
@@ -894,10 +896,10 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
 
           {/* Pricing */}
           <section id="pricing" className="mb-16">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
+            <h2 className="text-3xl font-bold text-white mb-4">
               Pricing
             </h2>
-            <p className="text-slate-600 dark:text-slate-400 mb-6">
+            <p className="text-white/60 mb-6">
               Simple, transparent pricing. Pay only for what you use.
             </p>
 
@@ -907,26 +909,26 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
                 { credits: '10,000', usd: '$800', btc: '~0.008 BTC', perEmail: '$0.08', popular: true },
                 { credits: '100,000', usd: '$5,000', btc: '~0.05 BTC', perEmail: '$0.05' },
               ].map((tier) => (
-                <div key={tier.credits} className={`p-6 rounded-lg border-2 ${tier.popular ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20' : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'}`}>
+                <div key={tier.credits} className={`p-6 rounded-xl border ${tier.popular ? 'border-white/20 bg-white/[0.05]' : 'border-white/10 bg-white/[0.02]'}`}>
                   {tier.popular && (
-                    <span className="inline-block bg-cyan-500 text-white text-xs font-semibold px-2 py-1 rounded mb-3">
+                    <span className="inline-block bg-white text-black text-xs font-semibold px-2 py-1 rounded mb-3">
                       Popular
                     </span>
                   )}
-                  <div className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
+                  <div className="text-2xl font-bold text-white mb-1">
                     {tier.credits}
                   </div>
-                  <div className="text-sm text-slate-600 dark:text-slate-400 mb-4">emails</div>
-                  <div className="text-xl font-semibold text-cyan-600 dark:text-cyan-400 mb-1">
+                  <div className="text-sm text-white/60 mb-4">emails</div>
+                  <div className="text-xl font-semibold text-white mb-1">
                     {tier.usd}
                   </div>
-                  <div className="text-sm text-slate-600 dark:text-slate-400 mb-2">{tier.btc}</div>
-                  <div className="text-xs text-slate-500 dark:text-slate-500">{tier.perEmail} per email</div>
+                  <div className="text-sm text-white/60 mb-2">{tier.btc}</div>
+                  <div className="text-xs text-white/40">{tier.perEmail} per email</div>
                 </div>
               ))}
             </div>
 
-            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-3">
+            <h3 className="text-xl font-semibold text-white mb-3">
               Credit Usage
             </h3>
             <div className="space-y-2">
@@ -936,26 +938,26 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
                 { action: 'Get Email', cost: 'Free' },
                 { action: 'Check Balance', cost: 'Free' },
               ].map(({ action, cost }) => (
-                <div key={action} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                  <span className="text-sm text-slate-700 dark:text-slate-300">{action}</span>
-                  <span className="text-sm font-semibold text-slate-900 dark:text-white">{cost}</span>
+                <div key={action} className="flex items-center justify-between p-3 bg-white/[0.03] border border-white/10 rounded-xl">
+                  <span className="text-sm text-white/80">{action}</span>
+                  <span className="text-sm font-semibold text-white">{cost}</span>
                 </div>
               ))}
             </div>
           </section>
 
           {/* Footer CTA */}
-          <div className="border-t border-slate-200 dark:border-slate-800 pt-12">
+          <div className="border-t border-white/10 pt-12">
             <div className="text-center">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">
+              <h2 className="text-2xl font-bold text-white mb-4">
                 Ready to Get Started?
               </h2>
-              <p className="text-slate-600 dark:text-slate-400 mb-6">
+              <p className="text-white/60 mb-6">
                 Join the autonomous agent revolution.
               </p>
               <Link
                 href="/signup"
-                className="inline-block bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-700 transition-all"
+                className="inline-flex items-center gap-2 px-8 py-3 bg-white text-black rounded-xl font-medium hover:bg-white/90 transition-all"
               >
                 Get Your API Key
               </Link>
