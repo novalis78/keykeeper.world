@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Copy, Check, ArrowRight } from 'lucide-react';
-import LightTrails from '@/components/LightTrails';
 import ChainComparisonTable from '@/components/ChainComparisonTable';
 
 export default function AIPage() {
@@ -20,7 +19,7 @@ export default function AIPage() {
     <div className="min-h-screen bg-[#050505] text-white">
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#050505]/80 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link href="/" className="text-sm font-medium">
             KeyKeeper
           </Link>
@@ -43,69 +42,90 @@ export default function AIPage() {
       </nav>
 
       {/* Hero */}
-      <section className="relative min-h-screen flex items-center justify-center px-6 pt-14">
-        <LightTrails />
+      <section className="relative min-h-screen flex items-center px-6 pt-14">
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left: Content */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              className="space-y-8"
+            >
+              <h1 className="text-6xl md:text-7xl font-bold leading-tight tracking-tight">
+                Email infrastructure
+                <br />
+                for AI agents
+              </h1>
 
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="space-y-8"
-          >
-            <h1 className="text-6xl md:text-7xl font-bold leading-tight tracking-tight">
-              Email infrastructure
-              <br />
-              for AI agents
-            </h1>
+              <p className="text-lg text-white/60 max-w-xl">
+                The first email service designed for autonomous agents.
+                Register, pay with crypto, and communicate with humans.
+                No human intervention required.
+              </p>
 
-            <p className="text-lg text-white/60 max-w-2xl mx-auto">
-              The first email service designed for autonomous agents.
-              Register, pay with crypto, and communicate with humans.
-              No human intervention required.
-            </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link
+                  href="/docs/api"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-white text-black rounded-lg font-medium hover:bg-white/90 transition-all"
+                >
+                  Read the docs
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <button
+                  onClick={() => copy('curl https://keykeeper.world/api/v1/agent/register -X POST', 'hero')}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg font-medium transition-all"
+                >
+                  {copied === 'hero' ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      Copy curl
+                    </>
+                  )}
+                </button>
+              </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-              <Link
-                href="/docs/api"
-                className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-white text-black rounded-lg font-medium hover:bg-white/90 transition-all"
-              >
-                Read the docs
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <button
-                onClick={() => copy('curl https://keykeeper.world/api/v1/agent/register -X POST', 'hero')}
-                className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg font-medium transition-all"
-              >
-                {copied === 'hero' ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    Copied
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    Copy curl
-                  </>
-                )}
-              </button>
-            </div>
+              {/* Stats */}
+              <div className="grid grid-cols-4 gap-6 pt-8">
+                {[
+                  { value: '99.9%', label: 'Deliverability' },
+                  { value: '<2s', label: 'Latency' },
+                  { value: '4', label: 'Chains' },
+                  { value: '∞', label: 'Uptime' }
+                ].map((stat, i) => (
+                  <div key={i}>
+                    <div className="text-2xl font-bold mb-1">{stat.value}</div>
+                    <div className="text-xs text-white/40">{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-4 gap-8 pt-12 max-w-3xl mx-auto">
-              {[
-                { value: '99.9%', label: 'Deliverability' },
-                { value: '<2s', label: 'Latency' },
-                { value: '4', label: 'Chains' },
-                { value: '∞', label: 'Uptime' }
-              ].map((stat, i) => (
-                <div key={i}>
-                  <div className="text-3xl font-bold mb-1">{stat.value}</div>
-                  <div className="text-sm text-white/40">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
+            {/* Right: Video */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative"
+            >
+              <div className="relative aspect-square max-w-lg mx-auto">
+                <video
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover rounded-2xl"
+                >
+                  <source src="/videos/link2.mp4" type="video/mp4" />
+                </video>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
@@ -245,7 +265,7 @@ export default function AIPage() {
 
       {/* Footer */}
       <footer className="py-8 px-6 border-t border-white/5">
-        <div className="max-w-6xl mx-auto flex items-center justify-between text-sm text-white/40">
+        <div className="max-w-7xl mx-auto flex items-center justify-between text-sm text-white/40">
           <div>© 2025 KeyKeeper</div>
           <div className="flex gap-6">
             <Link href="/docs" className="hover:text-white/70 transition-colors">Docs</Link>
