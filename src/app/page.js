@@ -97,11 +97,12 @@ export default function NewHomePage() {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-8 pt-12">
+              <div className="grid grid-cols-4 gap-8 pt-12">
                 {[
                   { value: '100%', label: 'Encrypted' },
                   { value: 'Zero', label: 'Tracking' },
-                  { value: 'PGP', label: 'Standard' }
+                  { value: 'PGP', label: 'Standard' },
+                  { value: 'AI', label: 'Ready' }
                 ].map((stat, i) => (
                   <div key={i}>
                     <div className="text-[28px] font-semibold mb-1 text-primary-400 leading-none">{stat.value}</div>
