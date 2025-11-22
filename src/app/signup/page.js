@@ -116,9 +116,24 @@ export default function SignupPage() {
         throw new Error(data.error || 'Registration failed');
       }
 
-      // Store token if provided
+      // Clear any old user data first
+      localStorage.removeItem('user_email');
+      localStorage.removeItem('user_id');
+      localStorage.removeItem('user_fingerprint');
+      localStorage.removeItem('user_key_id');
+
+      // Store new token
       if (data.token) {
         localStorage.setItem('auth_token', data.token);
+      }
+
+      // Store user information
+      if (data.user) {
+        localStorage.setItem('user_email', data.user.email);
+        localStorage.setItem('user_id', data.user.id);
+        if (data.user.name) {
+          localStorage.setItem('user_name', data.user.name);
+        }
       }
 
       // Redirect to dashboard
