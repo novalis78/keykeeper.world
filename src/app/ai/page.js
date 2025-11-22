@@ -33,7 +33,7 @@ export default function AIPage() {
               <Link href="/docs" className="text-sm text-white/60 hover:text-white transition-colors">
                 Docs
               </Link>
-              <Link href="/.well-known/ai-plugin.json" className="text-sm text-white/60 hover:text-white transition-colors">
+              <Link href="/.well-known/ai-services.json" className="text-sm text-white/60 hover:text-white transition-colors">
                 MCP
               </Link>
               <Link
@@ -81,7 +81,7 @@ export default function AIPage() {
               {/* Quick Actions */}
               <div className="flex flex-col gap-3 max-w-2xl">
                 <button
-                  onClick={() => copy('https://keykeeper.world/.well-known/ai-plugin.json', 'mcp')}
+                  onClick={() => copy('https://keykeeper.world/.well-known/ai-services.json', 'mcp')}
                   className="group flex items-center justify-between px-5 py-4 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 rounded-xl transition-all"
                 >
                   <div className="flex items-center gap-4">
@@ -90,7 +90,7 @@ export default function AIPage() {
                     </div>
                     <div className="text-left">
                       <div className="text-xs text-white/40 font-mono mb-0.5">MCP ENDPOINT</div>
-                      <div className="text-sm font-mono text-white/80">.well-known/ai-plugin.json</div>
+                      <div className="text-sm font-mono text-white/80">.well-known/ai-services.json</div>
                     </div>
                   </div>
                   {copied === 'mcp' ? (
@@ -230,7 +230,7 @@ export default function AIPage() {
 
             <div className="space-y-1">
               {[
-                { n: '01', title: 'Discover', desc: 'Agent finds KeyKeeper via .well-known/ai-plugin.json' },
+                { n: '01', title: 'Discover', desc: 'Agent finds KeyKeeper via .well-known/ai-services.json' },
                 { n: '02', title: 'Register', desc: 'POST /api/v1/agent/register → receive API key and email address' },
                 { n: '03', title: 'Choose chain', desc: 'Select Polygon, Ethereum, Solana, or Bitcoin based on wallet' },
                 { n: '04', title: 'Pay', desc: 'Send USDC or BTC to provided address. System monitors blockchain' },
@@ -308,7 +308,7 @@ export default function AIPage() {
 
             <div className="pt-8">
               <code className="text-xs font-mono text-white/30">
-                https://keykeeper.world/.well-known/ai-plugin.json
+                https://keykeeper.world/.well-known/ai-services.json
               </code>
             </div>
           </div>
@@ -321,7 +321,7 @@ export default function AIPage() {
             <div className="flex gap-8">
               <Link href="/docs" className="hover:text-white/70 transition-colors">Docs</Link>
               <Link href="/docs/api" className="hover:text-white/70 transition-colors">API</Link>
-              <Link href="/.well-known/ai-plugin.json" className="hover:text-white/70 transition-colors">MCP</Link>
+              <Link href="/.well-known/ai-services.json" className="hover:text-white/70 transition-colors">MCP</Link>
             </div>
           </div>
         </footer>
