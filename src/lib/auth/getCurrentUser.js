@@ -34,14 +34,14 @@ export function getCurrentUserId() {
       return hashUserId;
     }
     
-    // If not found in URL, check localStorage
-    const savedUserId = localStorage.getItem('userId');
+    // If not found in URL, check localStorage (try both keys for compatibility)
+    const savedUserId = localStorage.getItem('user_id') || localStorage.getItem('userId');
     if (savedUserId) {
       return savedUserId;
     }
-    
-    // Default to user ID 1 for testing if no ID found
-    return "1";
+
+    // No default - return null if not authenticated
+    return null;
   } catch (error) {
     console.error('Error getting current user ID:', error);
     return null;

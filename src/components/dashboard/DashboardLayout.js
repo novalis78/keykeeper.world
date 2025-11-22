@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { 
+import {
   Bars3Icon,
   XMarkIcon,
   EnvelopeIcon,
@@ -17,66 +17,44 @@ import {
   UsersIcon
 } from '@heroicons/react/24/outline';
 import { LockClosedIcon } from '@heroicons/react/24/solid';
-import { getCurrentUserId } from '@/lib/auth/getCurrentUser';
+import { useAuth } from '@/lib/auth/useAuth';
 
 export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, loading } = useAuth();
+
   const [userEmail, setUserEmail] = useState('Loading...');
   const [userInitials, setUserInitials] = useState('');
 
   useEffect(() => {
-    async function fetchUserEmail() {
-      try {
-        const userId = getCurrentUserId();
-        if (!userId) {
-          console.error('No user ID found');
-          setUserEmail('User@example.com'); // Fallback
-          setUserInitials('US');
-          return;
-        }
+    if (loading) return;
 
-        // Fetch the user's email from the virtual_users table
-        const response = await fetch('/api/mail/user-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ userId }),
-        });
+    if (user && user.email) {
+      setUserEmail(user.email);
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch user email');
-        }
-
-        const data = await response.json();
-        
-        if (data.success && data.email) {
-          setUserEmail(data.email);
-          
-          // Set initials from the email username
-          const username = data.email.split('@')[0];
-          if (username) {
-            // Get up to two characters for initials
-            const initials = username.substring(0, 2).toUpperCase();
-            setUserInitials(initials);
-          } else {
-            setUserInitials('US');
-          }
-        } else {
-          // Fallback if no email found
-          console.warn('No email found for user ID:', userId);
-          setUserEmail('User@example.com');
-          setUserInitials('US');
-        }
-      } catch (error) {
-        console.error('Error fetching user email:', error);
-        setUserEmail('User@example.com'); // Fallback
+      // Set initials from the email username
+      const username = user.email.split('@')[0];
+      if (username) {
+        // Get up to two characters for initials
+        const initials = username.substring(0, 2).toUpperCase();
+        setUserInitials(initials);
+      } else {
+        setUserInitials('US');
+      }
+    } else {
+      // No user logged in - try localStorage as fallback
+      const storedEmail = localStorage.getItem('user_email');
+      if (storedEmail) {
+        setUserEmail(storedEmail);
+        const username = storedEmail.split('@')[0];
+        const initials = username.substring(0, 2).toUpperCase();
+        setUserInitials(initials);
+      } else {
+        setUserEmail('User@example.com');
         setUserInitials('US');
       }
     }
-
-    fetchUserEmail();
-  }, []);
+  }, [user, loading]);
 
   const navigation = [
     { name: 'Inbox', href: '/dashboard', icon: EnvelopeIcon, current: true },
