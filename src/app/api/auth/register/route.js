@@ -3,6 +3,9 @@ import { query } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import accountManager from '@/lib/mail/accountManager';
+import db from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,6 +64,40 @@ export async function POST(request) {
       ) VALUES (?, ?, ?, ?, 'human', 'password', NOW())`,
       [userId, email, name || null, passwordHash]
     );
+
+    // Auto-provision mail account for the user
+    // Generate a secure mail password
+    const mailPassword = crypto.randomBytes(32).toString('hex');
+
+    try {
+      // Create the mail account in virtual_users table
+      await accountManager.createMailAccount(
+        email,
+        mailPassword,
+        name || email.split('@')[0],
+        parseInt(process.env.DEFAULT_MAIL_QUOTA || '1024'),
+        userId
+      );
+
+      // Store mail password (encrypted)
+      await db.users.updateMailPassword(userId, mailPassword);
+
+      // Log mail account creation
+      await db.activityLogs.create(userId, 'mail_account_creation', {
+        email,
+        success: true
+      });
+
+      console.log(`Mail account created successfully for: ${email}`);
+    } catch (mailError) {
+      console.error('Error creating mail account:', mailError);
+      // Continue anyway - user can set up mail later
+      await db.activityLogs.create(userId, 'mail_account_creation', {
+        email,
+        success: false,
+        error: mailError.message
+      });
+    }
 
     // Generate JWT token
     const token = jwt.sign(
