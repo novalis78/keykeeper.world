@@ -89,25 +89,20 @@ export default function APIDocsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-950">
+    <div className="min-h-screen bg-[#050505] text-white">
       {/* Top Navigation */}
-      <nav className="fixed top-0 left-0 right-0 h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 z-50">
-        <div className="h-full px-6 flex items-center justify-between">
+      <nav className="fixed top-0 left-0 right-0 h-14 bg-[#050505]/80 backdrop-blur-xl border-b border-white/5 z-50">
+        <div className="h-full px-6 flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">KK</span>
-              </div>
-              <span className="text-slate-900 dark:text-white font-semibold text-lg">
-                KeyKeeper
-              </span>
+            <Link href="/" className="text-sm font-medium">
+              KeyKeeper
             </Link>
-            <span className="text-slate-400 text-sm font-medium">API Documentation</span>
+            <span className="text-white/40 text-sm">API Documentation</span>
           </div>
 
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 text-slate-600 dark:text-slate-400"
+            className="lg:hidden p-2 text-white/50"
           >
             {mobileMenuOpen ? (
               <XMarkIcon className="w-6 h-6" />
@@ -116,16 +111,16 @@ export default function APIDocsPage() {
             )}
           </button>
 
-          <div className="hidden lg:flex items-center gap-4">
+          <div className="hidden lg:flex items-center gap-6">
             <Link
               href="/ai"
-              className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors text-sm"
+              className="text-sm text-white/50 hover:text-white transition-colors"
             >
               For Agents
             </Link>
             <Link
               href="/signup"
-              className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-cyan-600 hover:to-blue-700 transition-all"
+              className="text-sm px-3 py-1.5 bg-white text-black rounded-md hover:bg-white/90 transition-all"
             >
               Get Started
             </Link>
@@ -133,9 +128,9 @@ export default function APIDocsPage() {
         </div>
       </nav>
 
-      <div className="pt-16 flex">
+      <div className="pt-14 flex">
         {/* Sidebar Navigation */}
-        <aside className={`fixed lg:sticky top-16 left-0 bottom-0 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 overflow-y-auto transition-transform lg:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:block z-40`}>
+        <aside className={`fixed lg:sticky top-14 left-0 bottom-0 w-64 bg-[#050505] border-r border-white/5 overflow-y-auto transition-transform lg:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:block z-40`}>
           <nav className="p-6 space-y-1">
             {navigation.map((item) => (
               <div key={item.id}>
@@ -147,8 +142,8 @@ export default function APIDocsPage() {
                   }}
                   className={`block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     activeSection === item.id
-                      ? 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      ? 'bg-white/10 text-white'
+                      : 'text-white/60 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   {item.title}
@@ -165,8 +160,8 @@ export default function APIDocsPage() {
                         }}
                         className={`block px-3 py-1.5 rounded-lg text-sm transition-colors ${
                           activeSection === child.id
-                            ? 'text-cyan-600 dark:text-cyan-400'
-                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                            ? 'text-white'
+                            : 'text-white/50 hover:text-white'
                         }`}
                       >
                         {child.title}
