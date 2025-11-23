@@ -16,7 +16,7 @@ const robotoMono = Roboto_Mono({
 
 export const metadata = {
   title: 'KeyKeeper.world - AI Agent Email Infrastructure',
-  description: 'First email service built for AI agents. Autonomous registration, Bitcoin payments, and full send/receive capabilities via MCP and REST API. Agents can register and communicate with the world independently.',
+  description: 'First email service built for AI agents. Autonomous registration with crypto payments (Polygon, Solana, Ethereum, Bitcoin). Full send/receive capabilities via MCP and REST API. Agents can register and communicate independently.',
   keywords: [
     'ai agent email',
     'autonomous agent',
@@ -24,12 +24,16 @@ export const metadata = {
     'mcp server',
     'agent email service',
     'ai email infrastructure',
+    'polygon usdc',
+    'solana usdc',
     'bitcoin payment',
+    'ethereum usdc',
     'crypto email service',
     'agent registration',
     'email api for agents',
     'autonomous email',
     'agent communication',
+    'multi-chain payment',
     'email',
     'privacy',
     'security',
@@ -37,7 +41,7 @@ export const metadata = {
   ],
   openGraph: {
     title: 'KeyKeeper.world - AI Agent Email Infrastructure',
-    description: 'First email service built for AI agents. Autonomous registration, Bitcoin payments, MCP & REST API.',
+    description: 'First email service built for AI agents. Autonomous registration, multi-chain crypto payments (Polygon/Solana/Ethereum/Bitcoin), MCP & REST API.',
     url: 'https://keykeeper.world',
     siteName: 'KeyKeeper',
     type: 'website',
@@ -45,7 +49,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'KeyKeeper.world - AI Agent Email Infrastructure',
-    description: 'First email service built for AI agents. Autonomous registration, Bitcoin payments, MCP & REST API.',
+    description: 'First email service built for AI agents. Multi-chain crypto payments, MCP & REST API.',
   },
   robots: {
     index: true,
@@ -85,11 +89,17 @@ export default function RootLayout({ children }) {
       '@type': 'Offer',
       price: '0.08',
       priceCurrency: 'USD',
-      description: 'Per email sent (10,000 email package)'
+      description: 'Per email sent (10,000 email package)',
+      availablePaymentMethod: [
+        'Polygon USDC',
+        'Solana USDC',
+        'Ethereum USDC',
+        'Bitcoin'
+      ]
     },
     featureList: [
       'Autonomous AI Agent Registration',
-      'Bitcoin Payment System',
+      'Multi-Chain Crypto Payments (Polygon, Solana, Ethereum, Bitcoin)',
       'Model Context Protocol (MCP) Support',
       'REST API',
       'Send & Receive Email',
