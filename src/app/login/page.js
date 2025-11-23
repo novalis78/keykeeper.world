@@ -1,17 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { 
-  LockClosedIcon, 
-  EnvelopeIcon, 
-  EyeIcon, 
-  EyeSlashIcon,
-  ExclamationCircleIcon,
-  XMarkIcon
-} from '@heroicons/react/24/outline';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Lock, Mail, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -122,86 +115,65 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <Link href="/" className="flex justify-center">
-          <span className="sr-only">KeyKeeper</span>
-          <div className="h-14 w-14 rounded-full bg-primary-600 flex items-center justify-center">
-            <LockClosedIcon className="h-8 w-8 text-white" />
+    <div className="min-h-screen bg-[#050505] flex items-center justify-center px-6 py-12">
+      <div className="w-full max-w-md">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          {/* Header */}
+          <div className="text-center mb-8">
+            <Link href="/" className="inline-block mb-6">
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-teal-400 flex items-center justify-center shadow-lg shadow-primary-500/30">
+                  <Lock className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-xl font-semibold text-white">KeyKeeper</span>
+              </div>
+            </Link>
+            <h1 className="text-[44px] font-semibold mb-3 text-white leading-[1.2] tracking-[-0.02em]">
+              {requires2FA ? 'Two-factor code' : 'Welcome back'}
+            </h1>
+            <p className="text-[15px] text-white/50 leading-[1.6]">
+              {requires2FA ? 'Enter your 6-digit authentication code' : 'Sign in to your account'}
+            </p>
           </div>
-        </Link>
-        <h1 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-          KeyKeeper.world
-        </h1>
-        <p className="mt-2 text-center text-xl text-gray-600 dark:text-gray-400">
-          {requires2FA ? 'Enter your 2FA code' : 'Sign in to your account'}
-        </p>
-      </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow-lg sm:rounded-lg sm:px-10">
-          {error && (
-            <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-300 text-sm flex items-start">
-              <ExclamationCircleIcon className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">{error}</div>
-              <button 
-                type="button" 
-                className="ml-2 flex-shrink-0 text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300"
-                onClick={() => setError('')}
-              >
-                <XMarkIcon className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-6 bg-white/[0.03] border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
+            {error && (
+              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                <p className="text-sm text-red-300">{error}</p>
+              </div>
+            )}
+
             {!requires2FA ? (
               <>
                 {/* Email field */}
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <label htmlFor="email" className="block text-[13px] font-medium text-white/80 mb-2">
                     Email Address
                   </label>
-                  <div className="mt-1 relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <EnvelopeIcon className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      id="email"
-                      name="email"
-                      type="email"
-                      autoComplete="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="block w-full pl-10 border-0 py-3 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-primary-500 dark:focus:ring-primary-400 sm:text-sm sm:leading-6 dark:bg-gray-800 rounded-lg"
-                      placeholder="you@example.com"
-                    />
-                  </div>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-4 py-3 bg-white/[0.03] border border-white/10 rounded-xl text-white text-[15px] placeholder:text-white/30 focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/20 transition-all"
+                    placeholder="you@keykeeper.world"
+                  />
                 </div>
 
                 {/* Password field */}
                 <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <label htmlFor="password" className="block text-[13px] font-medium text-white/80 mb-2">
                     Password
                   </label>
-                  <div className="mt-1 relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <LockClosedIcon className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                      <button
-                        type="button"
-                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <EyeSlashIcon className="h-5 w-5" />
-                        ) : (
-                          <EyeIcon className="h-5 w-5" />
-                        )}
-                      </button>
-                    </div>
+                  <div className="relative">
                     <input
                       id="password"
                       name="password"
@@ -210,76 +182,74 @@ export default function LoginPage() {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="block w-full pl-10 pr-10 border-0 py-3 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-primary-500 dark:focus:ring-primary-400 sm:text-sm sm:leading-6 dark:bg-gray-800 rounded-lg"
+                      className="w-full px-4 py-3 bg-white/[0.03] border border-white/10 rounded-xl text-white text-[15px] placeholder:text-white/30 focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/20 transition-all"
                       placeholder="Enter your password"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
                   </div>
                 </div>
 
-                {/* Remember me checkbox */}
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
-                  />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                    Remember me
-                  </label>
+                {/* Remember me & Forgot password */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <input
+                      id="remember-me"
+                      name="remember-me"
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="w-4 h-4 rounded border-white/20 text-primary-600 focus:ring-primary-500 bg-white/[0.03]"
+                    />
+                    <label htmlFor="remember-me" className="ml-2 text-[13px] text-white/60">
+                      Remember me
+                    </label>
+                  </div>
+                  <Link href="/forgot-password" className="text-[13px] text-primary-400 hover:text-primary-300 transition-colors">
+                    Forgot password?
+                  </Link>
                 </div>
               </>
             ) : (
               /* 2FA Code Input */
               <div>
-                <label htmlFor="totp-code" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Two-Factor Authentication Code
+                <label htmlFor="totp-code" className="block text-[13px] font-medium text-white/80 mb-2">
+                  Two-Factor Code
                 </label>
-                <div className="mt-1">
-                  <input
-                    id="totp-code"
-                    name="totp-code"
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={6}
-                    autoComplete="one-time-code"
-                    required
-                    value={totpCode}
-                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
-                    className="block w-full text-center text-2xl tracking-widest border-0 py-3 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 focus:ring-2 focus:ring-inset focus:ring-primary-500 dark:focus:ring-primary-400 sm:text-sm sm:leading-6 dark:bg-gray-800 rounded-lg"
-                    placeholder="000000"
-                  />
-                </div>
-                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                  Enter the 6-digit code from your authenticator app.
+                <input
+                  id="totp-code"
+                  name="totp-code"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  autoComplete="one-time-code"
+                  required
+                  value={totpCode}
+                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                  className="w-full px-4 py-3 bg-white/[0.03] border border-white/10 rounded-xl text-white text-[24px] placeholder:text-white/30 focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/20 transition-all text-center tracking-widest"
+                  placeholder="000000"
+                />
+                <p className="mt-2 text-[13px] text-white/50">
+                  Enter the 6-digit code from your authenticator app
                 </p>
               </div>
             )}
 
-            <div>
-              <motion.button
-                type="submit"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                disabled={loading || (!requires2FA && (!email || !password)) || (requires2FA && !totpCode)}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    {requires2FA ? 'Verifying...' : 'Signing in...'}
-                  </>
-                ) : (
-                  requires2FA ? 'Verify Code' : 'Sign In'
-                )}
-              </motion.button>
-            </div>
+            {/* Submit button */}
+            <button
+              type="submit"
+              disabled={loading || (!requires2FA && (!email || !password)) || (requires2FA && !totpCode)}
+              className="w-full py-3 bg-gradient-to-r from-primary-600 to-teal-500 hover:from-primary-700 hover:to-teal-600 text-white text-[15px] rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40"
+            >
+              {loading ? (requires2FA ? 'Verifying...' : 'Signing in...') : (requires2FA ? 'Verify code' : 'Sign in')}
+              {!loading && <ArrowRight className="w-4 h-4" />}
+            </button>
 
             {/* Back button for 2FA */}
             {requires2FA && (
@@ -287,7 +257,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={handleBackToPassword}
-                  className="text-sm text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300"
+                  className="text-[13px] text-primary-400 hover:text-primary-300 transition-colors"
                 >
                   ← Back to password
                 </button>
@@ -295,50 +265,14 @@ export default function LoginPage() {
             )}
           </form>
 
-          {/* Security note */}
-          <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
-            <div className="flex items-start">
-              <LockClosedIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-              <div className="ml-3">
-                <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                  Secure & Encrypted
-                </h4>
-                <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                  Your emails are protected with end-to-end encryption. We manage the security so you can focus on what matters.
-                </p>
-              </div>
-            </div>
+          {/* Footer */}
+          <div className="mt-8 text-center text-[13px] text-white/50">
+            Don't have an account?{' '}
+            <Link href="/signup" className="text-primary-400 hover:text-primary-300 font-medium transition-colors">
+              Create account
+            </Link>
           </div>
-          
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                  Don't have an account?
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-4 flex justify-between items-center">
-              <Link
-                href="/forgot-password"
-                className="text-sm text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300"
-              >
-                Forgot your password?
-              </Link>
-              
-              <Link
-                href="/signup"
-                className="text-sm text-primary-600 hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300"
-              >
-                Create an account
-              </Link>
-            </div>
-          </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
