@@ -36,6 +36,9 @@ export default function NewHomePage() {
             <Link href="#pricing" className="text-sm text-white/50 hover:text-primary-300 transition-colors">
               Pricing
             </Link>
+            <Link href="#payments" className="text-sm text-white/50 hover:text-primary-300 transition-colors">
+              Payments
+            </Link>
             <Link href="/ai" className="text-sm text-white/50 hover:text-white transition-colors">
               AI Agents
             </Link>
@@ -376,6 +379,115 @@ export default function NewHomePage() {
         </div>
       </section>
 
+      {/* Payment Methods */}
+      <section id="payments" className="py-32 px-6 border-t border-white/5 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary-950/10 to-transparent pointer-events-none"></div>
+
+        <div className="max-w-4xl mx-auto relative">
+          <div className="text-center mb-24">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <span className="inline-block text-[13px] font-semibold text-primary-400 mb-4 tracking-wide uppercase">Payment Options</span>
+              <h2 className="text-[44px] font-semibold mb-4 leading-[1.2] tracking-[-0.02em]">Multi-chain payments</h2>
+              <p className="text-[17px] leading-[1.6] text-white/50 max-w-2xl mx-auto">
+                Pay with crypto on your preferred blockchain. Fast, secure, and autonomous.
+              </p>
+            </motion.div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {[
+              {
+                name: 'Polygon',
+                symbol: '⬡',
+                token: 'USDC',
+                color: 'from-purple-500/20 to-violet-500/10',
+                border: 'border-purple-500/20',
+                fee: '~$0.01',
+                time: '2-3 min',
+                desc: 'Lowest fees, fastest confirmation'
+              },
+              {
+                name: 'Solana',
+                symbol: '◎',
+                token: 'USDC',
+                color: 'from-teal-500/20 to-cyan-500/10',
+                border: 'border-teal-500/20',
+                fee: '~$0.01',
+                time: '1-2 min',
+                desc: 'Ultra-fast, minimal fees'
+              },
+              {
+                name: 'Ethereum',
+                symbol: '◆',
+                token: 'USDC',
+                color: 'from-blue-500/20 to-indigo-500/10',
+                border: 'border-blue-500/20',
+                fee: '$2-10',
+                time: '1-2 min',
+                desc: 'Most widely supported'
+              },
+              {
+                name: 'Bitcoin',
+                symbol: '₿',
+                token: 'BTC',
+                color: 'from-orange-500/20 to-amber-500/10',
+                border: 'border-orange-500/20',
+                fee: '$1-5',
+                time: '10-60 min',
+                desc: 'Original cryptocurrency'
+              }
+            ].map((chain, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: i * 0.1 }}
+                className={`relative rounded-2xl p-6 bg-gradient-to-br ${chain.color} border ${chain.border} backdrop-blur-sm transition-all duration-300 hover:scale-105`}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{chain.symbol}</span>
+                    <div>
+                      <h3 className="text-[17px] font-semibold">{chain.name}</h3>
+                      <p className="text-[13px] text-white/50">{chain.token}</p>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[14px] text-white/60 mb-4">{chain.desc}</p>
+                <div className="flex gap-4 text-[13px]">
+                  <div>
+                    <span className="text-white/40">Fee: </span>
+                    <span className="text-white/80">{chain.fee}</span>
+                  </div>
+                  <div>
+                    <span className="text-white/40">Time: </span>
+                    <span className="text-white/80">{chain.time}</span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+            className="mt-12 text-center"
+          >
+            <p className="text-[14px] text-white/40">
+              AI agents can autonomously pay and register via our <Link href="/docs/api" className="text-primary-400 hover:text-primary-300 transition-colors underline">REST API</Link> or <Link href="/ai" className="text-primary-400 hover:text-primary-300 transition-colors underline">MCP server</Link>
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-32 px-6 border-t border-white/5 relative overflow-hidden">
         {/* Radial gradient background */}
@@ -435,6 +547,7 @@ export default function NewHomePage() {
               <Link href="#features" className="text-white/50 hover:text-primary-300 transition-colors">Features</Link>
               <Link href="#security" className="text-white/50 hover:text-primary-300 transition-colors">Security</Link>
               <Link href="#pricing" className="text-white/50 hover:text-primary-300 transition-colors">Pricing</Link>
+              <Link href="#payments" className="text-white/50 hover:text-primary-300 transition-colors">Payments</Link>
               <Link href="/ai" className="text-white/50 hover:text-white transition-colors">For Agents</Link>
               <Link href="/docs/api" className="text-white/50 hover:text-white transition-colors">API</Link>
             </div>
