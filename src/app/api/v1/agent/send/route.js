@@ -52,6 +52,30 @@ export async function POST(request) {
       );
     }
 
+    // Check daily rate limit
+    const dailyLimit = user.daily_send_limit || 100;
+    const [dailyCount] = await db.query(
+      `SELECT COUNT(*) as emails_today
+       FROM emails
+       WHERE user_id = ? AND created_at >= CURDATE()`,
+      [user.id]
+    );
+
+    const emailsSentToday = dailyCount?.emails_today || 0;
+
+    if (emailsSentToday >= dailyLimit) {
+      return NextResponse.json(
+        {
+          error: 'Daily rate limit exceeded',
+          dailyLimit,
+          emailsSentToday,
+          message: 'You have reached your daily sending limit. Request an increase at /v1/agent/rate-limit/request',
+          rateLimitRequestUrl: '/api/v1/agent/rate-limit/request'
+        },
+        { status: 429 } // Too Many Requests
+      );
+    }
+
     // Check credit balance
     const creditCost = 1.0; // 1 credit per email
     const currentCredits = parseFloat(user.credits || 0);
@@ -118,12 +142,24 @@ export async function POST(request) {
         ]
       );
 
-      return NextResponse.json({
+      const response = NextResponse.json({
         success: true,
         messageId: info.messageId,
         creditsRemaining: currentCredits - creditCost,
+        rateLimit: {
+          dailyLimit,
+          remaining: dailyLimit - emailsSentToday - 1,
+          resetAt: new Date().setHours(24, 0, 0, 0)
+        },
         message: 'Email sent successfully'
       });
+
+      // Add rate limit headers (standard format)
+      response.headers.set('X-RateLimit-Limit', dailyLimit.toString());
+      response.headers.set('X-RateLimit-Remaining', (dailyLimit - emailsSentToday - 1).toString());
+      response.headers.set('X-RateLimit-Reset', new Date().setHours(24, 0, 0, 0).toString());
+
+      return response;
     } catch (smtpError) {
       console.error('SMTP error:', smtpError);
       return NextResponse.json(

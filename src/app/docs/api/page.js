@@ -57,6 +57,15 @@ export default function APIDocsPage() {
         { id: 'payment-claim', title: 'Claim Credits' },
       ]
     },
+    {
+      id: 'rate-limits',
+      title: 'Rate Limits',
+      children: [
+        { id: 'rate-limit-overview', title: 'Overview' },
+        { id: 'rate-limit-request', title: 'Request Increase' },
+        { id: 'rate-limit-status', title: 'Check Request Status' },
+      ]
+    },
     { id: 'errors', title: 'Error Handling' },
     { id: 'pricing', title: 'Pricing' },
   ];
@@ -922,6 +931,156 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
   "message": "Successfully claimed 10000 credits"
 }`}
               />
+            </div>
+          </section>
+
+          {/* Rate Limits */}
+          <section id="rate-limit-overview" className="mb-16">
+            <h2 className="text-[32px] font-semibold mb-4 text-white leading-tight">Rate Limits</h2>
+            <p className="text-[16px] text-white/60 mb-8 leading-relaxed">
+              To prevent spam and abuse, all accounts have daily sending limits. New accounts start at <strong className="text-white">100 emails per day</strong>.
+              AI agents can request limit increases through our AI-to-AI evaluation system.
+            </p>
+
+            <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-6 mb-8">
+              <h3 className="text-[18px] font-semibold mb-3 text-amber-300">Why Rate Limits?</h3>
+              <ul className="space-y-2 text-[15px] text-white/70">
+                <li>• Prevent spam and abuse on our platform</li>
+                <li>• Ensure fair resource allocation for all users</li>
+                <li>• Maintain email deliverability reputation</li>
+                <li>• Keep pricing affordable by reducing spam costs</li>
+              </ul>
+            </div>
+
+            <h3 className="text-[21px] font-semibold mb-4 text-white">Default Limits</h3>
+            <div className="bg-white/[0.03] border border-white/10 rounded-xl p-6 mb-8">
+              <div className="grid gap-4">
+                <div className="flex justify-between items-center pb-4 border-b border-white/10">
+                  <span className="text-white/70">New Accounts</span>
+                  <span className="text-white font-mono font-semibold">100 emails/day</span>
+                </div>
+                <div className="flex justify-between items-center pb-4 border-b border-white/10">
+                  <span className="text-white/70">Maximum (Auto-Approved)</span>
+                  <span className="text-white font-mono font-semibold">10,000 emails/day</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-white/70">Enterprise (Contact Support)</span>
+                  <span className="text-white font-mono font-semibold">Custom</span>
+                </div>
+              </div>
+            </div>
+
+            <h3 className="text-[21px] font-semibold mb-4 text-white">Rate Limit Headers</h3>
+            <p className="text-[15px] text-white/60 mb-4 leading-relaxed">
+              Every send email response includes standard rate limit headers:
+            </p>
+            <CodeBlock id="rate-limit-headers" code={`// Response headers
+X-RateLimit-Limit: 100        // Your daily limit
+X-RateLimit-Remaining: 87     // Emails remaining today
+X-RateLimit-Reset: 1732320000 // Unix timestamp of reset`} />
+          </section>
+
+          <section id="rate-limit-request" className="mb-16">
+            <h2 className="text-[32px] font-semibold mb-4 text-white leading-tight">Request Rate Limit Increase</h2>
+            <p className="text-[16px] text-white/60 mb-8 leading-relaxed">
+              Need to send more emails? Our AI evaluates your request based on your use case, account history, and sending patterns.
+              Most legitimate requests are approved within 30 seconds.
+            </p>
+
+            <div className="bg-gradient-to-br from-teal-500/10 to-cyan-500/10 border border-teal-500/20 rounded-xl p-6 mb-8">
+              <h3 className="text-[18px] font-semibold mb-3 text-teal-300">AI-to-AI Negotiation</h3>
+              <p className="text-[15px] text-white/70 leading-relaxed">
+                Your AI agent talks to our AI agent! Simply provide a detailed justification explaining your use case,
+                and our AI will evaluate it automatically. No human approval needed for legitimate use cases.
+              </p>
+            </div>
+
+            <h3 className="text-[21px] font-semibold mb-4 text-white">Endpoint</h3>
+            <CodeBlock id="rate-limit-request-endpoint" code={`POST /api/v1/agent/rate-limit/request
+Authorization: Bearer YOUR_API_KEY
+Content-Type: application/json
+
+{
+  "requestedLimit": 500,
+  "justification": "I am a customer service AI agent for Acme Corp. I handle support ticket notifications sent to customers who have explicitly opted in. We receive approximately 200-300 support tickets per day that require email responses. Our current 100/day limit is insufficient during peak periods. All recipients are verified Acme customers with active support tickets."
+}`} />
+
+            <h3 className="text-[21px] font-semibold mb-4 mt-8 text-white">Response</h3>
+            <CodeBlock id="rate-limit-request-response" code={`{
+  "success": true,
+  "requestId": "req_abc123",
+  "status": "pending",
+  "message": "Your request is being evaluated by our AI. This usually takes 10-30 seconds.",
+  "currentLimit": 100,
+  "requestedLimit": 500,
+  "statusUrl": "/api/v1/agent/rate-limit/status/req_abc123"
+}`} />
+
+            <div className="bg-gradient-to-br from-purple-500/10 to-violet-500/10 border border-purple-500/20 rounded-xl p-6 mt-8">
+              <h3 className="text-[18px] font-semibold mb-3 text-purple-300">Tips for Approval</h3>
+              <ul className="space-y-2 text-[15px] text-white/70">
+                <li>✓ Be specific about your use case and recipient types</li>
+                <li>✓ Explain how recipients opt-in or consent to emails</li>
+                <li>✓ Provide realistic volume estimates based on your needs</li>
+                <li>✓ Show responsible usage history (if applicable)</li>
+                <li>✗ Avoid vague terms like "marketing" or "testing"</li>
+                <li>✗ Don't mention purchased lists or cold outreach</li>
+              </ul>
+            </div>
+          </section>
+
+          <section id="rate-limit-status" className="mb-16">
+            <h2 className="text-[32px] font-semibold mb-4 text-white leading-tight">Check Request Status</h2>
+            <p className="text-[16px] text-white/60 mb-8 leading-relaxed">
+              Check the status of your rate limit increase request.
+            </p>
+
+            <h3 className="text-[21px] font-semibold mb-4 text-white">Endpoint</h3>
+            <CodeBlock id="rate-limit-status-endpoint" code={`GET /api/v1/agent/rate-limit/status/:requestId
+Authorization: Bearer YOUR_API_KEY`} />
+
+            <h3 className="text-[21px] font-semibold mb-4 mt-8 text-white">Response (Approved)</h3>
+            <CodeBlock id="rate-limit-status-approved" code={`{
+  "requestId": "req_abc123",
+  "status": "approved",
+  "requestedLimit": 500,
+  "newLimit": 500,
+  "message": "Congratulations! Your rate limit has been increased to 500 emails per day.",
+  "reasoning": "Legitimate customer service use case with clear opt-in mechanism and reasonable volume estimate.",
+  "reviewedBy": "ai",
+  "reviewedAt": "2024-11-22T10:30:00Z"
+}`} />
+
+            <h3 className="text-[21px] font-semibold mb-4 mt-8 text-white">Response (Rejected)</h3>
+            <CodeBlock id="rate-limit-status-rejected" code={`{
+  "requestId": "req_abc123",
+  "status": "rejected",
+  "requestedLimit": 500,
+  "currentLimit": 100,
+  "message": "Your request was not approved at this time.",
+  "reasoning": "Justification lacks specific details about recipient consent and email purpose. Please reapply with more details about your use case.",
+  "reviewedBy": "ai",
+  "canReapply": true,
+  "reapplyAfter": "7 days"
+}`} />
+
+            <h3 className="text-[21px] font-semibold mb-4 mt-8 text-white">Possible Statuses</h3>
+            <div className="bg-white/[0.03] border border-white/10 rounded-xl p-6">
+              <div className="space-y-4">
+                {[
+                  { status: 'pending', desc: 'Request is being evaluated by AI (usually 10-30 seconds)' },
+                  { status: 'approved', desc: 'Request approved! Your new limit is now active.' },
+                  { status: 'rejected', desc: 'Request rejected. Review reasoning and reapply after 7 days.' },
+                  { status: 'needs_human_review', desc: 'Request flagged for manual review (1-2 business days)' }
+                ].map(({ status, desc }) => (
+                  <div key={status} className="flex gap-4 items-start pb-4 border-b border-white/5 last:border-0 last:pb-0">
+                    <code className="text-sm font-mono font-semibold text-teal-400 w-40">
+                      {status}
+                    </code>
+                    <span className="text-sm text-white/60">{desc}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
 
