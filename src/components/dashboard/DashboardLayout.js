@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   Bars3Icon,
   XMarkIcon,
@@ -20,6 +21,7 @@ import { useAuth } from '@/lib/auth/useAuth';
 export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, loading } = useAuth();
+  const pathname = usePathname();
 
   const [userEmail, setUserEmail] = useState('Loading...');
   const [userInitials, setUserInitials] = useState('');
@@ -55,14 +57,24 @@ export default function DashboardLayout({ children }) {
   }, [user, loading]);
 
   const navigation = [
-    { name: 'Inbox', href: '/dashboard', icon: EnvelopeIcon, current: true },
-    { name: 'Sent', href: '/dashboard/sent', icon: PaperAirplaneIcon, current: false },
-    { name: 'Contacts', href: '/dashboard/contacts', icon: UsersIcon, current: false },
-    { name: 'Addresses', href: '/dashboard/addresses', icon: KeyIcon, current: false },
-    { name: 'Analytics', href: '/dashboard/analytics', icon: ArrowPathIcon, current: false },
-    { name: 'Security', href: '/dashboard/security', icon: ShieldCheckIcon, current: false },
-    { name: 'Settings', href: '/dashboard/settings', icon: CogIcon, current: false },
+    { name: 'Inbox', href: '/dashboard', icon: EnvelopeIcon },
+    { name: 'Sent', href: '/dashboard/sent', icon: PaperAirplaneIcon },
+    { name: 'Contacts', href: '/dashboard/contacts', icon: UsersIcon },
+    { name: 'Addresses', href: '/dashboard/addresses', icon: KeyIcon },
+    { name: 'Analytics', href: '/dashboard/analytics', icon: ArrowPathIcon },
+    { name: 'Security', href: '/dashboard/security', icon: ShieldCheckIcon },
+    { name: 'Settings', href: '/dashboard/settings', icon: CogIcon },
   ];
+
+  // Helper function to check if current route matches nav item
+  const isCurrentRoute = (href) => {
+    if (href === '/dashboard') {
+      // Inbox is only active on exact /dashboard match (not subpaths)
+      return pathname === '/dashboard';
+    }
+    // Other items are active if pathname starts with their href
+    return pathname.startsWith(href);
+  };
 
   return (
     <div className="flex h-screen bg-dashboard overflow-hidden">
@@ -101,24 +113,27 @@ export default function DashboardLayout({ children }) {
           </Link>
           
           <nav className="space-y-1">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
-                  item.current
-                    ? 'bg-primary-700/20 text-primary-400'
-                    : 'text-gray-300 hover:bg-sidebar hover:text-primary-400'
-                }`}
-              >
-                <item.icon className={`mr-3 h-5 w-5 ${
-                  item.current
-                    ? 'text-primary-500'
-                    : 'text-gray-400'
-                }`} />
-                {item.name}
-              </Link>
-            ))}
+            {navigation.map((item) => {
+              const isCurrent = isCurrentRoute(item.href);
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+                    isCurrent
+                      ? 'bg-primary-700/20 text-primary-400'
+                      : 'text-gray-300 hover:bg-sidebar hover:text-primary-400'
+                  }`}
+                >
+                  <item.icon className={`mr-3 h-5 w-5 ${
+                    isCurrent
+                      ? 'text-primary-500'
+                      : 'text-gray-400'
+                  }`} />
+                  {item.name}
+                </Link>
+              );
+            })}
           </nav>
         </div>
         
