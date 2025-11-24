@@ -348,7 +348,7 @@ export async function sendEmail(emailData, options = {}) {
           const { ImapFlow } = await import('imapflow');
           
           const client = new ImapFlow({
-            host: process.env.MAIL_SERVER_HOST || 'mail',
+            host: process.env.MAIL_HOST || process.env.MAIL_SERVER_HOST || '107.170.27.222',
             port: 993,
             secure: true,
             auth: {
