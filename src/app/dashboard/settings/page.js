@@ -49,7 +49,6 @@ export default function SettingsPage() {
     email: '',
     autoEncrypt: true,
     attachPublicKey: true,
-    darkMode: 'system',
     emailNotifications: true,
     securityAlerts: true,
     emailTemplate: 'default'
@@ -311,7 +310,7 @@ export default function SettingsPage() {
     { id: 'security', name: 'Security', icon: ShieldCheckIcon },
     { id: 'email', name: 'Email Preferences', icon: EnvelopeIcon },
     { id: 'notifications', name: 'Notifications', icon: BellIcon },
-    { id: 'appearance', name: 'Appearance', icon: PaintBrushIcon },
+    { id: 'appearance', name: 'Email Style', icon: PaintBrushIcon },
   ];
 
   if (loading) {
@@ -1028,32 +1027,6 @@ export default function SettingsPage() {
             {/* Appearance */}
             {activeSection === 'appearance' && (
               <div className="space-y-6">
-                {/* App Theme */}
-                <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-6">
-                  <h2 className="text-xl font-semibold text-white mb-6">App Theme</h2>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    {['light', 'dark', 'system'].map((theme) => (
-                      <button
-                        key={theme}
-                        onClick={() => setSettings({...settings, darkMode: theme})}
-                        className={`p-4 rounded-xl border-2 transition-all ${
-                          settings.darkMode === theme
-                            ? 'border-primary-500 bg-primary-500/10'
-                            : 'border-gray-700 hover:border-gray-600'
-                        }`}
-                      >
-                        <div className={`h-16 rounded-lg mb-3 ${
-                          theme === 'light' ? 'bg-white' :
-                          theme === 'dark' ? 'bg-gray-900' :
-                          'bg-gradient-to-br from-white to-gray-900'
-                        }`} />
-                        <span className="text-sm font-medium text-white capitalize">{theme}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Email Template */}
                 <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-6">
                   <h2 className="text-xl font-semibold text-white mb-2">Email Template</h2>
