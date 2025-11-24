@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import accountManager from '@/lib/mail/accountManager';
 import db from '@/lib/db';
+import { deriveMailPasswordFromHash } from '@/lib/auth/serverPgp';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,37 +67,74 @@ export async function POST(request) {
     );
 
     // Auto-provision mail account for the user
-    // Generate a secure mail password
-    const mailPassword = crypto.randomBytes(32).toString('hex');
-
+    // Derive the mail password deterministically from the password hash
+    // This ensures the same password is generated on login
+    let mailPassword;
     try {
-      // Create the mail account in virtual_users table
-      await accountManager.createMailAccount(
-        email,
-        mailPassword,
-        name || email.split('@')[0],
-        parseInt(process.env.DEFAULT_MAIL_QUOTA || '1024'),
-        userId
+      mailPassword = await deriveMailPasswordFromHash(email, passwordHash);
+      console.log(`[Registration] Derived mail password for ${email} (length: ${mailPassword.length})`);
+    } catch (deriveError) {
+      console.error('[Registration] Failed to derive mail password:', deriveError);
+      // Fall back to random password if derivation fails
+      mailPassword = crypto.randomBytes(16).toString('base64').replace(/[+/=]/g, '').substring(0, 32);
+    }
+
+    // Create virtual_users entry for Postfix/Dovecot authentication
+    try {
+      // Insert directly into virtual_users with PLAIN password format
+      // This bypasses the complex accountManager and ensures consistency
+      const [username, domain] = email.split('@');
+
+      // Check/create domain first
+      const domainResult = await query(
+        'SELECT id FROM virtual_domains WHERE name = ?',
+        [domain]
       );
 
-      // Store mail password (encrypted)
-      await db.users.updateMailPassword(userId, mailPassword);
+      let domainId;
+      if (domainResult.length === 0) {
+        // Create domain if it doesn't exist
+        const insertDomain = await query(
+          'INSERT INTO virtual_domains (name) VALUES (?)',
+          [domain]
+        );
+        domainId = insertDomain.insertId;
+        console.log(`[Registration] Created domain ${domain} with ID ${domainId}`);
+      } else {
+        domainId = domainResult[0].id;
+      }
+
+      // Insert into virtual_users with PLAIN password format
+      // This is what Dovecot reads for authentication
+      await query(
+        `INSERT INTO virtual_users (domain_id, username, password, email, user_id, pending_activation)
+         VALUES (?, ?, ?, ?, ?, 0)`,
+        [domainId, username, `{PLAIN}${mailPassword}`, email, userId]
+      );
+
+      console.log(`[Registration] Mail account created successfully for: ${email}`);
 
       // Log mail account creation
       await db.activityLogs.create(userId, 'mail_account_creation', {
         email,
         success: true
       });
-
-      console.log(`Mail account created successfully for: ${email}`);
     } catch (mailError) {
-      console.error('Error creating mail account:', mailError);
-      // Continue anyway - user can set up mail later
-      await db.activityLogs.create(userId, 'mail_account_creation', {
-        email,
-        success: false,
-        error: mailError.message
-      });
+      console.error('[Registration] Error creating mail account:', mailError);
+
+      // Log the failure for debugging
+      try {
+        await db.activityLogs.create(userId, 'mail_account_creation', {
+          email,
+          success: false,
+          error: mailError.message
+        });
+      } catch (logError) {
+        console.error('[Registration] Failed to log mail creation error:', logError);
+      }
+
+      // Don't fail registration - user account is created, mail can be set up later
+      console.warn(`[Registration] Continuing without mail account for ${email}`);
     }
 
     // Generate JWT token

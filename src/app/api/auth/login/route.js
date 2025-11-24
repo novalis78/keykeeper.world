@@ -2,10 +2,78 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import * as OTPAuth from 'otpauth';
 import jwt from '@/lib/auth/jwt';
-import db from '@/lib/db';
+import db, { query } from '@/lib/db';
 import { deriveMailPasswordFromHash } from '@/lib/auth/serverPgp';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * Auto-repair missing virtual_users entry for a user
+ * This ensures mail access works even if registration partially failed
+ */
+async function ensureMailboxExists(user, mailPassword) {
+  try {
+    // Check if virtual_users entry exists
+    const existingMailbox = await query(
+      'SELECT id FROM virtual_users WHERE user_id = ? OR email = ?',
+      [user.id, user.email]
+    );
+
+    if (existingMailbox.length > 0) {
+      // Mailbox exists - update password to ensure consistency
+      await query(
+        'UPDATE virtual_users SET password = ? WHERE user_id = ? OR email = ?',
+        [`{PLAIN}${mailPassword}`, user.id, user.email]
+      );
+      console.log(`[Login Auto-repair] Updated mail password for ${user.email}`);
+      return { repaired: false, updated: true };
+    }
+
+    // No mailbox exists - create one
+    console.log(`[Login Auto-repair] No mailbox found for ${user.email}, creating...`);
+
+    const [username, domain] = user.email.split('@');
+
+    // Get or create domain
+    const domainResult = await query(
+      'SELECT id FROM virtual_domains WHERE name = ?',
+      [domain]
+    );
+
+    let domainId;
+    if (domainResult.length === 0) {
+      const insertDomain = await query(
+        'INSERT INTO virtual_domains (name) VALUES (?)',
+        [domain]
+      );
+      domainId = insertDomain.insertId;
+      console.log(`[Login Auto-repair] Created domain ${domain} with ID ${domainId}`);
+    } else {
+      domainId = domainResult[0].id;
+    }
+
+    // Create virtual_users entry
+    await query(
+      `INSERT INTO virtual_users (domain_id, username, password, email, user_id, pending_activation)
+       VALUES (?, ?, ?, ?, ?, 0)`,
+      [domainId, username, `{PLAIN}${mailPassword}`, user.email, user.id]
+    );
+
+    console.log(`[Login Auto-repair] Created mailbox for ${user.email}`);
+
+    // Log the repair
+    await db.activityLogs.create(user.id, 'mail_account_auto_repair', {
+      email: user.email,
+      success: true
+    });
+
+    return { repaired: true, updated: false };
+  } catch (error) {
+    console.error(`[Login Auto-repair] Failed for ${user.email}:`, error);
+    // Don't fail login for mail repair issues
+    return { repaired: false, updated: false, error: error.message };
+  }
+}
 
 /**
  * Simplified login using email/password + optional 2FA
@@ -119,10 +187,19 @@ export async function POST(request) {
 
     // Derive mail password for client-side credential storage
     let mailPassword = null;
+    let mailboxRepaired = false;
     try {
       if (user.password_hash) {
         mailPassword = await deriveMailPasswordFromHash(email, user.password_hash);
         console.log(`Derived mail password for ${email}`);
+
+        // Auto-repair: ensure virtual_users entry exists and password is correct
+        // This fixes cases where registration failed to create the mailbox
+        const repairResult = await ensureMailboxExists(user, mailPassword);
+        mailboxRepaired = repairResult.repaired;
+        if (repairResult.repaired) {
+          console.log(`[Login] Auto-repaired mailbox for ${email}`);
+        }
       }
     } catch (deriveError) {
       console.error('Failed to derive mail password:', deriveError);
