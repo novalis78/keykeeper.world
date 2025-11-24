@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { sendEmail } from '@/lib/mail/mailbox';
 import { verifyToken, extractTokenFromHeader, extractTokenFromCookies } from '@/lib/auth/jwt';
 import { checkCanSendEmail, incrementEmailCount } from '@/lib/subscription/checkSubscription';
+import passwordManager from '@/lib/users/passwordManager';
 
 /**
  * API route to send an email
@@ -148,26 +149,39 @@ export async function POST(request) {
     console.log('Sending email to:', data.to.map(r => r.email).join(', '));
     console.log('Sending email from:', data.from.email);
     
-    // Include user's SMTP credentials if provided
-    const smtpConfig = data.credentials ? {
-      auth: {
-        user: data.from.email,
-        pass: data.credentials.password
-      }
-    } : undefined;
-    
-    // Log that we're attempting to use user's credentials (don't log the actual password)
-    if (data.credentials) {
-      console.log(`Using SMTP credentials for user: ${data.from.email}`);
-      console.log(`Password provided: ${data.credentials.password ? 'YES' : 'NO'}`);
-      
-      // Log a warning if password is provided but empty
-      if (!data.credentials.password) {
-        console.warn('Credentials object provided but password is empty');
-      }
+    // Get user's mail credentials server-side for both SMTP send and Sent folder save
+    let smtpConfig = undefined;
+
+    // First try client-provided credentials
+    if (data.credentials && data.credentials.password) {
+      console.log(`Using client-provided SMTP credentials for user: ${data.from.email}`);
+      smtpConfig = {
+        auth: {
+          user: data.from.email,
+          pass: data.credentials.password
+        }
+      };
     } else {
-      console.log('No SMTP credentials provided, will use default config');
-      // No credentials required - will use default config
+      // Fall back to server-side credential lookup
+      console.log(`[Mail Send] Looking up mail credentials for user ${userId}`);
+      try {
+        const mailAccount = await passwordManager.getPrimaryMailAccount(userId);
+        const mailPassword = await passwordManager.getMailPassword(userId);
+
+        if (mailAccount && mailPassword) {
+          console.log(`[Mail Send] Found server-side credentials for ${mailAccount.email}`);
+          smtpConfig = {
+            auth: {
+              user: mailAccount.email,
+              pass: mailPassword
+            }
+          };
+        } else {
+          console.warn('[Mail Send] Could not retrieve mail credentials, Sent folder save may fail');
+        }
+      } catch (credError) {
+        console.error('[Mail Send] Error getting mail credentials:', credError.message);
+      }
     }
     
     const result = await sendEmail(emailData, {
