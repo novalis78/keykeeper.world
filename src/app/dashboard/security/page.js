@@ -25,13 +25,6 @@ export default function Security() {
   return (
     <DashboardLayout>
       <div>
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Security</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Manage your encryption keys and security settings
-          </p>
-        </div>
-        
         {/* Master Key Information */}
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 mb-8">
           <div className="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">

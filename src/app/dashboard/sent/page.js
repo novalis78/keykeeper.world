@@ -145,12 +145,8 @@ export default function SentPage() {
   return (
     <DashboardLayout>
       <div className="h-full flex flex-col">
-        {/* Email header */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold flex items-center">
-            <PaperAirplaneIcon className="h-6 w-6 mr-2 transform rotate-90 text-primary-500" />
-            Sent
-          </h1>
+        {/* Toolbar */}
+        <div className="flex justify-end items-center mb-4">
           <div className="flex space-x-2">
             <button
               onClick={handleRefresh}

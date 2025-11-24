@@ -97,14 +97,6 @@ export default function ContactsPage() {
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white">Contacts</h1>
-          <p className="mt-2 text-gray-400">
-            Manage your contacts and their PGP keys for encrypted communication
-          </p>
-        </div>
-
         {/* Action Bar */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           {/* Search */}

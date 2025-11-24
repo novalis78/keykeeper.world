@@ -537,13 +537,6 @@ export default function Dashboard() {
       )}
       
       <div>
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-white">Inbox</h1>
-          <p className="mt-1 text-sm text-gray-400">
-            Your secure, encrypted messages
-          </p>
-        </div>
-        
         {/* Email Toolbar */}
         <div className="bg-sidebar shadow rounded-lg overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-6 border-b border-gray-700">

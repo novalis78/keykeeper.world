@@ -32,13 +32,6 @@ export default function Addresses() {
   return (
     <DashboardLayout>
       <div>
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Disposable Addresses</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Manage your disposable email addresses for enhanced privacy
-          </p>
-        </div>
-        
         {/* Control Bar */}
         <div className="mb-6 bg-white dark:bg-gray-800 p-4 shadow rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="flex flex-col sm:flex-row justify-between gap-4">
