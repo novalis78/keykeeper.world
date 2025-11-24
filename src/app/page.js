@@ -132,7 +132,7 @@ export default function NewHomePage() {
                     playsInline
                     className="w-full h-full object-cover"
                   >
-                    <source src="/videos/link1.mp4" type="video/mp4" />
+                    <source src="/videos/link2.mp4" type="video/mp4" />
                   </video>
                 </div>
               </div>
@@ -300,34 +300,35 @@ export default function NewHomePage() {
                 period: 'forever',
                 features: [
                   '1 email address',
-                  '100 MB storage',
+                  '3 emails per day',
                   'PGP encryption',
-                  'Basic support'
+                  'Receive unlimited'
+                ]
+              },
+              {
+                name: 'Personal',
+                price: '$2.99',
+                period: 'per month',
+                features: [
+                  '1 email address',
+                  '100 emails per day',
+                  '1 GB storage',
+                  'Full PGP encryption',
+                  'No branding'
                 ]
               },
               {
                 name: 'Pro',
-                price: '$8',
+                price: '$6.99',
                 period: 'per month',
                 popular: true,
                 features: [
-                  '10 email addresses',
-                  '10 GB storage',
-                  'Disposable addresses',
-                  '2FA & YubiKey',
-                  'Priority support'
-                ]
-              },
-              {
-                name: 'Business',
-                price: '$24',
-                period: 'per month',
-                features: [
-                  'Unlimited addresses',
-                  '100 GB storage',
+                  '5 email addresses',
+                  '500 emails per day',
+                  '5 GB storage',
+                  'Custom domains',
                   'API access',
-                  'Custom domain',
-                  'Dedicated support'
+                  'Priority support'
                 ]
               }
             ].map((plan, i) => (
@@ -376,6 +377,40 @@ export default function NewHomePage() {
               </motion.div>
             ))}
           </div>
+
+          {/* Bitcoin Special */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="mt-12 relative rounded-2xl p-8 bg-gradient-to-br from-orange-500/20 to-amber-500/10 border-2 border-orange-500/30 backdrop-blur-sm"
+          >
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <span className="text-4xl">₿</span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-[21px] font-semibold">3-Year Bitcoin Deal</h3>
+                    <span className="bg-orange-500 text-black text-xs font-bold px-2 py-0.5 rounded-full">SAVE 86%</span>
+                  </div>
+                  <p className="text-[15px] text-white/60 mt-1">Pay once with Bitcoin, get Pro features for 3 years. Just $0.83/month.</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="text-right">
+                  <span className="text-[36px] font-semibold text-orange-400">$30</span>
+                  <span className="text-white/50 text-[14px] ml-2">one-time</span>
+                </div>
+                <Link
+                  href="/signup?plan=bitcoin"
+                  className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-400 hover:from-orange-600 hover:to-amber-500 text-black text-[15px] rounded-xl font-medium transition-all duration-200 shadow-lg shadow-orange-500/30"
+                >
+                  Pay with Bitcoin
+                </Link>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
