@@ -20,8 +20,13 @@ export default function NewHomePage() {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-[#050505]/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link href="/" className="text-sm font-medium flex items-center gap-2 group">
-            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-primary-500 to-teal-400 flex items-center justify-center group-hover:shadow-lg group-hover:shadow-primary-500/50 transition-all">
-              <Lock className="w-3.5 h-3.5 text-white" />
+            <div className="relative">
+              <img
+                src="/logo-small.png"
+                alt="KeyKeeper"
+                className="w-8 h-8 object-contain transition-all duration-300 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-teal-400/0 group-hover:bg-teal-400/20 rounded-lg blur-xl transition-all duration-300 -z-10"></div>
             </div>
             <span className="group-hover:text-primary-300 transition-colors">KeyKeeper</span>
           </Link>
@@ -569,10 +574,12 @@ export default function NewHomePage() {
       <footer className="py-12 px-6 border-t border-white/5 bg-gradient-to-b from-transparent to-primary-950/20">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-teal-400 flex items-center justify-center shadow-lg shadow-primary-500/30">
-                <Lock className="w-4 h-4 text-white" />
-              </div>
+            <div className="flex items-center gap-3">
+              <img
+                src="/logo-small.png"
+                alt="KeyKeeper"
+                className="w-10 h-10 object-contain"
+              />
               <div>
                 <div className="font-semibold text-white">KeyKeeper</div>
                 <div className="text-xs text-white/40">© 2025 KeyKeeper. Privacy first.</div>

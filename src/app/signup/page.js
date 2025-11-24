@@ -161,12 +161,17 @@ export default function SignupPage() {
         >
           {/* Header */}
           <div className="text-center mb-8">
-            <Link href="/" className="inline-block mb-6">
+            <Link href="/" className="inline-block mb-6 group">
               <div className="flex items-center justify-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-teal-400 flex items-center justify-center shadow-lg shadow-primary-500/30">
-                  <Lock className="w-4 h-4 text-white" />
+                <div className="relative">
+                  <img
+                    src="/logo-small.png"
+                    alt="KeyKeeper"
+                    className="w-10 h-10 object-contain transition-all duration-300 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-teal-400/0 group-hover:bg-teal-400/30 rounded-lg blur-xl transition-all duration-300 -z-10"></div>
                 </div>
-                <span className="text-xl font-semibold text-white">KeyKeeper</span>
+                <span className="text-xl font-semibold text-white group-hover:text-primary-300 transition-colors">KeyKeeper</span>
               </div>
             </Link>
             <h1 className="text-[44px] font-semibold mb-3 text-white leading-[1.2] tracking-[-0.02em]">Create your account</h1>

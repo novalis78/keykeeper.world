@@ -15,7 +15,6 @@ import {
   PaperAirplaneIcon,
   UsersIcon
 } from '@heroicons/react/24/outline';
-import { LockClosedIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '@/lib/auth/useAuth';
 
 export default function DashboardLayout({ children }) {
@@ -72,9 +71,16 @@ export default function DashboardLayout({ children }) {
 
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-sidebar shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:z-0 flex-shrink-0`}>
         <div className="flex justify-between items-center h-16 px-4 border-b border-gray-700">
-          <Link href="/dashboard" className="flex items-center space-x-2">
-            <LockClosedIcon className="h-7 w-7 text-primary-500" />
-            <span className="text-lg font-bold text-white">KeyKeeper</span>
+          <Link href="/dashboard" className="flex items-center space-x-2 group">
+            <div className="relative">
+              <img
+                src="/logo-small.png"
+                alt="KeyKeeper"
+                className="h-8 w-8 object-contain transition-all duration-300 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-teal-400/0 group-hover:bg-teal-400/30 rounded-lg blur-xl transition-all duration-300 -z-10"></div>
+            </div>
+            <span className="text-lg font-bold text-white group-hover:text-primary-300 transition-colors">KeyKeeper</span>
           </Link>
           <button 
             type="button" 
