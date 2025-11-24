@@ -612,18 +612,48 @@ export default function SettingsPage() {
 
                   <div className="flex items-center justify-between p-4 bg-gray-900/50 rounded-xl">
                     <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 bg-green-500/20 rounded-full flex items-center justify-center">
-                        <ShieldCheckIcon className="h-6 w-6 text-green-400" />
+                      <div className={`h-12 w-12 ${user?.totpEnabled ? 'bg-green-500/20' : 'bg-yellow-500/20'} rounded-full flex items-center justify-center`}>
+                        <ShieldCheckIcon className={`h-6 w-6 ${user?.totpEnabled ? 'text-green-400' : 'text-yellow-400'}`} />
                       </div>
                       <div>
                         <h3 className="font-medium text-white">TOTP Authenticator</h3>
-                        <p className="text-sm text-gray-400">Use an app like Google Authenticator</p>
+                        <p className="text-sm text-gray-400">Use an app like Google Authenticator, Authy, or 1Password</p>
                       </div>
                     </div>
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400">
-                      {user?.totpEnabled ? 'Enabled' : 'Disabled'}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                        user?.totpEnabled
+                          ? 'bg-green-500/20 text-green-400'
+                          : 'bg-yellow-500/20 text-yellow-400'
+                      }`}>
+                        {user?.totpEnabled ? 'Enabled' : 'Disabled'}
+                      </span>
+                      <a
+                        href="/dashboard/security/2fa"
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          user?.totpEnabled
+                            ? 'bg-gray-700 hover:bg-gray-600 text-white'
+                            : 'bg-primary-600 hover:bg-primary-500 text-white'
+                        }`}
+                      >
+                        {user?.totpEnabled ? 'Manage' : 'Enable 2FA'}
+                      </a>
+                    </div>
                   </div>
+
+                  {!user?.totpEnabled && (
+                    <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+                      <div className="flex items-start gap-3">
+                        <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <h4 className="text-sm font-medium text-yellow-400">Recommended: Enable 2FA</h4>
+                          <p className="text-sm text-gray-400 mt-1">
+                            Protect your account with two-factor authentication. Even if your password is compromised, your account remains secure.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-6">
@@ -639,7 +669,7 @@ export default function SettingsPage() {
                         </div>
                         <div>
                           <h3 className="font-medium text-white">Current Session</h3>
-                          <p className="text-sm text-gray-400">Chrome on macOS</p>
+                          <p className="text-sm text-gray-400">This device</p>
                         </div>
                       </div>
                       <span className="text-xs text-green-400">Active now</span>
@@ -649,6 +679,25 @@ export default function SettingsPage() {
                   <button className="mt-4 text-sm text-red-400 hover:text-red-300">
                     Sign out all other sessions
                   </button>
+                </div>
+
+                <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-6">
+                  <h2 className="text-xl font-semibold text-white mb-6">Password</h2>
+
+                  <div className="flex items-center justify-between p-4 bg-gray-900/50 rounded-xl">
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 bg-gray-700 rounded-lg flex items-center justify-center">
+                        <KeyIcon className="h-5 w-5 text-gray-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-white">Account Password</h3>
+                        <p className="text-sm text-gray-400">Last changed: Never</p>
+                      </div>
+                    </div>
+                    <button className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors">
+                      Change Password
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
