@@ -144,7 +144,19 @@ export default function SettingsPage() {
     }
   };
 
+  const [upgradeLoading, setUpgradeLoading] = useState(null);
+  const [upgradeError, setUpgradeError] = useState('');
+
   const handleUpgrade = async (planId) => {
+    // Bitcoin plan should redirect to crypto payment
+    if (planId === 'bitcoin') {
+      window.location.href = '/ai?plan=bitcoin';
+      return;
+    }
+
+    setUpgradeLoading(planId);
+    setUpgradeError('');
+
     try {
       const token = localStorage.getItem('auth_token');
       const res = await fetch('/api/stripe/checkout', {
@@ -156,12 +168,18 @@ export default function SettingsPage() {
         body: JSON.stringify({ planId })
       });
 
-      if (res.ok) {
-        const data = await res.json();
+      const data = await res.json();
+
+      if (res.ok && data.url) {
         window.location.href = data.url;
+      } else {
+        setUpgradeError(data.error || 'Failed to start checkout. Please try again.');
       }
     } catch (error) {
       console.error('Error creating checkout:', error);
+      setUpgradeError('Network error. Please check your connection.');
+    } finally {
+      setUpgradeLoading(null);
     }
   };
 
@@ -376,6 +394,12 @@ export default function SettingsPage() {
                 <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-6">
                   <h2 className="text-xl font-semibold text-white mb-6">Available Plans</h2>
 
+                  {upgradeError && (
+                    <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
+                      {upgradeError}
+                    </div>
+                  )}
+
                   <div className="grid md:grid-cols-3 gap-4">
                     {/* Personal Plan */}
                     <div className="relative bg-gray-900/50 rounded-xl border border-gray-700 p-6 hover:border-primary-500/50 transition-colors">
@@ -404,9 +428,10 @@ export default function SettingsPage() {
                       </ul>
                       <button
                         onClick={() => handleUpgrade('personal')}
-                        className="mt-6 w-full py-2.5 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
+                        disabled={upgradeLoading === 'personal'}
+                        className="mt-6 w-full py-2.5 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Upgrade
+                        {upgradeLoading === 'personal' ? 'Loading...' : 'Upgrade'}
                       </button>
                     </div>
 
@@ -442,9 +467,10 @@ export default function SettingsPage() {
                       </ul>
                       <button
                         onClick={() => handleUpgrade('pro')}
-                        className="mt-6 w-full py-2.5 bg-primary-600 hover:bg-primary-500 text-white font-medium rounded-lg transition-colors"
+                        disabled={upgradeLoading === 'pro'}
+                        className="mt-6 w-full py-2.5 bg-primary-600 hover:bg-primary-500 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Upgrade to Pro
+                        {upgradeLoading === 'pro' ? 'Loading...' : 'Upgrade to Pro'}
                       </button>
                     </div>
 
