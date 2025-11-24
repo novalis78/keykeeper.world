@@ -34,6 +34,15 @@ export default function SettingsPage() {
   const [newDomain, setNewDomain] = useState('');
   const [copiedField, setCopiedField] = useState(null);
 
+  // Cloudflare state
+  const [cloudflare, setCloudflare] = useState({ connected: false, zones: [], loading: false });
+  const [showCfConnect, setShowCfConnect] = useState(false);
+  const [cfApiToken, setCfApiToken] = useState('');
+  const [cfConnecting, setCfConnecting] = useState(false);
+  const [cfError, setCfError] = useState('');
+  const [selectedZone, setSelectedZone] = useState(null);
+  const [setupDnsLoading, setSetupDnsLoading] = useState(false);
+
   // Settings state
   const [settings, setSettings] = useState({
     name: '',
@@ -143,6 +152,118 @@ export default function SettingsPage() {
       console.error('Error adding domain:', error);
     }
   };
+
+  // Cloudflare functions
+  const fetchCloudflareZones = async () => {
+    setCloudflare(prev => ({ ...prev, loading: true }));
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch('/api/cloudflare/zones', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setCloudflare({ connected: data.connected, zones: data.zones || [], loading: false });
+      } else {
+        setCloudflare({ connected: false, zones: [], loading: false });
+      }
+    } catch (error) {
+      console.error('Error fetching Cloudflare zones:', error);
+      setCloudflare({ connected: false, zones: [], loading: false });
+    }
+  };
+
+  const connectCloudflare = async () => {
+    if (!cfApiToken.trim()) {
+      setCfError('Please enter your Cloudflare API token');
+      return;
+    }
+
+    setCfConnecting(true);
+    setCfError('');
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch('/api/cloudflare/connect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ apiToken: cfApiToken.trim() })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setShowCfConnect(false);
+        setCfApiToken('');
+        fetchCloudflareZones();
+      } else {
+        setCfError(data.error || 'Failed to connect');
+      }
+    } catch (error) {
+      setCfError('Network error. Please try again.');
+    } finally {
+      setCfConnecting(false);
+    }
+  };
+
+  const disconnectCloudflare = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      await fetch('/api/cloudflare/connect', {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setCloudflare({ connected: false, zones: [], loading: false });
+    } catch (error) {
+      console.error('Error disconnecting Cloudflare:', error);
+    }
+  };
+
+  const setupDns = async (zoneId, domain) => {
+    setSetupDnsLoading(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch('/api/cloudflare/setup-dns', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ zoneId, domain })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert(`DNS records configured for ${domain}!\n\nCreated: ${data.results.created.length}\nSkipped: ${data.results.skipped.length}\nErrors: ${data.results.errors.length}`);
+        // Refresh domains list
+        const domainsRes = await fetch('/api/user/domains', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (domainsRes.ok) {
+          const domainsData = await domainsRes.json();
+          setDomains(domainsData.domains || []);
+        }
+      } else {
+        alert(data.error || 'Failed to setup DNS');
+      }
+    } catch (error) {
+      alert('Network error. Please try again.');
+    } finally {
+      setSetupDnsLoading(false);
+    }
+  };
+
+  // Load Cloudflare status when domains section is active
+  useEffect(() => {
+    if (activeSection === 'domains' && subscription?.subscription?.status === 'active') {
+      fetchCloudflareZones();
+    }
+  }, [activeSection, subscription]);
 
   const [upgradeLoading, setUpgradeLoading] = useState(null);
   const [upgradeError, setUpgradeError] = useState('');
@@ -614,15 +735,134 @@ export default function SettingsPage() {
                   <div className="mt-8 p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl">
                     <div className="flex items-start gap-4">
                       <CloudIcon className="h-8 w-8 text-orange-400 flex-shrink-0" />
-                      <div>
-                        <h3 className="text-lg font-medium text-white mb-2">Using Cloudflare?</h3>
-                        <p className="text-sm text-gray-400 mb-4">
-                          Connect your Cloudflare account to automatically configure DNS records.
-                        </p>
-                        <button className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-400 text-white font-medium rounded-lg transition-colors">
-                          <CloudIcon className="h-5 w-5" />
-                          Connect Cloudflare
-                        </button>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-medium text-white mb-2">Cloudflare Integration</h3>
+
+                        {/* Check if paid user */}
+                        {subscription?.subscription?.status !== 'active' ? (
+                          <div>
+                            <p className="text-sm text-gray-400 mb-4">
+                              Automatic DNS configuration requires a paid subscription.
+                            </p>
+                            <button
+                              onClick={() => setActiveSection('billing')}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
+                            >
+                              Upgrade to unlock
+                            </button>
+                          </div>
+                        ) : cloudflare.connected ? (
+                          <div>
+                            <div className="flex items-center gap-2 mb-4">
+                              <CheckCircleIcon className="h-5 w-5 text-green-400" />
+                              <span className="text-sm text-green-400">Connected to Cloudflare</span>
+                            </div>
+
+                            {/* Zone selector and auto-setup */}
+                            {cloudflare.zones.length > 0 ? (
+                              <div className="space-y-4">
+                                <div>
+                                  <label className="block text-sm text-gray-400 mb-2">Select a domain to configure:</label>
+                                  <select
+                                    value={selectedZone?.id || ''}
+                                    onChange={(e) => {
+                                      const zone = cloudflare.zones.find(z => z.id === e.target.value);
+                                      setSelectedZone(zone || null);
+                                    }}
+                                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                  >
+                                    <option value="">Choose a domain...</option>
+                                    {cloudflare.zones.map(zone => (
+                                      <option key={zone.id} value={zone.id}>{zone.name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                {selectedZone && (
+                                  <button
+                                    onClick={() => setupDns(selectedZone.id, selectedZone.name)}
+                                    disabled={setupDnsLoading}
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-400 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+                                  >
+                                    {setupDnsLoading ? (
+                                      <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                                        Setting up DNS...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <CloudIcon className="h-5 w-5" />
+                                        Auto-Configure DNS for {selectedZone.name}
+                                      </>
+                                    )}
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-400">No domains found in your Cloudflare account.</p>
+                            )}
+
+                            <button
+                              onClick={disconnectCloudflare}
+                              className="mt-4 text-sm text-red-400 hover:text-red-300"
+                            >
+                              Disconnect Cloudflare
+                            </button>
+                          </div>
+                        ) : showCfConnect ? (
+                          <div className="space-y-4">
+                            <p className="text-sm text-gray-400">
+                              Enter your Cloudflare API token. You can create one at{' '}
+                              <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline">
+                                dash.cloudflare.com/profile/api-tokens
+                              </a>
+                              {' '}with "Zone:DNS:Edit" permissions.
+                            </p>
+
+                            {cfError && (
+                              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+                                {cfError}
+                              </div>
+                            )}
+
+                            <input
+                              type="password"
+                              value={cfApiToken}
+                              onChange={(e) => setCfApiToken(e.target.value)}
+                              placeholder="Cloudflare API Token"
+                              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                            />
+
+                            <div className="flex gap-3">
+                              <button
+                                onClick={connectCloudflare}
+                                disabled={cfConnecting}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-400 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
+                              >
+                                {cfConnecting ? 'Connecting...' : 'Connect'}
+                              </button>
+                              <button
+                                onClick={() => { setShowCfConnect(false); setCfError(''); }}
+                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-sm text-gray-400 mb-4">
+                              Connect your Cloudflare account to automatically configure DNS records for your custom domains.
+                            </p>
+                            <button
+                              onClick={() => setShowCfConnect(true)}
+                              className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-400 text-white font-medium rounded-lg transition-colors"
+                            >
+                              <CloudIcon className="h-5 w-5" />
+                              Connect Cloudflare
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
