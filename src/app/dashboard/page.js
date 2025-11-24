@@ -389,13 +389,100 @@ export default function Dashboard() {
     }
   };
   
-  const filteredMessages = messages.filter(message => 
-    (message.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    message.from?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    message.from?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    message.snippet?.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Filter messages by folder and search query
+  const filteredMessages = messages.filter(message => {
+    // First filter by folder
+    let folderMatch = true;
+    if (currentFolder === 'starred') {
+      folderMatch = message.starred === true;
+    } else if (currentFolder === 'archive') {
+      folderMatch = message.archived === true;
+    } else if (currentFolder === 'inbox') {
+      // Inbox shows non-archived messages
+      folderMatch = message.archived !== true;
+    }
+
+    // Then filter by search query
+    const searchMatch = !searchQuery || (
+      message.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      message.from?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      message.from?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      message.snippet?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    return folderMatch && searchMatch;
+  });
   
+  // Handle starring an email
+  const handleStarEmail = async (emailId, starred) => {
+    try {
+      // Update local state immediately for responsive UI
+      setMessages(prevMessages =>
+        prevMessages.map(msg =>
+          msg.id === emailId ? { ...msg, starred } : msg
+        )
+      );
+
+      // Get current user email for API call
+      const email = user?.email || localStorage.getItem('user_email');
+      if (!email) return;
+
+      // Persist to server
+      const response = await fetch('/api/mail/email/star', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: emailId, userEmail: email, starred }),
+      });
+
+      if (!response.ok) {
+        // Revert on error
+        setMessages(prevMessages =>
+          prevMessages.map(msg =>
+            msg.id === emailId ? { ...msg, starred: !starred } : msg
+          )
+        );
+        console.error('Failed to star email');
+      }
+    } catch (error) {
+      console.error('Error starring email:', error);
+    }
+  };
+
+  // Handle archiving an email
+  const handleArchiveEmail = async (emailId) => {
+    try {
+      // Update local state immediately for responsive UI
+      setMessages(prevMessages =>
+        prevMessages.map(msg =>
+          msg.id === emailId ? { ...msg, archived: true } : msg
+        )
+      );
+
+      // Get current user email for API call
+      const email = user?.email || localStorage.getItem('user_email');
+      if (!email) return;
+
+      // Persist to server
+      const response = await fetch('/api/mail/email/archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: emailId, userEmail: email, archived: true }),
+      });
+
+      if (!response.ok) {
+        // Revert on error
+        setMessages(prevMessages =>
+          prevMessages.map(msg =>
+            msg.id === emailId ? { ...msg, archived: false } : msg
+          )
+        );
+        console.error('Failed to archive email');
+      }
+    } catch (error) {
+      console.error('Error archiving email:', error);
+    }
+  };
+
   // Handle credentials submission from modal
   const handleCredentialsSubmit = (accountInfo) => {
     console.log('Credentials submitted for account:', accountInfo.email);
@@ -630,6 +717,7 @@ export default function Dashboard() {
                     message={message}
                     onClick={() => setSelectedEmail(message)}
                     isSelected={false}
+                    onStar={handleStarEmail}
                   />
                 ))}
               </div>

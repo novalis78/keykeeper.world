@@ -5,9 +5,8 @@ import { format } from 'date-fns';
 import { LockClosedIcon, PaperClipIcon, StarIcon, KeyIcon } from '@heroicons/react/20/solid';
 import { motion } from 'framer-motion';
 
-export default function EmailRow({ message, onClick, isSelected }) {
+export default function EmailRow({ message, onClick, isSelected, onStar }) {
   const [isHovered, setIsHovered] = useState(false);
-  const [isStarred, setIsStarred] = useState(false);
   
   const formattedDate = (dateString) => {
     const date = new Date(dateString);
@@ -23,8 +22,12 @@ export default function EmailRow({ message, onClick, isSelected }) {
 
   const handleStar = (e) => {
     e.stopPropagation();
-    setIsStarred(!isStarred);
+    if (onStar) {
+      onStar(message.id, !message.starred);
+    }
   };
+
+  const isStarred = message.starred || false;
 
   // Check if message has PGP key attachment
   const hasPgpKey = message.attachments?.some(att => 

@@ -474,8 +474,43 @@ export async function POST(request) {
       
       // Sort messages by date (newest first)
       messages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      // Fetch email metadata (starred, archived) for all messages
+      if (messages.length > 0) {
+        try {
+          const { query } = await import('@/lib/db');
+          const messageIds = messages.map(m => m.id);
+          const placeholders = messageIds.map(() => '?').join(',');
+          const metadata = await query(
+            `SELECT email_id, starred, archived FROM email_metadata
+             WHERE user_email = ? AND email_id IN (${placeholders})`,
+            [user.email, ...messageIds]
+          );
+
+          // Create a map for quick lookup
+          const metadataMap = {};
+          for (const meta of metadata) {
+            metadataMap[meta.email_id] = {
+              starred: meta.starred === 1,
+              archived: meta.archived === 1
+            };
+          }
+
+          // Add metadata to messages
+          for (const msg of messages) {
+            const meta = metadataMap[msg.id];
+            msg.starred = meta?.starred || false;
+            msg.archived = meta?.archived || false;
+          }
+
+          console.log(`[Mail API] Added metadata for ${metadata.length} messages`);
+        } catch (metaError) {
+          console.error('[Mail API] Error fetching email metadata:', metaError);
+          // Continue without metadata
+        }
+      }
     }
-    
+
     // Connection will be closed in finally block
     
     // Safely serialize the messages to avoid circular references
