@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { sendEmail } from '@/lib/mail/mailbox';
 import { verifyToken, extractTokenFromHeader, extractTokenFromCookies } from '@/lib/auth/jwt';
+import { checkCanSendEmail, incrementEmailCount } from '@/lib/subscription/checkSubscription';
 
 /**
  * API route to send an email
@@ -49,9 +50,11 @@ export async function POST(request) {
     );
   }
   
+  let userId;
   try {
     // Verify the token and get user data
     const payload = await verifyToken(token);
+    userId = payload.userId;
     console.log('Token verified successfully. User:', payload.email || 'unknown');
   } catch (error) {
     console.error('Invalid authentication token:', error);
@@ -60,12 +63,34 @@ export async function POST(request) {
       { status: 403 }
     );
   }
+
+  // Check subscription status before allowing email send
+  const subscriptionCheck = await checkCanSendEmail(userId);
+  if (!subscriptionCheck.canSend) {
+    console.log('[Mail Send] Subscription check failed:', subscriptionCheck.reason);
+    return NextResponse.json(
+      {
+        error: subscriptionCheck.reason,
+        subscriptionStatus: subscriptionCheck.subscriptionStatus,
+        emailsSent: subscriptionCheck.emailsSent,
+        emailLimit: subscriptionCheck.emailLimit,
+        requiresUpgrade: true
+      },
+      { status: 403 }
+    );
+  }
+
+  console.log('[Mail Send] Subscription check passed:', {
+    status: subscriptionCheck.subscriptionStatus,
+    emailsRemaining: subscriptionCheck.emailsRemaining
+  });
+
   try {
     // Enable real mail server integration
     process.env.USE_REAL_MAIL_SERVER = 'true';
-    
+
     // Don't hardcode passwords - credentials will be provided by the client
-    
+
     // Parse the request body
     const data = await request.json();
     
@@ -160,11 +185,15 @@ export async function POST(request) {
     }
     
     console.log('Email sent successfully, messageId:', result.messageId);
-    
+
+    // Increment the user's email count after successful send
+    await incrementEmailCount(userId);
+
     return NextResponse.json({
       success: true,
       messageId: result.messageId,
-      sentAt: result.sentAt || new Date()
+      sentAt: result.sentAt || new Date(),
+      emailsRemaining: subscriptionCheck.emailsRemaining - 1
     });
   } catch (error) {
     console.error('Error sending email:', error);

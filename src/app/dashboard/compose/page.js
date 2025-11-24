@@ -21,6 +21,7 @@ function ComposeContent() {
   const fileInputRef = useRef(null);
   const [sendingStatus, setSendingStatus] = useState('idle'); // idle, sending, success, error
   const [encryptionStatus, setEncryptionStatus] = useState('unknown'); // unknown, available, unavailable
+  const [encryptionEnabled, setEncryptionEnabled] = useState(true); // user can toggle this off even when key is available
   
   // Handle query parameters (like ?to=email@example.com)
   useEffect(() => {
@@ -449,7 +450,7 @@ function ComposeContent() {
         text: emailData.message,
         // Use formatted HTML template for the body
         body: formatEmailHTML(emailData.message, senderName, selectedAccount.email),
-        pgpEncrypted: encryptionStatus === 'available',
+        pgpEncrypted: encryptionStatus === 'available' && encryptionEnabled,
         attachments: allAttachments,
         // Include credentials if found
         credentials: credentials
@@ -471,9 +472,9 @@ function ComposeContent() {
         }))
       });
       
-      // If encryption is available, fetch the recipient's public key
+      // If encryption is available AND enabled, fetch the recipient's public key
       let recipientPublicKey = null;
-      if (encryptionStatus === 'available') {
+      if (encryptionStatus === 'available' && encryptionEnabled) {
         try {
           const authToken = localStorage.getItem('auth_token');
           const keyResponse = await fetch('/api/contacts/get-key', {
@@ -534,7 +535,8 @@ function ComposeContent() {
       });
       
       setEncryptionStatus('unknown');
-      
+      setEncryptionEnabled(true); // Reset to default
+
       setSendingStatus('success');
       
       // Reset success status after 5 seconds
@@ -555,34 +557,36 @@ function ComposeContent() {
         <div className="bg-gray-800/70 shadow-xl rounded-xl overflow-hidden border border-gray-700 backdrop-blur-sm">
           <form onSubmit={handleSubmit}>
             <div className="p-8 space-y-6">
-              {/* FROM FIELD */}
-              <div className="group">
-                <label htmlFor="from" className="block text-sm font-medium text-gray-300 mb-2">
-                  From
-                </label>
-                <div className="relative rounded-lg transition-all duration-300 bg-gray-900/80 hover:bg-gray-900 focus-within:ring-2 focus-within:ring-primary-500 border border-gray-700 shadow-inner">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <div className="rounded-full h-7 w-7 flex items-center justify-center bg-primary-600/30 text-primary-400">
-                      <span className="text-xs font-bold">LE</span>
+              {/* FROM FIELD - Only show if user has multiple accounts */}
+              {userEmailAccounts.length > 1 && (
+                <div className="group">
+                  <label htmlFor="from" className="block text-sm font-medium text-gray-300 mb-2">
+                    From
+                  </label>
+                  <div className="relative rounded-lg transition-all duration-300 bg-gray-900/80 hover:bg-gray-900 focus-within:ring-2 focus-within:ring-primary-500 border border-gray-700 shadow-inner">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <div className="rounded-full h-7 w-7 flex items-center justify-center bg-primary-600/30 text-primary-400">
+                        <span className="text-xs font-bold">LE</span>
+                      </div>
                     </div>
+                    <select
+                      name="from"
+                      id="from"
+                      value={emailData.from}
+                      onChange={handleInputChange}
+                      className="block w-full pl-14 pr-4 py-3.5 text-base text-white bg-transparent border-0 focus:ring-0 focus:outline-none"
+                      required
+                    >
+                      <option value="" disabled className="bg-gray-800 text-gray-300">Select an email address</option>
+                      {userEmailAccounts.map(account => (
+                        <option key={account.id} value={account.id} className="bg-gray-800 text-white">
+                          {account.email} {account.isDefault ? '(Default)' : ''} - {account.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <select
-                    name="from"
-                    id="from"
-                    value={emailData.from}
-                    onChange={handleInputChange}
-                    className="block w-full pl-14 pr-4 py-3.5 text-base text-white bg-transparent border-0 focus:ring-0 focus:outline-none"
-                    required
-                  >
-                    <option value="" disabled className="bg-gray-800 text-gray-300">Select an email address</option>
-                    {userEmailAccounts.map(account => (
-                      <option key={account.id} value={account.id} className="bg-gray-800 text-white">
-                        {account.email} {account.isDefault ? '(Default)' : ''} - {account.name}
-                      </option>
-                    ))}
-                  </select>
                 </div>
-              </div>
+              )}
               
               {/* TO FIELD */}
               <div className="group">
@@ -607,10 +611,15 @@ function ComposeContent() {
                   {/* Encryption status indicator */}
                   {emailData.to && (
                     <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
-                      {encryptionStatus === 'available' ? (
+                      {encryptionStatus === 'available' && encryptionEnabled ? (
                         <div className="flex items-center rounded-full px-3 py-1 bg-green-900/30 border border-green-800">
                           <LockClosedIcon className="h-4 w-4 mr-1.5 text-green-400" />
                           <span className="text-xs font-medium text-green-400">Encrypted</span>
+                        </div>
+                      ) : encryptionStatus === 'available' && !encryptionEnabled ? (
+                        <div className="flex items-center rounded-full px-3 py-1 bg-blue-900/30 border border-blue-800">
+                          <ShieldCheckIcon className="h-4 w-4 mr-1.5 text-blue-400" />
+                          <span className="text-xs font-medium text-blue-400">Key Available</span>
                         </div>
                       ) : encryptionStatus === 'unavailable' ? (
                         <div className="flex items-center rounded-full px-3 py-1 bg-yellow-900/30 border border-yellow-800">
@@ -626,6 +635,26 @@ function ComposeContent() {
                     <ShieldCheckIcon className="h-3.5 w-3.5 mr-1.5" />
                     No PGP key found for this recipient. The message will be sent with standard TLS encryption.
                   </p>
+                )}
+                {encryptionStatus === 'available' && (
+                  <div className="mt-2 flex items-center justify-between">
+                    <p className="text-xs text-green-400 flex items-center">
+                      <LockClosedIcon className="h-3.5 w-3.5 mr-1.5" />
+                      PGP key found for this recipient. End-to-end encryption is available.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setEncryptionEnabled(!encryptionEnabled)}
+                      className={`ml-4 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                        encryptionEnabled
+                          ? 'bg-green-900/50 text-green-400 border border-green-700 hover:bg-green-900/70'
+                          : 'bg-gray-700/50 text-gray-400 border border-gray-600 hover:bg-gray-700/70'
+                      }`}
+                    >
+                      <LockClosedIcon className={`h-3.5 w-3.5 mr-1.5 ${encryptionEnabled ? 'text-green-400' : 'text-gray-500'}`} />
+                      {encryptionEnabled ? 'Encryption ON' : 'Encryption OFF'}
+                    </button>
+                  </div>
                 )}
               </div>
               
@@ -793,6 +822,7 @@ function ComposeContent() {
                         attachments: []
                       });
                       setEncryptionStatus('unknown');
+                      setEncryptionEnabled(true); // Reset to default
                     }
                   }}
                   className="inline-flex items-center px-5 py-2.5 border border-gray-600 rounded-lg text-sm font-medium text-white bg-gray-800 hover:bg-gray-700 transition-colors shadow-sm focus:outline-none"
