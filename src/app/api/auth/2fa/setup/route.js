@@ -46,18 +46,21 @@ export async function POST(request) {
       digits: 6,
       period: 30
     });
-    
+
     // Get the secret
     const secret = totp.secret.base32;
-    
+
     // Generate backup codes (one-time use)
     const backupCodes = [];
     for (let i = 0; i < 10; i++) {
       backupCodes.push(totp.generate());
     }
-    
-    // Generate QR code URI
-    const otpauthUrl = totp.toString();
+
+    // Generate QR code URI with image parameter (supported by some authenticators)
+    let otpauthUrl = totp.toString();
+    // Add image parameter for authenticators that support it (unofficial but widely supported)
+    const iconUrl = 'https://keykeeper.world/logo.png';
+    otpauthUrl += `&image=${encodeURIComponent(iconUrl)}`;
     
     // Store the secret in database (not enabled yet)
     await db.users.updateTOTPSecret(user.id, secret);
