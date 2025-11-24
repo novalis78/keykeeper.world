@@ -132,7 +132,7 @@ export default function NewHomePage() {
                     playsInline
                     className="w-full h-full object-cover"
                   >
-                    <source src="/videos/link2.mp4" type="video/mp4" />
+                    <source src="/videos/link1.mp4" type="video/mp4" />
                   </video>
                 </div>
               </div>
