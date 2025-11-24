@@ -42,11 +42,32 @@ export default function SettingsPage() {
     attachPublicKey: true,
     darkMode: 'system',
     emailNotifications: true,
-    securityAlerts: true
+    securityAlerts: true,
+    emailTemplate: 'default'
   });
+
+  // Email templates
+  const emailTemplates = [
+    { id: 'default', name: 'KeyKeeper Classic', description: 'Clean and professional', colors: { bg: '#ffffff', text: '#333333', accent: '#2b7de9' }},
+    { id: 'midnight', name: 'Midnight', description: 'Dark and elegant', colors: { bg: '#1a1b26', text: '#a9b1d6', accent: '#7aa2f7' }},
+    { id: 'dracula', name: 'Dracula', description: 'Dark with vibrant accents', colors: { bg: '#282a36', text: '#f8f8f2', accent: '#bd93f9' }},
+    { id: 'nord', name: 'Nord', description: 'Arctic and minimalist', colors: { bg: '#2e3440', text: '#eceff4', accent: '#88c0d0' }},
+    { id: 'solarized', name: 'Solarized Light', description: 'Easy on the eyes', colors: { bg: '#fdf6e3', text: '#657b83', accent: '#268bd2' }},
+    { id: 'gruvbox', name: 'Gruvbox', description: 'Retro and warm', colors: { bg: '#282828', text: '#ebdbb2', accent: '#fe8019' }},
+    { id: 'monokai', name: 'Monokai', description: 'Classic dark theme', colors: { bg: '#272822', text: '#f8f8f2', accent: '#a6e22e' }},
+    { id: 'ocean', name: 'Ocean', description: 'Calm and serene', colors: { bg: '#ffffff', text: '#1e3a5f', accent: '#0077b6' }},
+    { id: 'rose', name: 'Rose Pine', description: 'Soft and natural', colors: { bg: '#191724', text: '#e0def4', accent: '#eb6f92' }},
+    { id: 'plain', name: 'Plain Text', description: 'No formatting, just text', colors: null },
+  ];
 
   useEffect(() => {
     fetchUserData();
+
+    // Load saved template preference from localStorage
+    const savedTemplate = localStorage.getItem('email_template');
+    if (savedTemplate) {
+      setSettings(s => ({ ...s, emailTemplate: savedTemplate }));
+    }
   }, []);
 
   const fetchUserData = async () => {
@@ -691,28 +712,156 @@ export default function SettingsPage() {
 
             {/* Appearance */}
             {activeSection === 'appearance' && (
-              <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-6">
-                <h2 className="text-xl font-semibold text-white mb-6">Theme</h2>
+              <div className="space-y-6">
+                {/* App Theme */}
+                <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-6">
+                  <h2 className="text-xl font-semibold text-white mb-6">App Theme</h2>
 
-                <div className="grid grid-cols-3 gap-4">
-                  {['light', 'dark', 'system'].map((theme) => (
-                    <button
-                      key={theme}
-                      onClick={() => setSettings({...settings, darkMode: theme})}
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        settings.darkMode === theme
-                          ? 'border-primary-500 bg-primary-500/10'
-                          : 'border-gray-700 hover:border-gray-600'
-                      }`}
-                    >
-                      <div className={`h-16 rounded-lg mb-3 ${
-                        theme === 'light' ? 'bg-white' :
-                        theme === 'dark' ? 'bg-gray-900' :
-                        'bg-gradient-to-br from-white to-gray-900'
-                      }`} />
-                      <span className="text-sm font-medium text-white capitalize">{theme}</span>
-                    </button>
-                  ))}
+                  <div className="grid grid-cols-3 gap-4">
+                    {['light', 'dark', 'system'].map((theme) => (
+                      <button
+                        key={theme}
+                        onClick={() => setSettings({...settings, darkMode: theme})}
+                        className={`p-4 rounded-xl border-2 transition-all ${
+                          settings.darkMode === theme
+                            ? 'border-primary-500 bg-primary-500/10'
+                            : 'border-gray-700 hover:border-gray-600'
+                        }`}
+                      >
+                        <div className={`h-16 rounded-lg mb-3 ${
+                          theme === 'light' ? 'bg-white' :
+                          theme === 'dark' ? 'bg-gray-900' :
+                          'bg-gradient-to-br from-white to-gray-900'
+                        }`} />
+                        <span className="text-sm font-medium text-white capitalize">{theme}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Email Template */}
+                <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-6">
+                  <h2 className="text-xl font-semibold text-white mb-2">Email Template</h2>
+                  <p className="text-sm text-gray-400 mb-6">Choose how your outgoing emails will look to recipients</p>
+
+                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                    {emailTemplates.map((template) => (
+                      <button
+                        key={template.id}
+                        onClick={() => {
+                          setSettings({...settings, emailTemplate: template.id});
+                          localStorage.setItem('email_template', template.id);
+                        }}
+                        className={`group relative p-4 rounded-xl border-2 transition-all ${
+                          settings.emailTemplate === template.id
+                            ? 'border-primary-500 bg-primary-500/10'
+                            : 'border-gray-700 hover:border-gray-600'
+                        }`}
+                      >
+                        {/* Template Preview */}
+                        <div
+                          className="h-20 rounded-lg mb-3 overflow-hidden"
+                          style={{
+                            backgroundColor: template.colors?.bg || '#f5f5f5',
+                          }}
+                        >
+                          {template.colors ? (
+                            <div className="h-full p-2 flex flex-col">
+                              {/* Mini header */}
+                              <div
+                                className="h-3 w-3/4 rounded mb-2 opacity-50"
+                                style={{ backgroundColor: template.colors.accent }}
+                              />
+                              {/* Mini content lines */}
+                              <div
+                                className="h-2 w-full rounded mb-1 opacity-60"
+                                style={{ backgroundColor: template.colors.text }}
+                              />
+                              <div
+                                className="h-2 w-5/6 rounded mb-1 opacity-40"
+                                style={{ backgroundColor: template.colors.text }}
+                              />
+                              <div
+                                className="h-2 w-4/6 rounded opacity-40"
+                                style={{ backgroundColor: template.colors.text }}
+                              />
+                            </div>
+                          ) : (
+                            <div className="h-full p-2 flex flex-col justify-center items-center text-gray-400">
+                              <EnvelopeIcon className="h-6 w-6 mb-1 opacity-50" />
+                              <span className="text-xs">Plain Text</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Template Info */}
+                        <div className="text-left">
+                          <span className="text-sm font-medium text-white block truncate">{template.name}</span>
+                          <span className="text-xs text-gray-500 truncate block">{template.description}</span>
+                        </div>
+
+                        {/* Selected Indicator */}
+                        {settings.emailTemplate === template.id && (
+                          <div className="absolute -top-2 -right-2 h-6 w-6 bg-primary-500 rounded-full flex items-center justify-center">
+                            <CheckIcon className="h-4 w-4 text-white" />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Preview */}
+                  {settings.emailTemplate && settings.emailTemplate !== 'plain' && (
+                    <div className="mt-6 p-4 bg-gray-900/50 rounded-xl border border-gray-700">
+                      <h3 className="text-sm font-medium text-gray-300 mb-3">Preview</h3>
+                      <div
+                        className="rounded-lg overflow-hidden"
+                        style={{
+                          backgroundColor: emailTemplates.find(t => t.id === settings.emailTemplate)?.colors?.bg || '#ffffff'
+                        }}
+                      >
+                        {(() => {
+                          const t = emailTemplates.find(t => t.id === settings.emailTemplate);
+                          if (!t?.colors) return null;
+                          return (
+                            <div className="p-4">
+                              {/* Header */}
+                              <div
+                                className="pb-3 mb-3 border-b"
+                                style={{ borderColor: t.colors.accent + '40' }}
+                              >
+                                <h4
+                                  style={{ color: t.colors.text }}
+                                  className="text-lg font-semibold"
+                                >
+                                  Sample Email Subject
+                                </h4>
+                              </div>
+                              {/* Body */}
+                              <div style={{ color: t.colors.text }}>
+                                <p className="text-sm mb-2">Hello there,</p>
+                                <p className="text-sm mb-2">This is how your emails will look to recipients who view them in their email client.</p>
+                                <p className="text-sm">Best regards</p>
+                              </div>
+                              {/* Footer */}
+                              <div
+                                className="mt-4 pt-3 border-t text-xs"
+                                style={{ borderColor: t.colors.accent + '30', color: t.colors.text + '99' }}
+                              >
+                                <span style={{ color: t.colors.accent }}>KeyKeeper</span> Secure Email
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end">
+                  <button className="px-6 py-2.5 bg-primary-600 hover:bg-primary-500 text-white font-medium rounded-lg transition-colors">
+                    Save Preferences
+                  </button>
                 </div>
               </div>
             )}

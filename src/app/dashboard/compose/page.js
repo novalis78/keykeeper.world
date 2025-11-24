@@ -6,6 +6,7 @@ import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 import { EnvelopeIcon, PaperAirplaneIcon, XMarkIcon, PaperClipIcon, ShieldCheckIcon, KeyIcon } from '@heroicons/react/24/outline';
 import { LockClosedIcon } from '@heroicons/react/24/solid';
 import { getCurrentUserId } from '@/lib/auth/getCurrentUser';
+import { generateEmailHTML, EMAIL_TEMPLATES } from '@/lib/email/templates';
 
 function ComposeContent() {
   const searchParams = useSearchParams();
@@ -19,11 +20,13 @@ function ComposeContent() {
     attachments: []
   });
   const fileInputRef = useRef(null);
+  const toInputRef = useRef(null);
   const [sendingStatus, setSendingStatus] = useState('idle'); // idle, sending, success, error
   const [encryptionStatus, setEncryptionStatus] = useState('unknown'); // unknown, available, unavailable
   const [encryptionEnabled, setEncryptionEnabled] = useState(true); // user can toggle this off even when key is available
+  const [emailTemplate, setEmailTemplate] = useState('default'); // user's preferred email template
   
-  // Handle query parameters (like ?to=email@example.com)
+  // Handle query parameters (like ?to=email@example.com) and auto-focus
   useEffect(() => {
     const toEmail = searchParams.get('to');
     if (toEmail) {
@@ -31,6 +34,16 @@ function ComposeContent() {
       // Check encryption status for the pre-filled email
       checkEncryptionStatus(decodeURIComponent(toEmail));
     }
+
+    // Auto-focus the recipient field when the component mounts
+    // Use a small delay to ensure the input is rendered
+    const focusTimer = setTimeout(() => {
+      if (toInputRef.current) {
+        toInputRef.current.focus();
+      }
+    }, 100);
+
+    return () => clearTimeout(focusTimer);
   }, [searchParams]);
 
   // Fetch user's email accounts from the virtual_users table
@@ -82,7 +95,7 @@ function ComposeContent() {
                 'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
               }
             });
-            
+
             if (publicKeyResponse.ok) {
               const pkData = await publicKeyResponse.json();
               if (pkData.publicKey) {
@@ -99,6 +112,12 @@ function ComposeContent() {
             }
           } catch (pkError) {
             console.error('Error fetching user public key:', pkError);
+          }
+
+          // Fetch user's email template preference
+          const savedTemplate = localStorage.getItem('email_template');
+          if (savedTemplate && EMAIL_TEMPLATES[savedTemplate]) {
+            setEmailTemplate(savedTemplate);
           }
         } else {
           console.warn('No email found for user, falling back to mock data');
@@ -340,116 +359,43 @@ function ComposeContent() {
         console.error('Error retrieving mail credentials:', error);
       }
       
-      // Format user's plain text message into a professional HTML template
+      // Generate HTML using the selected template
       const formatEmailHTML = (plainText, fromName, fromEmail) => {
-        // Escape HTML special chars to prevent XSS
-        const escapeHtml = (text) => {
-          return text
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-        };
-        
-        // Convert plain text to HTML paragraphs
-        const textToHtml = (text) => {
-          return escapeHtml(text)
-            .replace(/\n{2,}/g, '</p><p>') // Double newlines become new paragraphs
-            .replace(/\n/g, '<br>');       // Single newlines become line breaks
-        };
-        
-        // Create professional email template with left alignment
-        return `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>${escapeHtml(emailData.subject)}</title>
-            <style>
-              body {
-                font-family: Arial, sans-serif;
-                line-height: 1.6;
-                color: #333333;
-                margin: 0;
-                padding: 0;
-                text-align: left;
-              }
-              .email-container {
-                max-width: 600px;
-                margin: 0 auto;
-                padding: 20px;
-                text-align: left;
-              }
-              .email-header {
-                margin-bottom: 20px;
-                padding-bottom: 20px;
-                border-bottom: 1px solid #eeeeee;
-              }
-              .email-content {
-                margin-bottom: 20px;
-                text-align: left;
-              }
-              .email-footer {
-                margin-top: 30px;
-                padding-top: 20px;
-                border-top: 1px solid #eeeeee;
-                font-size: 12px;
-                color: #888888;
-              }
-              h1, h2, h3, h4, h5, h6, p {
-                margin: 0 0 15px;
-                text-align: left;
-              }
-              a {
-                color: #2b7de9;
-                text-decoration: none;
-              }
-              .footer-logo {
-                margin-bottom: 10px;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="email-container">
-              <div class="email-header">
-                <h2 style="margin-top:0; text-align:left;">${escapeHtml(emailData.subject)}</h2>
-              </div>
-              <div class="email-content">
-                <p>${textToHtml(plainText)}</p>
-              </div>
-              <div class="email-footer">
-                <div class="footer-logo">
-                  <strong>KeyKeeper</strong> Secure Email
-                </div>
-                <p>Sent by ${escapeHtml(fromName)} (${fromEmail})</p>
-                <p>This email was sent with end-to-end security by <a href="https://keykeeper.world">KeyKeeper</a>.</p>
-              </div>
-            </div>
-          </body>
-          </html>
-        `;
+        // Use the template system to generate HTML
+        const html = generateEmailHTML(emailTemplate, {
+          subject: emailData.subject,
+          body: plainText,
+          senderName: fromName,
+          senderEmail: fromEmail
+        });
+
+        // If plain text template is selected, return null (will use text-only)
+        return html;
       };
       
       // Get sender name with fallback
       const senderName = selectedAccount.name || 'KeyKeeper User';
-      
+
+      // Generate HTML from template (returns null for plain text)
+      const htmlBody = formatEmailHTML(emailData.message, senderName, selectedAccount.email);
+      const isPlainText = !htmlBody;
+
       // Prepare email data for API with proper formatting for optimal delivery
       const emailApiData = {
         from: {
           email: selectedAccount.email,
           name: senderName
         },
-        to: [{ 
-          email: emailData.to.trim(), 
-          name: '' 
+        to: [{
+          email: emailData.to.trim(),
+          name: ''
         }],
         subject: emailData.subject,
         // Use simple text version for the text field
         text: emailData.message,
-        // Use formatted HTML template for the body
-        body: formatEmailHTML(emailData.message, senderName, selectedAccount.email),
+        // Use formatted HTML template for the body (null for plain text)
+        body: htmlBody || emailData.message,
+        isPlainText: isPlainText,
         pgpEncrypted: encryptionStatus === 'available' && encryptionEnabled,
         attachments: allAttachments,
         // Include credentials if found
@@ -601,6 +547,7 @@ function ComposeContent() {
                     type="email"
                     name="to"
                     id="to"
+                    ref={toInputRef}
                     value={emailData.to}
                     onChange={handleInputChange}
                     className="block w-full pl-14 pr-20 py-3.5 text-base text-white bg-transparent border-0 focus:ring-0 focus:outline-none placeholder-gray-500"
