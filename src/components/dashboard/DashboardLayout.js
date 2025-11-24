@@ -20,11 +20,12 @@ import { useAuth } from '@/lib/auth/useAuth';
 
 export default function DashboardLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user, loading } = useAuth();
+  const { user, loading, getToken } = useAuth();
   const pathname = usePathname();
 
   const [userEmail, setUserEmail] = useState('Loading...');
   const [userInitials, setUserInitials] = useState('');
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
 
   useEffect(() => {
     if (loading) return;
@@ -41,6 +42,9 @@ export default function DashboardLayout({ children }) {
       } else {
         setUserInitials('US');
       }
+
+      // Fetch subscription status
+      fetchSubscriptionStatus();
     } else {
       // No user logged in - try localStorage as fallback
       const storedEmail = localStorage.getItem('user_email');
@@ -55,6 +59,58 @@ export default function DashboardLayout({ children }) {
       }
     }
   }, [user, loading]);
+
+  const fetchSubscriptionStatus = async () => {
+    try {
+      const token = getToken();
+      if (!token) return;
+
+      const response = await fetch('/api/user/profile', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSubscriptionStatus(data.subscriptionStatus || 'free');
+      }
+    } catch (error) {
+      console.error('Error fetching subscription status:', error);
+      setSubscriptionStatus('free');
+    }
+  };
+
+  // Format subscription status for display
+  const getSubscriptionLabel = () => {
+    if (!subscriptionStatus) return '';
+    const labels = {
+      free: 'Free',
+      trial: 'Trial',
+      active: 'Pro',
+      personal: 'Personal',
+      pro: 'Pro',
+      bitcoin: 'Pro',
+      cancelled: 'Cancelled',
+      expired: 'Expired'
+    };
+    return labels[subscriptionStatus] || subscriptionStatus;
+  };
+
+  const getSubscriptionColor = () => {
+    if (!subscriptionStatus) return 'text-gray-400';
+    const colors = {
+      free: 'text-gray-400',
+      trial: 'text-yellow-400',
+      active: 'text-primary-400',
+      personal: 'text-blue-400',
+      pro: 'text-primary-400',
+      bitcoin: 'text-orange-400',
+      cancelled: 'text-red-400',
+      expired: 'text-red-400'
+    };
+    return colors[subscriptionStatus] || 'text-gray-400';
+  };
 
   const navigation = [
     { name: 'Inbox', href: '/dashboard', icon: EnvelopeIcon },
@@ -169,7 +225,7 @@ export default function DashboardLayout({ children }) {
               </div>
               <div className="ml-3">
                 <div className="text-sm font-medium text-gray-200">{userEmail}</div>
-                <div className="text-xs text-primary-400">Premium</div>
+                <div className={`text-xs ${getSubscriptionColor()}`}>{getSubscriptionLabel()}</div>
               </div>
             </div>
           </div>
