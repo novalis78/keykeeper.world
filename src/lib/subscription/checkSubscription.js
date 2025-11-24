@@ -238,6 +238,9 @@ export async function getSubscriptionStatus(userId) {
   }
 }
 
+// Named exports for direct imports
+export { EMAIL_LIMITS, PLANS };
+
 export default {
   checkCanSendEmail,
   incrementEmailCount,
