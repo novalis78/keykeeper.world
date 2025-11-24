@@ -9,11 +9,63 @@ import { query } from '@/lib/db';
 
 // Email limits per subscription tier
 const EMAIL_LIMITS = {
-  free: 5,        // 5 emails per day for free users
-  trial: 20,      // 20 emails per day during trial
-  active: 1000,   // 1000 emails per day for paid users
-  cancelled: 5,   // Same as free when cancelled
-  expired: 5      // Same as free when expired
+  free: 3,        // 3 emails per day for free users (enough to try, not enough to abuse)
+  trial: 50,      // 50 emails per day during trial period
+  active: 500,    // 500 emails per day for paid subscribers
+  cancelled: 3,   // Same as free when cancelled
+  expired: 3      // Same as free when expired
+};
+
+// Plan details for display and Stripe integration
+const PLANS = {
+  personal: {
+    id: 'personal',
+    name: 'Personal',
+    price: 299, // cents
+    priceDisplay: '$2.99',
+    interval: 'month',
+    emailLimit: 100,
+    features: [
+      '100 emails per day',
+      '1GB storage',
+      'Full PGP encryption',
+      'No branding in emails',
+      'Priority support'
+    ]
+  },
+  pro: {
+    id: 'pro',
+    name: 'Pro',
+    price: 699, // cents
+    priceDisplay: '$6.99',
+    interval: 'month',
+    emailLimit: 500,
+    features: [
+      '500 emails per day',
+      '5GB storage',
+      'Full PGP encryption',
+      'No branding in emails',
+      'API access',
+      'Priority support'
+    ]
+  },
+  bitcoin: {
+    id: 'bitcoin',
+    name: 'Bitcoin 3-Year',
+    price: 3000, // cents (one-time)
+    priceDisplay: '$30',
+    interval: 'once',
+    duration: 36, // months
+    emailLimit: 500,
+    features: [
+      '500 emails per day for 3 years',
+      '5GB storage',
+      'Full PGP encryption',
+      'No branding in emails',
+      'Maximum privacy',
+      'No recurring charges'
+    ]
+  }
 };
 
 /**
@@ -190,5 +242,6 @@ export default {
   checkCanSendEmail,
   incrementEmailCount,
   getSubscriptionStatus,
-  EMAIL_LIMITS
+  EMAIL_LIMITS,
+  PLANS
 };
