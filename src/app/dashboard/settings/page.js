@@ -18,7 +18,13 @@ import {
   TrashIcon,
   CloudIcon,
   ExclamationTriangleIcon,
-  SparklesIcon
+  SparklesIcon,
+  ComputerDesktopIcon,
+  DevicePhoneMobileIcon,
+  DeviceTabletIcon,
+  MapPinIcon,
+  ClockIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
@@ -42,6 +48,11 @@ export default function SettingsPage() {
   const [cfError, setCfError] = useState('');
   const [selectedZone, setSelectedZone] = useState(null);
   const [setupDnsLoading, setSetupDnsLoading] = useState(false);
+
+  // Sessions state
+  const [sessions, setSessions] = useState([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [revokingSession, setRevokingSession] = useState(null);
 
   // Settings state
   const [settings, setSettings] = useState({
@@ -263,6 +274,130 @@ export default function SettingsPage() {
       fetchCloudflareZones();
     }
   }, [activeSection, subscription]);
+
+  // Load sessions when security section is active
+  useEffect(() => {
+    if (activeSection === 'security') {
+      fetchSessions();
+      // Also register/update the current session
+      registerSession();
+    }
+  }, [activeSection]);
+
+  const fetchSessions = async () => {
+    setSessionsLoading(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch('/api/user/sessions', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setSessions(data.sessions || []);
+      }
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  const registerSession = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      await fetch('/api/user/sessions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    } catch (error) {
+      console.error('Error registering session:', error);
+    }
+  };
+
+  const revokeSession = async (sessionId) => {
+    setRevokingSession(sessionId);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch('/api/user/sessions', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ sessionId })
+      });
+
+      if (res.ok) {
+        setSessions(sessions.filter(s => s.id !== sessionId));
+      }
+    } catch (error) {
+      console.error('Error revoking session:', error);
+    } finally {
+      setRevokingSession(null);
+    }
+  };
+
+  const revokeAllOtherSessions = async () => {
+    if (!confirm('Are you sure you want to sign out all other devices?')) return;
+
+    setRevokingSession('all');
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch('/api/user/sessions', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ revokeAll: true })
+      });
+
+      if (res.ok) {
+        // Keep only current session
+        setSessions(sessions.filter(s => s.isCurrent));
+      }
+    } catch (error) {
+      console.error('Error revoking sessions:', error);
+    } finally {
+      setRevokingSession(null);
+    }
+  };
+
+  // Format relative time
+  const formatRelativeTime = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString();
+  };
+
+  // Get device icon
+  const getDeviceIcon = (device) => {
+    if (device === 'Mobile') return DevicePhoneMobileIcon;
+    if (device === 'Tablet') return DeviceTabletIcon;
+    return ComputerDesktopIcon;
+  };
+
+  // Get browser color
+  const getBrowserColor = (browser) => {
+    const colors = {
+      'Chrome': 'text-green-400',
+      'Firefox': 'text-orange-400',
+      'Safari': 'text-blue-400',
+      'Edge': 'text-cyan-400',
+      'Opera': 'text-red-400'
+    };
+    return colors[browser] || 'text-gray-400';
+  };
 
   const [upgradeLoading, setUpgradeLoading] = useState(null);
   const [upgradeError, setUpgradeError] = useState('');
@@ -922,28 +1057,139 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-6">
-                  <h2 className="text-xl font-semibold text-white mb-6">Active Sessions</h2>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-4 bg-gray-900/50 rounded-xl">
-                      <div className="flex items-center gap-4">
-                        <div className="h-10 w-10 bg-primary-500/20 rounded-lg flex items-center justify-center">
-                          <svg className="h-5 w-5 text-primary-400" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z"/>
-                          </svg>
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-white">Current Session</h3>
-                          <p className="text-sm text-gray-400">This device</p>
-                        </div>
-                      </div>
-                      <span className="text-xs text-green-400">Active now</span>
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h2 className="text-xl font-semibold text-white">Active Sessions</h2>
+                      <p className="text-sm text-gray-400 mt-1">Devices where you're currently logged in</p>
                     </div>
+                    {sessions.length > 1 && (
+                      <button
+                        onClick={revokeAllOtherSessions}
+                        disabled={revokingSession === 'all'}
+                        className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-sm font-medium rounded-lg border border-red-500/30 transition-colors disabled:opacity-50"
+                      >
+                        {revokingSession === 'all' ? 'Signing out...' : 'Sign out all other devices'}
+                      </button>
+                    )}
                   </div>
 
-                  <button className="mt-4 text-sm text-red-400 hover:text-red-300">
-                    Sign out all other sessions
-                  </button>
+                  {sessionsLoading ? (
+                    <div className="space-y-3">
+                      {[1, 2].map(i => (
+                        <div key={i} className="animate-pulse p-4 bg-gray-900/50 rounded-xl">
+                          <div className="flex items-center gap-4">
+                            <div className="h-12 w-12 bg-gray-700 rounded-xl"></div>
+                            <div className="flex-1">
+                              <div className="h-4 bg-gray-700 rounded w-1/3 mb-2"></div>
+                              <div className="h-3 bg-gray-700 rounded w-1/2"></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : sessions.length === 0 ? (
+                    <div className="text-center py-8">
+                      <ComputerDesktopIcon className="h-12 w-12 text-gray-600 mx-auto mb-3" />
+                      <p className="text-gray-400">No active sessions found</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {sessions.map((session) => {
+                        const DeviceIcon = getDeviceIcon(session.device);
+                        return (
+                          <div
+                            key={session.id}
+                            className={`relative p-4 rounded-xl border transition-all ${
+                              session.isCurrent
+                                ? 'bg-primary-500/10 border-primary-500/30'
+                                : 'bg-gray-900/50 border-gray-700/50 hover:border-gray-600'
+                            }`}
+                          >
+                            <div className="flex items-start gap-4">
+                              {/* Device Icon */}
+                              <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${
+                                session.isCurrent ? 'bg-primary-500/20' : 'bg-gray-800'
+                              }`}>
+                                <DeviceIcon className={`h-6 w-6 ${
+                                  session.isCurrent ? 'text-primary-400' : 'text-gray-400'
+                                }`} />
+                              </div>
+
+                              {/* Session Info */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="font-medium text-white">
+                                    {session.browser} on {session.os}
+                                  </h3>
+                                  {session.isCurrent && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+                                      This device
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-400">
+                                  {/* Location */}
+                                  <span className="flex items-center gap-1">
+                                    <MapPinIcon className="h-4 w-4" />
+                                    {session.location}
+                                  </span>
+
+                                  {/* IP Address */}
+                                  <span className="font-mono text-xs">
+                                    {session.ipAddress}
+                                  </span>
+
+                                  {/* Last Active */}
+                                  <span className="flex items-center gap-1">
+                                    <ClockIcon className="h-4 w-4" />
+                                    {session.isCurrent ? 'Active now' : formatRelativeTime(session.lastActive)}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Revoke Button */}
+                              {!session.isCurrent && (
+                                <button
+                                  onClick={() => revokeSession(session.id)}
+                                  disabled={revokingSession === session.id}
+                                  className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
+                                  title="Sign out this device"
+                                >
+                                  {revokingSession === session.id ? (
+                                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-400 border-t-transparent"></div>
+                                  ) : (
+                                    <XMarkIcon className="h-5 w-5" />
+                                  )}
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Current Session Indicator */}
+                            {session.isCurrent && (
+                              <div className="absolute top-0 right-0 h-3 w-3 -mt-1 -mr-1">
+                                <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Security Info */}
+                  <div className="mt-6 p-4 bg-gray-900/30 rounded-xl border border-gray-700/30">
+                    <div className="flex items-start gap-3">
+                      <ShieldCheckIcon className="h-5 w-5 text-primary-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-300">Session Security</h4>
+                        <p className="text-xs text-gray-500 mt-1">
+                          If you notice any unfamiliar devices, sign them out immediately and consider changing your password. Enable 2FA for additional protection.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-6">
