@@ -363,6 +363,9 @@ export async function POST(request) {
             read: flagsArray.indexOf('\\Seen') >= 0,
             flagged: flagsArray.indexOf('\\Flagged') >= 0,
             answered: flagsArray.indexOf('\\Answered') >= 0,
+            // Initialize starred and archived to false (will be overwritten by metadata if exists)
+            starred: false,
+            archived: false,
             labels: [],
             timestamp: parsedMessage.date?.toISOString() || new Date().toISOString(),
             // Include the full text content

@@ -215,9 +215,9 @@ export default function SentPage() {
                   emails.map((email) => (
                     <EmailRow
                       key={email.id}
-                      email={email}
+                      message={email}
                       onClick={() => handleSelectEmail(email)}
-                      selected={selectedEmail?.id === email.id}
+                      isSelected={selectedEmail?.id === email.id}
                     />
                   ))
                 )}
