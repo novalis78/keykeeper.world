@@ -77,15 +77,21 @@ export default function EmailDetail({ message, onBack, onDelete, onReply, onForw
   };
   
   const handleReply = () => {
+    // Get the body content - prefer text, then strip HTML tags from html
+    let bodyContent = message.text || message.body || '';
+    if (!bodyContent && message.html) {
+      // Strip HTML tags for quote
+      bodyContent = message.html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+    }
+
     // Prepare data for reply
     const replyData = {
       replyTo: message.from,
       subject: message.subject,
       date: message.timestamp || message.date,
-      // Use the original body text if available, or use HTML content
-      originalBody: message.text || message.body || (message.html ? 'HTML content' : ''),
+      originalBody: bodyContent,
     };
-    
+
     // Call the reply handler passed from parent
     if (onReply) {
       onReply(replyData);
@@ -93,13 +99,20 @@ export default function EmailDetail({ message, onBack, onDelete, onReply, onForw
   };
   
   const handleForward = () => {
+    // Get the body content - prefer text, then strip HTML tags from html
+    let bodyContent = message.text || message.body || '';
+    if (!bodyContent && message.html) {
+      // Strip HTML tags for quote
+      bodyContent = message.html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+    }
+
     // Prepare data for forwarding
     const forwardData = {
       subject: message.subject,
       date: message.timestamp || message.date,
       from: message.from,
       to: message.to,
-      originalBody: message.text || message.body || (message.html ? 'HTML content' : ''),
+      originalBody: bodyContent,
       attachments: message.attachments || [],
     };
 

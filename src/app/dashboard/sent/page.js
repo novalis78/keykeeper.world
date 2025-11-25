@@ -175,9 +175,9 @@ export default function SentPage() {
         {/* Email list/detail view */}
         <div className="flex-grow bg-gray-800/70 backdrop-blur-md rounded-lg overflow-hidden border border-gray-700 shadow-xl">
           {selectedEmail ? (
-            <EmailDetail 
-              message={selectedEmail} 
-              onClose={handleCloseDetail} 
+            <EmailDetail
+              message={selectedEmail}
+              onBack={handleCloseDetail}
               onReply={handleReply}
               onForward={handleForward}
             />
