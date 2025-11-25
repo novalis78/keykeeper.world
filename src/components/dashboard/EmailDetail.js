@@ -30,7 +30,7 @@ export default function EmailDetail({ message, onBack, onDelete, onReply, onForw
   const [isStarred, setIsStarred] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
-  const [showOriginal, setShowOriginal] = useState(false);
+  const [showOriginalModal, setShowOriginalModal] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
   const menuRef = useRef(null);
   const router = useRouter();
@@ -147,6 +147,55 @@ export default function EmailDetail({ message, onBack, onDelete, onReply, onForw
     const hash = md5(email.trim().toLowerCase());
     return `https://www.gravatar.com/avatar/${hash}?s=${size}&d=404`;
   };
+
+  // Generate raw email source (like Gmail's "Show original")
+  const getRawEmailSource = () => {
+    const lines = [];
+
+    // Email headers
+    lines.push(`From: ${message.from.name} <${message.from.email}>`);
+    lines.push(`To: ${message.to.email}`);
+    if (message.cc) lines.push(`Cc: ${message.cc}`);
+    if (message.bcc) lines.push(`Bcc: ${message.bcc}`);
+    lines.push(`Subject: ${message.subject}`);
+    lines.push(`Date: ${new Date(message.timestamp).toUTCString()}`);
+
+    // MIME headers
+    lines.push(`MIME-Version: 1.0`);
+    lines.push(`Content-Type: ${message.html ? 'text/html' : 'text/plain'}; charset=UTF-8`);
+    if (message.messageId) lines.push(`Message-ID: ${message.messageId}`);
+
+    // Security headers
+    if (message.encryptedBody) {
+      lines.push(`X-KeyKeeper-Encrypted: yes`);
+    }
+
+    // Custom headers
+    lines.push(`X-Mailer: KeyKeeper.world`);
+
+    // Empty line between headers and body
+    lines.push('');
+
+    // Email body
+    if (message.html) {
+      lines.push(message.html);
+    } else if (message.text) {
+      lines.push(message.text);
+    } else {
+      lines.push(message.snippet || '(No content)');
+    }
+
+    // Attachments info
+    if (message.attachments && message.attachments.length > 0) {
+      lines.push('');
+      lines.push('------ Attachments ------');
+      message.attachments.forEach(att => {
+        lines.push(`${att.filename} (${att.contentType}, ${(att.size / 1024).toFixed(1)} KB)`);
+      });
+    }
+
+    return lines.join('\n');
+  };
   
   return (
     <motion.div 
@@ -207,13 +256,13 @@ export default function EmailDetail({ message, onBack, onDelete, onReply, onForw
                   <div className="py-1">
                     <button
                       onClick={() => {
-                        setShowOriginal(!showOriginal);
+                        setShowOriginalModal(true);
                         setShowMoreMenu(false);
                       }}
                       className="w-full flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
                     >
                       <CodeBracketIcon className="h-4 w-4 mr-3" />
-                      {showOriginal ? 'Show formatted' : 'Show original'}
+                      Show original
                     </button>
                     <button
                       onClick={() => {
@@ -401,28 +450,20 @@ export default function EmailDetail({ message, onBack, onDelete, onReply, onForw
               </div>
             )}
 
-            {/* Show original message view */}
-            {showOriginal ? (
-              <div className="bg-gray-900 rounded-md p-4 overflow-x-auto">
-                <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-all">
-                  {message.text || message.html || 'No raw content available'}
-                </pre>
-              </div>
-            ) : (
-              <div className="prose dark:prose-invert max-w-none text-gray-300">
-                {/* If we have HTML content, render it safely */}
-                {message.html ? (
-                  <div dangerouslySetInnerHTML={{ __html: message.html }} />
-                ) : (
-                  // Otherwise show text content with proper line breaks
-                  <div>
-                    {(message.text || message.snippet || "No content available").split('\n').map((paragraph, idx) => (
-                      <p key={idx} className="my-4">{paragraph}</p>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Email content */}
+            <div className="prose dark:prose-invert max-w-none text-gray-300">
+              {/* If we have HTML content, render it safely */}
+              {message.html ? (
+                <div dangerouslySetInnerHTML={{ __html: message.html }} />
+              ) : (
+                // Otherwise show text content with proper line breaks
+                <div>
+                  {(message.text || message.snippet || "No content available").split('\n').map((paragraph, idx) => (
+                    <p key={idx} className="my-4">{paragraph}</p>
+                  ))}
+                </div>
+              )}
+            </div>
             
             {/* Attachments */}
             {message.attachments?.length > 0 && (
@@ -491,6 +532,86 @@ export default function EmailDetail({ message, onBack, onDelete, onReply, onForw
           </div>
         )}
       </div>
+
+      {/* Show Original Modal */}
+      <AnimatePresence>
+        {showOriginalModal && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
+              onClick={() => setShowOriginalModal(false)}
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2, type: "spring" }}
+              className="fixed inset-4 md:inset-10 z-50 bg-gray-900 rounded-xl border border-gray-700 shadow-2xl flex flex-col overflow-hidden"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
+                <div className="flex items-center gap-3">
+                  <CodeBracketIcon className="h-6 w-6 text-primary-400" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">Original Message</h3>
+                    <p className="text-sm text-gray-400">Raw email source with headers</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowOriginalModal(false)}
+                  className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-gray-800"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="flex-1 overflow-auto p-6">
+                <div className="bg-gray-950 rounded-lg border border-gray-800 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-2 bg-gray-800/50 border-b border-gray-700">
+                    <span className="text-xs font-mono text-gray-400">Email Source</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(getRawEmailSource());
+                        // You could add a toast notification here
+                      }}
+                      className="text-xs text-primary-400 hover:text-primary-300 font-medium flex items-center gap-1"
+                    >
+                      <ClipboardDocumentIcon className="h-4 w-4" />
+                      Copy to clipboard
+                    </button>
+                  </div>
+                  <pre className="p-4 text-xs font-mono text-gray-300 whitespace-pre-wrap break-all leading-relaxed">
+                    {getRawEmailSource()}
+                  </pre>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-4 border-t border-gray-700 bg-gray-800/30">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-500">
+                    This is the raw source of the email as it would appear in transit through email servers
+                  </p>
+                  <button
+                    onClick={() => setShowOriginalModal(false)}
+                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm font-medium"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
