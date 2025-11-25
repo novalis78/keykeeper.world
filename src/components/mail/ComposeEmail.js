@@ -254,7 +254,7 @@ export default function ComposeEmail({
       const emailData = {
         from: {
           email: userEmail || localStorage.getItem('userEmail') || 'no-reply@keykeeper.world',
-          name: localStorage.getItem('userName') || 'KeyKeeper User'
+          name: localStorage.getItem('user_name') || localStorage.getItem('user_email')?.split('@')[0] || 'KeyKeeper User'
         },
         to: toArray,
         cc: ccArray,

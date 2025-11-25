@@ -120,10 +120,12 @@ function ComposeContent() {
             setEmailTemplate(savedTemplate);
           }
         } else {
-          console.warn('No email found for user, falling back to mock data');
-          // Fallback to mock data if no real email found
+          console.warn('No email found for user, falling back to localStorage');
+          // Fallback to localStorage if no real email found
+          const fallbackEmail = localStorage.getItem('user_email') || 'user@keykeeper.world';
+          const fallbackName = localStorage.getItem('user_name') || fallbackEmail.split('@')[0];
           const mockAccounts = [
-            { id: 1, email: 'user@keykeeper.world', name: 'KeyKeeper User', isDefault: true }
+            { id: 1, email: fallbackEmail, name: fallbackName, isDefault: true }
           ];
 
           setUserEmailAccounts(mockAccounts);
@@ -137,9 +139,11 @@ function ComposeContent() {
       } catch (error) {
         console.error('Error fetching user email accounts:', error);
 
-        // Fallback to mock data on error
+        // Fallback to localStorage on error
+        const fallbackEmail = localStorage.getItem('user_email') || 'user@keykeeper.world';
+        const fallbackName = localStorage.getItem('user_name') || fallbackEmail.split('@')[0];
         const mockAccounts = [
-          { id: 1, email: 'user@keykeeper.world', name: 'KeyKeeper User', isDefault: true }
+          { id: 1, email: fallbackEmail, name: fallbackName, isDefault: true }
         ];
 
         setUserEmailAccounts(mockAccounts);

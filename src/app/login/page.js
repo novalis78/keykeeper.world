@@ -73,6 +73,9 @@ function LoginForm() {
       if (data.user?.email) {
         localStorage.setItem('user_email', data.user.email);
         localStorage.setItem('user_id', data.user.id);
+        if (data.user.name) {
+          localStorage.setItem('user_name', data.user.name);
+        }
         if (data.user.fingerprint) {
           localStorage.setItem('user_fingerprint', data.user.fingerprint);
         }
