@@ -446,8 +446,70 @@ export async function sendEmail(emailData, options = {}) {
 }
 
 /**
+ * Find the correct folder name on the IMAP server
+ * Different servers use different folder names (Sent, INBOX.Sent, Sent Messages, etc.)
+ *
+ * @param {Object} client ImapFlow client
+ * @param {string} requestedFolder The folder name requested
+ * @param {boolean} createIfMissing Whether to create the folder if it doesn't exist
+ * @returns {Promise<string>} The actual folder name on the server
+ */
+async function findActualFolderName(client, requestedFolder, createIfMissing = false) {
+  const normalizedRequest = requestedFolder.toLowerCase();
+
+  // If it's INBOX, just return it
+  if (normalizedRequest === 'inbox') {
+    return 'INBOX';
+  }
+
+  // Get list of mailboxes
+  const mailboxes = await client.list();
+
+  // Define possible names for each folder type and canonical name to create
+  const folderConfig = {
+    'sent': { aliases: ['Sent', 'INBOX.Sent', 'Sent Messages', 'Sent Items', 'SENT'], create: 'Sent' },
+    'drafts': { aliases: ['Drafts', 'INBOX.Drafts', 'Draft', 'DRAFTS'], create: 'Drafts' },
+    'trash': { aliases: ['Trash', 'INBOX.Trash', 'Deleted', 'Deleted Items', 'TRASH'], create: 'Trash' },
+    'spam': { aliases: ['Spam', 'INBOX.Spam', 'Junk', 'Junk E-mail', 'SPAM', 'JUNK'], create: 'Spam' },
+    'archive': { aliases: ['Archive', 'INBOX.Archive', 'Archives', 'ARCHIVE'], create: 'Archive' }
+  };
+
+  // Get the config for this folder type
+  const config = folderConfig[normalizedRequest];
+  const aliases = config?.aliases || [requestedFolder];
+
+  // Find a matching mailbox
+  for (const alias of aliases) {
+    const found = mailboxes.find(mb =>
+      mb.path.toLowerCase() === alias.toLowerCase() ||
+      mb.name?.toLowerCase() === alias.toLowerCase()
+    );
+    if (found) {
+      console.log(`[Mail Connector] Folder '${requestedFolder}' resolved to '${found.path}'`);
+      return found.path;
+    }
+  }
+
+  // If not found and we should create it, create the folder
+  if (createIfMissing && config?.create) {
+    try {
+      console.log(`[Mail Connector] Creating folder '${config.create}'`);
+      await client.mailboxCreate(config.create);
+      return config.create;
+    } catch (createError) {
+      console.error(`[Mail Connector] Failed to create folder '${config.create}':`, createError.message);
+    }
+  }
+
+  // If not found, log available mailboxes and return the original
+  console.log(`[Mail Connector] Folder '${requestedFolder}' not found. Available mailboxes:`,
+    mailboxes.map(mb => mb.path));
+  return requestedFolder;
+}
+
+/**
  * Fetch emails from IMAP server
- * 
+ *
  * @param {string} folder Folder name to fetch from (INBOX, Sent, etc.)
  * @param {Object} options Options like limit, offset, query
  * @param {Object} config Custom IMAP configuration
@@ -456,13 +518,16 @@ export async function sendEmail(emailData, options = {}) {
 export async function fetchEmails(folder = 'INBOX', options = {}, config = {}) {
   const client = createIMAPClient(config);
   const emails = [];
-  
+
   try {
     // Connect to the server
     await client.connect();
-    
+
+    // Find the actual folder name on this server
+    const actualFolder = await findActualFolderName(client, folder);
+
     // Select the mailbox
-    const mailbox = await client.mailboxOpen(folder);
+    const mailbox = await client.mailboxOpen(actualFolder);
     
     // Default limit
     const limit = options.limit || 50;
@@ -501,7 +566,7 @@ export async function fetchEmails(folder = 'INBOX', options = {}, config = {}) {
         isRead: message.flags.includes('\\Seen'),
         isStarred: message.flags.includes('\\Flagged'),
         hasAttachments: hasAttachments(message.bodyStructure),
-        folder: folder.toLowerCase(),
+        folder: folder.toLowerCase().replace('inbox.', ''),
         // More detailed parsing would happen in fetchEmail
         preview: options.fetchBody ? await getMessagePreview(client, message.uid) : null
       };
@@ -537,13 +602,16 @@ export async function fetchEmails(folder = 'INBOX', options = {}, config = {}) {
  */
 export async function fetchEmail(uid, folder = 'INBOX', markAsRead = true, config = {}) {
   const client = createIMAPClient(config);
-  
+
   try {
     // Connect to the server
     await client.connect();
-    
+
+    // Find the actual folder name on this server
+    const actualFolder = await findActualFolderName(client, folder);
+
     // Select the mailbox
-    await client.mailboxOpen(folder);
+    await client.mailboxOpen(actualFolder);
     
     // Fetch the message
     const message = await client.fetchOne(uid, {
@@ -616,13 +684,16 @@ export async function fetchEmail(uid, folder = 'INBOX', markAsRead = true, confi
  */
 export async function updateEmail(uid, folder = 'INBOX', updates = {}, config = {}) {
   const client = createIMAPClient(config);
-  
+
   try {
     // Connect to the server
     await client.connect();
-    
+
+    // Find the actual folder name on this server
+    const actualFolder = await findActualFolderName(client, folder);
+
     // Select the mailbox
-    await client.mailboxOpen(folder);
+    await client.mailboxOpen(actualFolder);
     
     // Apply flag updates
     if (updates.isRead !== undefined) {
@@ -670,13 +741,16 @@ export async function updateEmail(uid, folder = 'INBOX', updates = {}, config = 
  */
 export async function deleteEmail(uid, folder = 'INBOX', permanent = false, config = {}) {
   const client = createIMAPClient(config);
-  
+
   try {
     // Connect to the server
     await client.connect();
-    
+
+    // Find the actual folder name on this server
+    const actualFolder = await findActualFolderName(client, folder);
+
     // Select the mailbox
-    await client.mailboxOpen(folder);
+    await client.mailboxOpen(actualFolder);
     
     if (permanent) {
       // Permanently delete

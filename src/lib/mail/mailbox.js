@@ -141,8 +141,9 @@ export async function fetchEmails(email, folder = 'inbox', options = {}) {
     // Use Postfix integration if USE_REAL_MAIL_SERVER flag is set
     if (process.env.USE_REAL_MAIL_SERVER === 'true') {
       console.log('Fetching emails via Postfix IMAP');
-      const config = { auth: { user: email } };
-      return await postfix.default.fetchEmails(folder.toUpperCase(), options, config);
+      // Use imapConfig from options if provided (includes password), otherwise just use email
+      const config = options.imapConfig || { auth: { user: email } };
+      return await postfix.default.fetchEmails(folder, options, config);
     } else {
       console.log('Using mock email fetching (Postfix integration disabled)');
       // For development, return mock data

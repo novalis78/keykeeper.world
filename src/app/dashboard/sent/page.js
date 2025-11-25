@@ -199,13 +199,10 @@ export default function SentPage() {
                 ) : emails.length === 0 ? (
                   <div className="flex flex-col justify-center items-center h-full text-gray-400">
                     <PaperAirplaneIcon className="h-16 w-16 mb-4 transform rotate-90 text-gray-600" />
-                    <p className="text-xl font-medium">No sent messages</p>
+                    <p className="text-xl font-medium">No sent messages yet</p>
                     <p className="mt-2 text-center max-w-md px-4">
-                      Sent emails are being saved to your mail server's Sent folder when you send them. 
-                      However, viewing them here requires your email password, which is not stored for security reasons.
-                    </p>
-                    <p className="mt-2 text-sm text-gray-500">
-                      You can view your sent emails in any IMAP email client (like Thunderbird or Mail app).
+                      Your sent emails will appear here automatically.
+                      Compose a new message to get started!
                     </p>
                     <button
                       onClick={() => window.location.href = '/dashboard/compose'}
