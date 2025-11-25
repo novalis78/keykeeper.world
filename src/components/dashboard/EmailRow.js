@@ -7,6 +7,21 @@ import { motion } from 'framer-motion';
 
 export default function EmailRow({ message, onClick, isSelected, onStar }) {
   const [isHovered, setIsHovered] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
+
+  // Generate Gravatar URL from email
+  const getGravatarUrl = (email, size = 40) => {
+    if (!email) return null;
+    const normalizedEmail = email.trim().toLowerCase();
+    let hash = 0;
+    for (let i = 0; i < normalizedEmail.length; i++) {
+      const char = normalizedEmail.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    const hashStr = Math.abs(hash).toString(16).padStart(32, '0');
+    return `https://www.gravatar.com/avatar/${hashStr}?s=${size}&d=404`;
+  };
   
   const formattedDate = (dateString) => {
     const date = new Date(dateString);
@@ -66,8 +81,17 @@ export default function EmailRow({ message, onClick, isSelected, onStar }) {
 
       {/* Sender photo */}
       <div className="mr-4 flex-shrink-0 hidden sm:block">
-        <div className="h-9 w-9 rounded-full bg-primary-600/30 flex items-center justify-center text-sm font-medium text-primary-400 uppercase">
-          {message.from.name.charAt(0)}
+        <div className="h-9 w-9 rounded-full bg-primary-600/30 flex items-center justify-center text-sm font-medium text-primary-400 uppercase overflow-hidden">
+          {!avatarError ? (
+            <img
+              src={getGravatarUrl(message.from?.email, 72)}
+              alt={message.from?.name || ''}
+              className="h-full w-full object-cover"
+              onError={() => setAvatarError(true)}
+            />
+          ) : (
+            message.from?.name?.charAt(0) || message.from?.email?.charAt(0) || '?'
+          )}
         </div>
       </div>
       
@@ -75,7 +99,7 @@ export default function EmailRow({ message, onClick, isSelected, onStar }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center">
           <p className={`text-sm font-medium truncate mr-2 ${message.read ? 'text-gray-200' : 'text-white font-semibold'}`}>
-            {message.from.name}
+            {message.from?.name || message.from?.email || 'Unknown'}
           </p>
           
           {/* Email tags and PGP key indicator */}

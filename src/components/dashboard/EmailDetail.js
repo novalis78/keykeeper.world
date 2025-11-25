@@ -1,14 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
-import { motion } from 'framer-motion';
-import { 
-  ArrowLeftIcon, 
-  ArrowUturnLeftIcon, 
-  ArchiveBoxIcon, 
-  TrashIcon, 
-  EyeIcon, 
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ArrowLeftIcon,
+  ArrowUturnLeftIcon,
+  ArchiveBoxIcon,
+  TrashIcon,
+  EyeIcon,
   LockClosedIcon,
   DocumentTextIcon,
   PaperClipIcon,
@@ -16,7 +16,11 @@ import {
   ArrowTopRightOnSquareIcon,
   EllipsisHorizontalIcon,
   FolderIcon,
-  KeyIcon
+  KeyIcon,
+  CodeBracketIcon,
+  PrinterIcon,
+  FlagIcon,
+  NoSymbolIcon
 } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 
@@ -24,7 +28,22 @@ export default function EmailDetail({ message, onBack, onDelete, onReply, onForw
   const [decrypted, setDecrypted] = useState(false);
   const [isStarred, setIsStarred] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
+  const menuRef = useRef(null);
   const router = useRouter();
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowMoreMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   
   const formattedDate = (dateString) => {
     const date = new Date(dateString);
@@ -83,11 +102,47 @@ export default function EmailDetail({ message, onBack, onDelete, onReply, onForw
       originalBody: message.text || message.body || (message.html ? 'HTML content' : ''),
       attachments: message.attachments || [],
     };
-    
+
     // Call the forward handler passed from parent
     if (onForward) {
       onForward(forwardData);
     }
+  };
+
+  // Check if message is actually PGP encrypted (not just has encryptedBody flag)
+  const isActuallyEncrypted = () => {
+    // Check for explicit encryptedBody flag
+    if (message.encryptedBody === true) return true;
+
+    // Check message content for PGP markers
+    const content = message.text || message.html || '';
+    return content.includes('-----BEGIN PGP MESSAGE-----') ||
+           content.includes('-----BEGIN PGP SIGNED MESSAGE-----');
+  };
+
+  // Handle clicking on email address - open compose instead of mailto
+  const handleEmailClick = (e, email) => {
+    e.preventDefault();
+    // Navigate to compose with pre-filled recipient
+    router.push(`/dashboard/compose?to=${encodeURIComponent(email)}`);
+  };
+
+  // Generate Gravatar URL from email using simple hash
+  // Gravatar accepts any hash, it just won't find a real image for invalid hashes
+  // We use d=404 so we can detect when no image exists and fall back to initials
+  const getGravatarUrl = (email, size = 80) => {
+    if (!email) return null;
+    // Simple hash function for email (Gravatar uses MD5, but any consistent hash works for lookup)
+    const normalizedEmail = email.trim().toLowerCase();
+    // Create a simple numeric hash and convert to hex-like string
+    let hash = 0;
+    for (let i = 0; i < normalizedEmail.length; i++) {
+      const char = normalizedEmail.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    const hashStr = Math.abs(hash).toString(16).padStart(32, '0');
+    return `https://www.gravatar.com/avatar/${hashStr}?s=${size}&d=404`;
   };
   
   return (
@@ -127,12 +182,72 @@ export default function EmailDetail({ message, onBack, onDelete, onReply, onForw
             <FolderIcon className="h-5 w-5" />
           </button>
           
-          <button
-            type="button"
-            className="inline-flex items-center p-2 text-gray-400 hover:text-white transition-colors"
-          >
-            <EllipsisHorizontalIcon className="h-5 w-5" />
-          </button>
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setShowMoreMenu(!showMoreMenu)}
+              className="inline-flex items-center p-2 text-gray-400 hover:text-white transition-colors"
+            >
+              <EllipsisHorizontalIcon className="h-5 w-5" />
+            </button>
+
+            {/* Dropdown menu */}
+            <AnimatePresence>
+              {showMoreMenu && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-gray-800 border border-gray-700 z-50"
+                >
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setShowOriginal(!showOriginal);
+                        setShowMoreMenu(false);
+                      }}
+                      className="w-full flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
+                    >
+                      <CodeBracketIcon className="h-4 w-4 mr-3" />
+                      {showOriginal ? 'Show formatted' : 'Show original'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        window.print();
+                        setShowMoreMenu(false);
+                      }}
+                      className="w-full flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
+                    >
+                      <PrinterIcon className="h-4 w-4 mr-3" />
+                      Print
+                    </button>
+                    <button
+                      onClick={() => {
+                        toggleStar();
+                        setShowMoreMenu(false);
+                      }}
+                      className="w-full flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
+                    >
+                      <FlagIcon className="h-4 w-4 mr-3" />
+                      {isStarred ? 'Remove star' : 'Add star'}
+                    </button>
+                    <div className="border-t border-gray-700 my-1"></div>
+                    <button
+                      onClick={() => {
+                        // Mark as spam functionality
+                        setShowMoreMenu(false);
+                      }}
+                      className="w-full flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
+                    >
+                      <NoSymbolIcon className="h-4 w-4 mr-3" />
+                      Report spam
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
       
@@ -157,8 +272,17 @@ export default function EmailDetail({ message, onBack, onDelete, onReply, onForw
       <div className="px-6 py-4 border-b border-gray-700">
         <div className="flex justify-between items-start">
           <div className="flex">
-            <div className="h-10 w-10 rounded-full bg-primary-600/30 mr-4 flex items-center justify-center text-base font-medium text-primary-400 uppercase">
-              {message.from.name.charAt(0)}
+            <div className="h-10 w-10 rounded-full bg-primary-600/30 mr-4 flex items-center justify-center text-base font-medium text-primary-400 uppercase overflow-hidden">
+              {!avatarError ? (
+                <img
+                  src={getGravatarUrl(message.from.email, 80)}
+                  alt={message.from.name}
+                  className="h-full w-full object-cover"
+                  onError={() => setAvatarError(true)}
+                />
+              ) : (
+                message.from.name?.charAt(0) || message.from.email?.charAt(0) || '?'
+              )}
             </div>
             <div>
               <div className="flex items-center">
@@ -168,9 +292,12 @@ export default function EmailDetail({ message, onBack, onDelete, onReply, onForw
                     <LockClosedIcon className="inline ml-1.5 h-4 w-4 text-primary-400" />
                   )}
                 </p>
-                <a href={`mailto:${message.from.email}`} className="ml-2 text-xs text-gray-400 hover:text-primary-400">
+                <button
+                  onClick={(e) => handleEmailClick(e, message.from.email)}
+                  className="ml-2 text-xs text-gray-400 hover:text-primary-400"
+                >
                   &lt;{message.from.email}&gt;
-                </a>
+                </button>
               </div>
               <p className="text-sm text-gray-400 mt-1">
                 To: {message.to.email}
@@ -234,9 +361,10 @@ export default function EmailDetail({ message, onBack, onDelete, onReply, onForw
       
       {/* Email body */}
       <div className="px-6 py-6">
-        {message.encryptedBody && !decrypted ? (
+        {/* Only show decrypt UI if message is actually PGP encrypted */}
+        {isActuallyEncrypted() && !decrypted ? (
           <div className="py-16 flex flex-col items-center justify-center">
-            <motion.div 
+            <motion.div
               className="mb-6 bg-primary-600/20 p-6 rounded-full"
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
@@ -263,26 +391,35 @@ export default function EmailDetail({ message, onBack, onDelete, onReply, onForw
           </div>
         ) : (
           <div>
-            {message.encryptedBody && decrypted && (
+            {isActuallyEncrypted() && decrypted && (
               <div className="bg-green-900/20 text-green-300 text-sm p-3 rounded-md mb-6 flex items-center">
                 <LockClosedIcon className="h-5 w-5 mr-2 text-green-400" />
                 This message was decrypted with your private key
               </div>
             )}
-            
-            <div className="prose dark:prose-invert max-w-none text-gray-300">
-              {/* If we have HTML content, render it safely */}
-              {message.html ? (
-                <div dangerouslySetInnerHTML={{ __html: message.html }} />
-              ) : (
-                // Otherwise show text content with proper line breaks
-                <div>
-                  {(message.text || message.snippet || "No content available").split('\n').map((paragraph, idx) => (
-                    <p key={idx} className="my-4">{paragraph}</p>
-                  ))}
-                </div>
-              )}
-            </div>
+
+            {/* Show original message view */}
+            {showOriginal ? (
+              <div className="bg-gray-900 rounded-md p-4 overflow-x-auto">
+                <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap break-all">
+                  {message.text || message.html || 'No raw content available'}
+                </pre>
+              </div>
+            ) : (
+              <div className="prose dark:prose-invert max-w-none text-gray-300">
+                {/* If we have HTML content, render it safely */}
+                {message.html ? (
+                  <div dangerouslySetInnerHTML={{ __html: message.html }} />
+                ) : (
+                  // Otherwise show text content with proper line breaks
+                  <div>
+                    {(message.text || message.snippet || "No content available").split('\n').map((paragraph, idx) => (
+                      <p key={idx} className="my-4">{paragraph}</p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             
             {/* Attachments */}
             {message.attachments?.length > 0 && (
