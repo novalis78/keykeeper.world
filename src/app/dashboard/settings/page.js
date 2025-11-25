@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   UserCircleIcon,
@@ -31,10 +31,7 @@ import { CheckIcon } from '@heroicons/react/24/solid';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 import { QRCodeSVG } from 'qrcode.react';
 
-// Force dynamic rendering since we use searchParams and need auth
-export const dynamic = 'force-dynamic';
-
-export default function SettingsPage() {
+function SettingsContent() {
   const searchParams = useSearchParams();
   const [activeSection, setActiveSection] = useState('account');
   const [loading, setLoading] = useState(true);
@@ -1929,5 +1926,20 @@ function DomainCard({ domain, onCopy, copiedField }) {
         </div>
       )}
     </div>
+  );
+}
+
+// Default export with Suspense boundary for useSearchParams
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={
+      <DashboardLayout>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
+        </div>
+      </DashboardLayout>
+    }>
+      <SettingsContent />
+    </Suspense>
   );
 }
