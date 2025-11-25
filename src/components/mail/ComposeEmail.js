@@ -431,15 +431,15 @@ export default function ComposeEmail({
           {getTitle()}
         </h3>
         <div className="flex space-x-2">
-          <button 
+          <button
             onClick={() => setMinimized(true)}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
           >
             <MinusIcon className="h-5 w-5" />
           </button>
-          <button 
+          <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
           >
             <XMarkIcon className="h-5 w-5" />
           </button>
@@ -457,13 +457,13 @@ export default function ComposeEmail({
         {/* Recipients */}
         <div className="mb-3">
           <div className="flex items-center">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 w-10">To:</label>
+            <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 w-16 pr-3 flex-shrink-0">To</label>
             <input
               type="text"
               name="to"
               value={formData.to}
               onChange={handleChange}
-              className="block w-full border-0 p-0 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-0 sm:text-sm bg-transparent"
+              className="block w-full border-0 p-0 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-0 sm:text-sm bg-transparent"
               placeholder="Recipients"
             />
             <button
@@ -472,7 +472,7 @@ export default function ComposeEmail({
                 setShowCc(!showCc);
                 setShowBcc(!showCc);
               }}
-              className="ml-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+              className="ml-3 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors whitespace-nowrap"
             >
               Cc/Bcc
             </button>
@@ -483,13 +483,13 @@ export default function ComposeEmail({
         {showCc && (
           <div className="mb-3">
             <div className="flex items-center">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 w-10">Cc:</label>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 w-16 pr-3 flex-shrink-0">Cc</label>
               <input
                 type="text"
                 name="cc"
                 value={formData.cc}
                 onChange={handleChange}
-                className="block w-full border-0 p-0 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-0 sm:text-sm bg-transparent"
+                className="block w-full border-0 p-0 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-0 sm:text-sm bg-transparent"
                 placeholder="Carbon copy recipients"
               />
             </div>
@@ -500,13 +500,13 @@ export default function ComposeEmail({
         {showBcc && (
           <div className="mb-3">
             <div className="flex items-center">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 w-10">Bcc:</label>
+              <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 w-16 pr-3 flex-shrink-0">Bcc</label>
               <input
                 type="text"
                 name="bcc"
                 value={formData.bcc}
                 onChange={handleChange}
-                className="block w-full border-0 p-0 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-0 sm:text-sm bg-transparent"
+                className="block w-full border-0 p-0 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-0 sm:text-sm bg-transparent"
                 placeholder="Blind carbon copy recipients"
               />
             </div>
@@ -517,13 +517,13 @@ export default function ComposeEmail({
         {/* Subject */}
         <div className="mb-3">
           <div className="flex items-center">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 w-10 flex-shrink-0">Subject:</label>
+            <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 w-16 pr-3 flex-shrink-0">Subject</label>
             <input
               type="text"
               name="subject"
               value={formData.subject}
               onChange={handleChange}
-              className="block w-full border-0 p-0 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-0 sm:text-sm bg-transparent truncate"
+              className="block w-full border-0 p-0 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-0 sm:text-sm bg-transparent truncate"
               placeholder="Subject"
               style={{ textOverflow: 'ellipsis' }}
             />
@@ -538,7 +538,7 @@ export default function ComposeEmail({
             rows={12}
             value={formData.body}
             onChange={handleChange}
-            className="block w-full border-0 py-0 resize-none text-gray-900 dark:text-white placeholder-gray-500 focus:ring-0 sm:text-sm bg-transparent focus:outline-none"
+            className="block w-full border-0 py-0 px-0 resize-none text-gray-900 dark:text-white placeholder-gray-400 focus:ring-0 sm:text-sm bg-transparent focus:outline-none leading-relaxed"
             placeholder="Write your message here..."
             style={{ border: 'none', boxShadow: 'none' }}
           />
@@ -621,9 +621,9 @@ export default function ComposeEmail({
           <button
             type="button"
             onClick={() => attachmentInputRef.current?.click()}
-            className="inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
-            <PaperClipIcon className="h-4 w-4 mr-1" />
+            <PaperClipIcon className="h-4 w-4 mr-1.5" />
             Attach
           </button>
           <input
@@ -639,7 +639,7 @@ export default function ComposeEmail({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             Discard
           </button>
@@ -647,13 +647,23 @@ export default function ComposeEmail({
             type="button"
             onClick={handleSend}
             disabled={isLoading}
-            className={`inline-flex items-center rounded-md border border-transparent px-3 py-1.5 text-sm font-medium text-white ${
+            className={`inline-flex items-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm transition-all ${
               isLoading
-                ? 'bg-primary-400 dark:bg-primary-500 cursor-not-allowed'
-                : 'bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600'
+                ? 'bg-primary-400 dark:bg-primary-500 cursor-not-allowed opacity-75'
+                : 'bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 hover:shadow-md'
             }`}
           >
-            {isLoading ? 'Sending...' : 'Send'}
+            {isLoading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Sending...
+              </>
+            ) : (
+              'Send'
+            )}
           </button>
         </div>
       </div>

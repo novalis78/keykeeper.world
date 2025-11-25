@@ -46,3 +46,62 @@ This machine runs:
 - `users` - user accounts with PGP keys (public_key, fingerprint, key_id)
 - `virtual_users` - mail server accounts (email, password with {PLAIN} prefix)
 - `public_keys` - contacts' public keys for encryption
+
+## Future UI Enhancements (Next-Gen Email UX Ideas)
+
+### Compose Window Improvements
+- Draggable floating window that can be positioned anywhere
+- Multiple compose windows with tabbed interface
+- Full-screen mode option
+- Smooth spring animations for open/close/minimize
+
+### Smart Recipient Features
+- Recipient chips with Gravatar avatars
+- Autocomplete dropdown with contact search
+- Keyboard navigation (arrow keys, Enter to select)
+- Valid/invalid email indicators (green/red borders)
+- Quick remove with X button on each chip
+
+### Rich Text Editor
+- Floating toolbar on text selection
+- Bold, italic, underline, strikethrough
+- Bullet/numbered lists
+- Link insertion with preview
+- Code blocks with syntax highlighting
+- Emoji picker
+- @ mentions for contacts
+
+### Smart Features
+- AI-powered subject line suggestions
+- Quick reply templates ("Thanks!", "Got it", "Will do")
+- Scheduled send with calendar picker
+- Undo send (5-second grace period)
+- Auto-save drafts every 30 seconds
+
+### Attachment Enhancements
+- Image thumbnails preview
+- PDF first page preview
+- File icons by type
+- Animated drag & drop zone
+- Upload progress bars
+
+### Quoted Text Improvements
+- Collapsible quoted text (show first 2 lines)
+- Smooth accordion animation
+- Gradient fade when collapsed
+- "Show quoted text" link (Gmail-style)
+- Different background color for distinction
+
+### Keyboard Shortcuts
+- Cmd/Ctrl + Enter: Send
+- Cmd/Ctrl + Shift + C: Toggle Cc/Bcc
+- Esc: Minimize window
+- Tab: Navigate through fields
+
+### Polish & Micro-interactions
+- Subtle scale on button hover
+- Ripple effect on send button
+- Success animation (checkmark bounce)
+- Skeleton loading states
+- Smooth color transitions
+- Glassmorphism effects on modal backdrop
