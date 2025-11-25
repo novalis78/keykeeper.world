@@ -29,6 +29,7 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "autoprefixer": "^10.4.16",
     "bcryptjs": "^3.0.2",
+    "blueimp-md5": "^2.19.0",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.9.2",
     "gsap": "^3.13.0",
