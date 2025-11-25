@@ -548,19 +548,51 @@ export async function fetchEmails(folder = 'INBOX', options = {}, config = {}) {
       return [];
     }
     
-    // Fetch emails
-    const messages = client.fetch(`${from}:${to}`, {
+    // Fetch emails - always fetch source when fetchBody is requested
+    const fetchOptions = {
       uid: true,
       flags: true,
       envelope: true,
       bodyStructure: true,
-      internalDate: true,
-      bodyParts: options.fetchBody ? ['TEXT', 'HEADER'] : ['HEADER']
-    });
-    
+      internalDate: true
+    };
+
+    // If fetchBody is true, we need the full message source to parse the body
+    if (options.fetchBody) {
+      fetchOptions.source = true;
+    }
+
+    const messages = client.fetch(`${from}:${to}`, fetchOptions);
+
     for await (const message of messages) {
       const fromAddr = formatAddress(message.envelope.from);
       const toAddrs = formatAddressArray(message.envelope.to);
+
+      let htmlBody = null;
+      let textBody = null;
+      let snippet = '';
+      let attachmentList = [];
+
+      // Parse the full message if we fetched the source
+      if (options.fetchBody && message.source) {
+        try {
+          const parsed = await simpleParser(message.source);
+          htmlBody = parsed.html || null;
+          textBody = parsed.text || null;
+          snippet = (parsed.text || '').substring(0, 150).trim();
+
+          // Extract attachments
+          if (parsed.attachments && parsed.attachments.length > 0) {
+            attachmentList = parsed.attachments.map(att => ({
+              filename: att.filename,
+              contentType: att.contentType,
+              size: att.size
+            }));
+          }
+        } catch (parseError) {
+          console.error('[Mail Connector] Error parsing message body:', parseError.message);
+        }
+      }
 
       const parsedEmail = {
         id: message.uid,
@@ -579,12 +611,17 @@ export async function fetchEmails(folder = 'INBOX', options = {}, config = {}) {
         isRead: message.flags?.has('\\Seen') || false,
         isStarred: message.flags?.has('\\Flagged') || false,
         flags: Array.from(message.flags || []),
-        hasAttachments: hasAttachments(message.bodyStructure),
-        attachments: [],
+        hasAttachments: hasAttachments(message.bodyStructure) || attachmentList.length > 0,
+        attachments: attachmentList,
         folder: folder.toLowerCase().replace('inbox.', ''),
-        snippet: '', // Empty snippet for list view
-        preview: null,
-        labels: []
+        // Body content for detail view
+        html: htmlBody,
+        text: textBody,
+        snippet: snippet,
+        preview: snippet,
+        labels: [],
+        // For encrypted detection
+        encryptedBody: false
       };
 
       emails.push(parsedEmail);
