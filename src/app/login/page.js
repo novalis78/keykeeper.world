@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -16,6 +16,14 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [requires2FA, setRequires2FA] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const totpInputRef = useRef(null);
+
+  // Autofocus 2FA input when shown
+  useEffect(() => {
+    if (requires2FA && totpInputRef.current) {
+      totpInputRef.current.focus();
+    }
+  }, [requires2FA]);
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -146,7 +154,7 @@ export default function LoginPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6 bg-white/[0.03] border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
+          <form id="login-form" onSubmit={handleSubmit} className="space-y-6 bg-white/[0.03] border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
             {error && (
               <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
                 <p className="text-sm text-red-300">{error}</p>
@@ -227,6 +235,7 @@ export default function LoginPage() {
                   Two-Factor Code
                 </label>
                 <input
+                  ref={totpInputRef}
                   id="totp-code"
                   name="totp-code"
                   type="text"
@@ -236,7 +245,17 @@ export default function LoginPage() {
                   autoComplete="one-time-code"
                   required
                   value={totpCode}
-                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                  onChange={(e) => {
+                    const newCode = e.target.value.replace(/\D/g, '');
+                    setTotpCode(newCode);
+                    // Auto-submit when 6 digits are entered
+                    if (newCode.length === 6 && !loading) {
+                      // Small delay to show the last digit before submitting
+                      setTimeout(() => {
+                        document.getElementById('login-form').requestSubmit();
+                      }, 100);
+                    }
+                  }}
                   className="w-full px-4 py-3 bg-white/[0.03] border border-white/10 rounded-xl text-white text-[24px] placeholder:text-white/30 focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/20 transition-all text-center tracking-widest"
                   placeholder="000000"
                 />
