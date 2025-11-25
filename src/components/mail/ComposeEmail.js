@@ -23,6 +23,7 @@ export default function ComposeEmail({
   const [minimized, setMinimized] = useState(false);
   const [isPgpEncrypted, setIsPgpEncrypted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [sendingStage, setSendingStage] = useState(null); // null, 'encrypting', 'sending', 'sent'
   const [error, setError] = useState(null);
   const [userPublicKey, setUserPublicKey] = useState(null);
   const [userEmail, setUserEmail] = useState(null);
@@ -169,13 +170,17 @@ export default function ComposeEmail({
   // Send the email
   const handleSend = async () => {
     setIsLoading(true);
+    setSendingStage('encrypting');
     setError(null);
-    
+
     try {
       // Basic validation
       if (!formData.to) {
         throw new Error('Please specify at least one recipient');
       }
+
+      // Simulate encryption stage (brief pause for animation)
+      await new Promise(resolve => setTimeout(resolve, 600));
       
       // Split recipient strings into arrays
       const toArray = formData.to.split(',').map(email => ({
@@ -295,6 +300,9 @@ export default function ComposeEmail({
         console.warn('Auth status check failed:', authCheckResponse.status);
       }
       
+      // Move to sending stage
+      setSendingStage('sending');
+
       // Send the email using the API instead of the direct function
       const response = await fetch('/api/mail/send', {
         method: 'POST',
@@ -362,9 +370,14 @@ export default function ComposeEmail({
       if (!result.success) {
         throw new Error(result.error || 'Failed to send email');
       }
-      
+
+
       console.log('Email sent successfully:', result);
-      
+
+      // Show success state briefly
+      setSendingStage('sent');
+      await new Promise(resolve => setTimeout(resolve, 800));
+
       // Close the composer on success
       onClose();
     } catch (err) {
@@ -378,6 +391,9 @@ export default function ComposeEmail({
       }
     } finally {
       setIsLoading(false);
+      if (sendingStage !== 'sent') {
+        setSendingStage(null);
+      }
     }
   };
   
@@ -649,17 +665,26 @@ export default function ComposeEmail({
             disabled={isLoading}
             className={`inline-flex items-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm transition-all ${
               isLoading
-                ? 'bg-primary-400 dark:bg-primary-500 cursor-not-allowed opacity-75'
+                ? sendingStage === 'sent'
+                  ? 'bg-green-600 cursor-default'
+                  : 'bg-primary-400 dark:bg-primary-500 cursor-not-allowed opacity-75'
                 : 'bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 hover:shadow-md'
             }`}
           >
-            {isLoading ? (
+            {sendingStage === 'encrypting' ? (
               <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Sending...
+                <span className="mr-2 text-base animate-pulse">🔐</span>
+                <span className="animate-pulse">Encrypting...</span>
+              </>
+            ) : sendingStage === 'sending' ? (
+              <>
+                <span className="mr-2 text-base animate-bounce">📤</span>
+                <span>Sending...</span>
+              </>
+            ) : sendingStage === 'sent' ? (
+              <>
+                <span className="mr-2 text-base animate-bounce">✓</span>
+                <span>Sent!</span>
               </>
             ) : (
               'Send'

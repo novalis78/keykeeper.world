@@ -612,15 +612,29 @@ export default function Dashboard() {
                       <FunnelIcon className="h-4 w-4" />
                     </button>
                     
-                    <button 
+                    <button
                       type="button"
                       onClick={handleRefresh}
-                      className={`ml-1 inline-flex items-center p-1.5 rounded-md text-gray-400 hover:bg-gray-700 hover:text-white transition-colors ${
-                        refreshing ? 'animate-spin text-primary-400' : ''
-                      }`}
+                      disabled={refreshing}
+                      className="ml-1 inline-flex items-center p-1.5 rounded-md text-gray-400 hover:bg-gray-700 hover:text-white transition-colors relative group"
+                      title={refreshing ? "Checking for new mail..." : "Refresh inbox"}
                     >
-                      <ArrowPathIcon className="h-4 w-4" />
+                      {refreshing ? (
+                        <div className="relative">
+                          <ArrowPathIcon className="h-4 w-4 text-primary-400 animate-spin" />
+                          <div className="absolute -inset-1 bg-primary-400/20 rounded-full animate-ping"></div>
+                        </div>
+                      ) : (
+                        <ArrowPathIcon className="h-4 w-4" />
+                      )}
                     </button>
+                    {refreshing && (
+                      <span className="ml-2 text-xs text-primary-400 animate-pulse font-mono">
+                        <span className="inline-block animate-pulse">▌</span>
+                        <span className="inline-block animate-pulse delay-75">▌</span>
+                        <span className="inline-block animate-pulse delay-150">▌</span>
+                      </span>
+                    )}
                   </div>
                 </>
               )}
