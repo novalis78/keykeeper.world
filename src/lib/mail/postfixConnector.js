@@ -559,23 +559,34 @@ export async function fetchEmails(folder = 'INBOX', options = {}, config = {}) {
     });
     
     for await (const message of messages) {
+      const fromAddr = formatAddress(message.envelope.from);
+      const toAddrs = formatAddressArray(message.envelope.to);
+
       const parsedEmail = {
         id: message.uid,
-        subject: message.envelope.subject,
-        from: formatAddress(message.envelope.from),
-        to: formatAddressArray(message.envelope.to),
+        subject: message.envelope.subject || '(no subject)',
+        from: fromAddr,
+        to: toAddrs.length > 0 ? toAddrs[0] : { name: '', email: '' }, // Frontend expects single object
+        toAll: toAddrs, // Keep full array for detail view
         cc: formatAddressArray(message.envelope.cc),
         bcc: formatAddressArray(message.envelope.bcc),
+        // Frontend expects these property names:
+        timestamp: message.internalDate,
         date: message.internalDate,
-        flags: Array.from(message.flags || []),
+        read: message.flags?.has('\\Seen') || false,
+        starred: message.flags?.has('\\Flagged') || false,
+        // Also include the isRead/isStarred for compatibility
         isRead: message.flags?.has('\\Seen') || false,
         isStarred: message.flags?.has('\\Flagged') || false,
+        flags: Array.from(message.flags || []),
         hasAttachments: hasAttachments(message.bodyStructure),
+        attachments: [],
         folder: folder.toLowerCase().replace('inbox.', ''),
-        // Skip preview fetching for list view - too slow with individual downloads
-        preview: null
+        snippet: '', // Empty snippet for list view
+        preview: null,
+        labels: []
       };
-      
+
       emails.push(parsedEmail);
     }
     
