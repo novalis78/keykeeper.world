@@ -138,19 +138,24 @@ export function getSMTPTransporter(config = {}) {
  */
 export function createIMAPClient(config = {}) {
   console.log('[Mail Connector] Creating IMAP client with rejectUnauthorized: false');
-  
+
   // Make sure we respect any auth credentials passed in the config
   const mergedConfig = {
     ...IMAP_CONFIG,
-    ...config
+    ...config,
+    // Add connection timeout settings
+    connectionTimeout: 10000, // 10 seconds to connect
+    greetingTimeout: 5000,    // 5 seconds for greeting
+    socketTimeout: 30000,     // 30 seconds socket timeout
+    logger: false             // Disable verbose logging
   };
-  
+
   // Always ensure rejectUnauthorized is false for TLS
   mergedConfig.tls = {
     ...mergedConfig.tls,
     rejectUnauthorized: false // Always allow self-signed certificates
   };
-  
+
   // If auth credentials were passed in config, make sure they take precedence
   if (config.auth) {
     mergedConfig.auth = {
@@ -158,9 +163,9 @@ export function createIMAPClient(config = {}) {
       ...config.auth
     };
   }
-  
+
   console.log(`[Mail Connector] Using IMAP credentials for: ${mergedConfig.auth.user}`);
-  
+
   return new ImapFlow(mergedConfig);
 }
 

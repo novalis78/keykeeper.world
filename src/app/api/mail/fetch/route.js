@@ -96,8 +96,34 @@ export async function POST(request) {
     const targetFolder = folder.toLowerCase() === 'sent' ? 'Sent' : folder;
     
     console.log(`[Mail API] Fetching from folder: ${targetFolder}`);
-    const emails = await fetchEmails(mailAccount.email, targetFolder, options);
-    
+
+    // Add timeout to prevent infinite hangs
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Mail fetch timeout after 30 seconds')), 30000);
+    });
+
+    let emails;
+    try {
+      emails = await Promise.race([
+        fetchEmails(mailAccount.email, targetFolder, options),
+        timeoutPromise
+      ]);
+    } catch (fetchError) {
+      console.error(`[Mail API] Error fetching from ${targetFolder}:`, fetchError.message);
+      // Return empty array on timeout or error instead of failing completely
+      return NextResponse.json({
+        success: true,
+        emails: [],
+        meta: {
+          folder: targetFolder,
+          total: 0,
+          limit,
+          offset,
+          error: fetchError.message
+        }
+      });
+    }
+
     console.log(`[Mail API] Found ${emails.length} emails in '${targetFolder}' folder`);
     
     return NextResponse.json({
