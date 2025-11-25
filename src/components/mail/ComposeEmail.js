@@ -28,7 +28,8 @@ export default function ComposeEmail({
   const [userPublicKey, setUserPublicKey] = useState(null);
   const [userEmail, setUserEmail] = useState(null);
   const [formData, setFormData] = useState({
-    to: initialData.to || '',
+    // Handle to field: if it's an object with email, extract email; if string use as-is; otherwise empty
+    to: typeof initialData.to === 'string' ? initialData.to : (initialData.to?.email || ''),
     cc: initialData.cc || '',
     bcc: initialData.bcc || '',
     subject: initialData.subject || '',
@@ -51,12 +52,21 @@ export default function ComposeEmail({
         body: `\n\n---\nOn ${new Date(initialData.date).toLocaleString()}, ${initialData.replyTo.name || initialData.replyTo.email} wrote:\n\n${initialData.originalBody || ''}`,
       });
     } else if (mode === 'forward' && initialData.originalBody) {
+      // Format the To field for the forwarded message header
+      let toStr = '';
+      if (Array.isArray(initialData.to)) {
+        toStr = initialData.to.map(r => `${r.name || r.email} <${r.email}>`).join(', ');
+      } else if (initialData.to?.email) {
+        toStr = `${initialData.to.name || initialData.to.email} <${initialData.to.email}>`;
+      }
+
       setFormData({
         ...formData,
-        subject: initialData.subject.startsWith('Fwd:') 
-          ? initialData.subject 
+        to: '', // Clear to field - user enters new recipient
+        subject: initialData.subject.startsWith('Fwd:')
+          ? initialData.subject
           : `Fwd: ${initialData.subject}`,
-        body: `\n\n---\n---------- Forwarded message ---------\nFrom: ${initialData.from?.name || initialData.from?.email || ''} <${initialData.from?.email || ''}>\nDate: ${new Date(initialData.date).toLocaleString()}\nSubject: ${initialData.subject}\nTo: ${Array.isArray(initialData.to) ? initialData.to.map(r => `${r.name || r.email} <${r.email}>`).join(', ') : ''}\n\n${initialData.originalBody}`,
+        body: `\n\n---\n---------- Forwarded message ---------\nFrom: ${initialData.from?.name || initialData.from?.email || ''} <${initialData.from?.email || ''}>\nDate: ${new Date(initialData.date).toLocaleString()}\nSubject: ${initialData.subject}\nTo: ${toStr}\n\n${initialData.originalBody}`,
         attachments: initialData.attachments || []
       });
     }

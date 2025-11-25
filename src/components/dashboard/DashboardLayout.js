@@ -18,7 +18,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/lib/auth/useAuth';
 
-export default function DashboardLayout({ children }) {
+export default function DashboardLayout({ children, onInboxClick }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, loading, getToken } = useAuth();
   const pathname = usePathname();
@@ -175,6 +175,7 @@ export default function DashboardLayout({ children }) {
                 <Link
                   key={item.name}
                   href={item.href}
+                  onClick={item.name === 'Inbox' && onInboxClick ? onInboxClick : undefined}
                   className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
                     isCurrent
                       ? 'bg-primary-700/20 text-primary-400'

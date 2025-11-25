@@ -524,7 +524,7 @@ export default function Dashboard() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout onInboxClick={() => setSelectedEmail(null)}>
       {/* Mail Credentials Modal */}
       <MailCredentialsModal
         isOpen={showCredentialsModal}
