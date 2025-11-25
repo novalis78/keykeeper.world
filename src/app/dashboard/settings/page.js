@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   UserCircleIcon,
   CreditCardIcon,
@@ -31,6 +32,7 @@ import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function SettingsPage() {
+  const searchParams = useSearchParams();
   const [activeSection, setActiveSection] = useState('account');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -75,6 +77,15 @@ export default function SettingsPage() {
   // Template saved notification
   const [templateSaved, setTemplateSaved] = useState(false);
 
+  // PGP Key details
+  const [masterKeyDetails, setMasterKeyDetails] = useState({
+    fingerprint: user?.fingerprint || 'Loading...',
+    created: user?.createdAt || 'N/A',
+    type: 'RSA-4096',
+    expires: 'Never',
+    backupStatus: 'disabled'
+  });
+
   // Email templates
   const emailTemplates = [
     { id: 'default', name: 'KeyKeeper Classic', description: 'Clean and professional', colors: { bg: '#ffffff', text: '#333333', accent: '#2b7de9' }},
@@ -97,7 +108,13 @@ export default function SettingsPage() {
     if (savedTemplate) {
       setSettings(s => ({ ...s, emailTemplate: savedTemplate }));
     }
-  }, []);
+
+    // Check for section query parameter (e.g., ?section=security)
+    const section = searchParams.get('section');
+    if (section && ['account', 'billing', 'domains', 'security', 'email', 'notifications', 'appearance'].includes(section)) {
+      setActiveSection(section);
+    }
+  }, [searchParams]);
 
   const fetchUserData = async () => {
     try {
@@ -114,6 +131,12 @@ export default function SettingsPage() {
           ...s,
           name: profileData.user?.name || '',
           email: profileData.user?.email || ''
+        }));
+        // Update master key details
+        setMasterKeyDetails(prev => ({
+          ...prev,
+          fingerprint: profileData.user?.fingerprint || 'Not available',
+          created: profileData.user?.createdAt ? new Date(profileData.user.createdAt).toLocaleDateString() : 'N/A'
         }));
       }
 
@@ -1099,6 +1122,97 @@ export default function SettingsPage() {
             {/* Security Section */}
             {activeSection === 'security' && (
               <div className="space-y-6">
+                {/* Master PGP Key */}
+                <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-6">
+                  <div className="flex items-center gap-2 mb-6">
+                    <KeyIcon className="h-5 w-5 text-primary-400" />
+                    <h2 className="text-xl font-semibold text-white">Master PGP Key</h2>
+                  </div>
+                  <p className="text-sm text-gray-400 mb-6">
+                    Your master key is used to encrypt and sign all communications
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div className="p-4 bg-gray-900/50 rounded-xl">
+                      <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Key Fingerprint</dt>
+                      <dd className="text-sm text-white font-mono break-all">{user?.fingerprint || 'Loading...'}</dd>
+                    </div>
+                    <div className="p-4 bg-gray-900/50 rounded-xl">
+                      <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Key Type</dt>
+                      <dd className="text-sm text-white">RSA-4096</dd>
+                    </div>
+                    <div className="p-4 bg-gray-900/50 rounded-xl">
+                      <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Created</dt>
+                      <dd className="text-sm text-white">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</dd>
+                    </div>
+                    <div className="p-4 bg-gray-900/50 rounded-xl">
+                      <dt className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Expires</dt>
+                      <dd className="text-sm text-white">Never</dd>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3">
+                    <a
+                      href="/api/user/public-key"
+                      download
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                      Download Public Key
+                    </a>
+                    <button
+                      onClick={() => {
+                        copyToClipboard(user?.fingerprint || '', 'fingerprint');
+                      }}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors"
+                    >
+                      {copiedField === 'fingerprint' ? (
+                        <>
+                          <CheckIcon className="h-4 w-4" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <ClipboardDocumentIcon className="h-4 w-4" />
+                          Copy Fingerprint
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Key Backup Status */}
+                <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-6">
+                  <div className="flex items-center gap-2 mb-6">
+                    <ShieldCheckIcon className="h-5 w-5 text-primary-400" />
+                    <h2 className="text-xl font-semibold text-white">Key Backup</h2>
+                  </div>
+                  <p className="text-sm text-gray-400 mb-6">
+                    Securely encrypted backup of your master key
+                  </p>
+
+                  <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl mb-4">
+                    <div className="flex items-start gap-3">
+                      <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h3 className="text-sm font-medium text-yellow-400">Backup Not Configured</h3>
+                        <p className="text-sm text-gray-400 mt-1">
+                          Backing up your key is important for recovery. Your key will be encrypted with a recovery passphrase that only you know.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    <ShieldCheckIcon className="h-4 w-4" />
+                    Enable Key Backup
+                  </button>
+                </div>
+
+                {/* Two-Factor Authentication */}
                 <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-6">
                   <h2 className="text-xl font-semibold text-white mb-6">Two-Factor Authentication</h2>
 

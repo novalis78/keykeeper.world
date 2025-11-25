@@ -118,7 +118,6 @@ export default function DashboardLayout({ children, onInboxClick }) {
     { name: 'Contacts', href: '/dashboard/contacts', icon: UsersIcon },
     { name: 'Addresses', href: '/dashboard/addresses', icon: KeyIcon },
     { name: 'Analytics', href: '/dashboard/analytics', icon: ArrowPathIcon },
-    { name: 'Security', href: '/dashboard/security', icon: ShieldCheckIcon },
     { name: 'Settings', href: '/dashboard/settings', icon: CogIcon },
   ];
 
