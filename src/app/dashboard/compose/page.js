@@ -74,14 +74,14 @@ function ComposeContent() {
         const data = await response.json();
         
         if (data.success && data.email) {
-          // Create account object from real user email
-          const userAccount = { 
-            id: 1, 
-            email: data.email, 
-            name: 'Primary Account', 
-            isDefault: true 
+          // Create account object from real user email and name
+          const userAccount = {
+            id: 1,
+            email: data.email,
+            name: data.name || data.email.split('@')[0], // Use user's name or email prefix as fallback
+            isDefault: true
           };
-          
+
           setUserEmailAccounts([userAccount]);
           
           // Set default From address
@@ -123,12 +123,11 @@ function ComposeContent() {
           console.warn('No email found for user, falling back to mock data');
           // Fallback to mock data if no real email found
           const mockAccounts = [
-            { id: 1, email: 'user@keykeeper.world', name: 'Primary Account', isDefault: true },
-            { id: 2, email: 'admin@keykeeper.world', name: 'Admin Account', isDefault: false }
+            { id: 1, email: 'user@keykeeper.world', name: 'KeyKeeper User', isDefault: true }
           ];
-          
+
           setUserEmailAccounts(mockAccounts);
-          
+
           // Set default From address
           const defaultAccount = mockAccounts.find(account => account.isDefault) || mockAccounts[0];
           if (defaultAccount) {
@@ -137,15 +136,14 @@ function ComposeContent() {
         }
       } catch (error) {
         console.error('Error fetching user email accounts:', error);
-        
+
         // Fallback to mock data on error
         const mockAccounts = [
-          { id: 1, email: 'user@keykeeper.world', name: 'Primary Account', isDefault: true },
-          { id: 2, email: 'admin@keykeeper.world', name: 'Admin Account', isDefault: false }
+          { id: 1, email: 'user@keykeeper.world', name: 'KeyKeeper User', isDefault: true }
         ];
-        
+
         setUserEmailAccounts(mockAccounts);
-        
+
         // Set default From address
         const defaultAccount = mockAccounts.find(account => account.isDefault) || mockAccounts[0];
         if (defaultAccount) {

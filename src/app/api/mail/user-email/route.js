@@ -24,20 +24,21 @@ export async function POST(request) {
 
     // First try to get the user's email from the virtual_users table (mail account)
     let email = await getUserEmailByUserId(userId);
+    let userName = null;
 
-    // If not found in virtual_users, fall back to the users table
-    if (!email) {
-      console.log(`No email found in virtual_users for user ${userId}, checking users table`);
-
-      try {
-        const user = await db.users.findById(userId);
-        if (user && user.email) {
+    // Always fetch the user from users table to get the name
+    try {
+      const user = await db.users.findById(userId);
+      if (user) {
+        userName = user.name;
+        // If no email from virtual_users, fall back to users table email
+        if (!email && user.email) {
           email = user.email;
           console.log(`Found email in users table: ${email}`);
         }
-      } catch (userError) {
-        console.error('Error fetching user from users table:', userError);
       }
+    } catch (userError) {
+      console.error('Error fetching user from users table:', userError);
     }
 
     if (!email) {
@@ -51,8 +52,8 @@ export async function POST(request) {
       );
     }
 
-    // Return the email
-    return NextResponse.json({ success: true, email });
+    // Return the email and name
+    return NextResponse.json({ success: true, email, name: userName });
   } catch (error) {
     console.error('Error in user-email API:', error);
     return NextResponse.json(
