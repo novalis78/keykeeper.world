@@ -645,54 +645,6 @@ export default function ComposeEmail({
           </button>
           <button
             type="button"
-            onClick={async () => {
-              try {
-                setIsLoading(true);
-                setError(null);
-                const token = localStorage.getItem('auth_token');
-                if (!token) {
-                  throw new Error('No auth token found');
-                }
-                
-                // Use our simplified test endpoint
-                const response = await fetch('/api/diagnostics/mail-test', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                  },
-                  body: JSON.stringify({
-                    from: { email: 'test@example.com' },
-                    to: [{ email: 'recipient@example.com' }]
-                  })
-                });
-                
-                const result = await response.text();
-                console.log('Test endpoint response:', result);
-                
-                try {
-                  const jsonResult = JSON.parse(result);
-                  if (jsonResult.success) {
-                    setError('Test succeeded! Check console for details.');
-                  } else {
-                    setError(`Test failed: ${jsonResult.error}`);
-                  }
-                } catch (e) {
-                  setError(`Test returned non-JSON response: ${result.substring(0, 100)}...`);
-                }
-              } catch (err) {
-                console.error('Test failed:', err);
-                setError(`Test error: ${err.message}`);
-              } finally {
-                setIsLoading(false);
-              }
-            }}
-            className="inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
-          >
-            Test API
-          </button>
-          <button
-            type="button"
             onClick={handleSend}
             disabled={isLoading}
             className={`inline-flex items-center rounded-md border border-transparent px-3 py-1.5 text-sm font-medium text-white ${
