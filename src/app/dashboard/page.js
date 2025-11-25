@@ -292,14 +292,20 @@ export default function Dashboard() {
       const data = await response.json();
       
       if (!response.ok) {
-        // If mail credentials are required, log user out instead of showing modal
-        if (response.status === 401 && data.requireCredentials) {
-          console.error('Mail credentials required but unavailable - logging out user');
-          // Force logout by redirecting to logout page
-          window.location.href = '/logout';
-          throw new Error('Mail credentials unavailable - session terminated');
+        // Handle 401 Unauthorized - session expired or invalid
+        if (response.status === 401) {
+          console.error('Session expired or unauthorized - logging out user');
+          // Clear stored tokens and credentials
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('user_email');
+          localStorage.removeItem('user_id');
+          localStorage.removeItem('user_fingerprint');
+          localStorage.removeItem('user_key_id');
+          // Redirect to login page
+          window.location.href = '/login?expired=true';
+          throw new Error('Session expired - please log in again');
         }
-        
+
         throw new Error(data.error || 'Failed to fetch inbox');
       }
       

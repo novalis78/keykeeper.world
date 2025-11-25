@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Lock, Mail, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sessionExpired = searchParams.get('expired') === 'true';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [totpCode, setTotpCode] = useState('');
@@ -155,6 +157,11 @@ export default function LoginPage() {
 
           {/* Form */}
           <form id="login-form" onSubmit={handleSubmit} className="space-y-6 bg-white/[0.03] border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
+            {sessionExpired && !error && (
+              <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                <p className="text-sm text-amber-300">Your session has expired. Please sign in again.</p>
+              </div>
+            )}
             {error && (
               <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
                 <p className="text-sm text-red-300">{error}</p>
@@ -299,5 +306,17 @@ export default function LoginPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <div className="text-white/50">Loading...</div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
