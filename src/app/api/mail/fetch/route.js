@@ -60,9 +60,10 @@ export async function POST(request) {
     }
     
     console.log(`[Mail API] Found mail account: ${mailAccount.email}`);
-    
-    // Get the password
-    const password = await passwordManager.getMailPassword(userId);
+
+    // Get the password from the mail account (stored in virtual_users table)
+    // The password is stored with {PLAIN} prefix, remove it if present
+    let password = mailAccount.password;
     if (!password) {
       console.log(`[Mail API] Could not retrieve mail password for user ${userId}`);
       return NextResponse.json(
@@ -70,7 +71,12 @@ export async function POST(request) {
         { status: 500 }
       );
     }
-    
+
+    // Remove {PLAIN} prefix if present (Dovecot password format)
+    if (password.startsWith('{PLAIN}')) {
+      password = password.substring(7);
+    }
+
     console.log(`[Mail API] Retrieved password for ${mailAccount.email}`);
     
     const options = {
