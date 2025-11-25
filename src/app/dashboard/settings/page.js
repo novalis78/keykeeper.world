@@ -72,6 +72,9 @@ export default function SettingsPage() {
     emailTemplate: 'default'
   });
 
+  // Template saved notification
+  const [templateSaved, setTemplateSaved] = useState(false);
+
   // Email templates
   const emailTemplates = [
     { id: 'default', name: 'KeyKeeper Classic', description: 'Clean and professional', colors: { bg: '#ffffff', text: '#333333', accent: '#2b7de9' }},
@@ -1362,6 +1365,21 @@ export default function SettingsPage() {
             {/* Appearance */}
             {activeSection === 'appearance' && (
               <div className="space-y-6">
+                {/* Success notification */}
+                {templateSaved && (
+                  <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-shrink-0">
+                        <CheckCircleIcon className="h-6 w-6 text-green-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-green-400">Email style applied!</h3>
+                        <p className="text-sm text-gray-400 mt-0.5">Your new email template has been saved successfully.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Email Template */}
                 <div className="bg-gray-800/50 rounded-xl border border-gray-700/50 p-6">
                   <h2 className="text-xl font-semibold text-white mb-2">Email Template</h2>
@@ -1374,6 +1392,9 @@ export default function SettingsPage() {
                         onClick={() => {
                           setSettings({...settings, emailTemplate: template.id});
                           localStorage.setItem('email_template', template.id);
+                          // Show success feedback
+                          setTemplateSaved(true);
+                          setTimeout(() => setTemplateSaved(false), 3000);
                         }}
                         className={`group relative p-4 rounded-xl border-2 transition-all ${
                           settings.emailTemplate === template.id
