@@ -168,9 +168,14 @@ export async function POST(request) {
       console.log(`[Mail Send] Looking up mail credentials for user ${userId}`);
       try {
         const mailAccount = await passwordManager.getPrimaryMailAccount(userId);
-        const mailPassword = await passwordManager.getMailPassword(userId);
 
-        if (mailAccount && mailPassword) {
+        if (mailAccount && mailAccount.password) {
+          // Get password from virtual_users table, strip {PLAIN} prefix if present
+          let mailPassword = mailAccount.password;
+          if (mailPassword.startsWith('{PLAIN}')) {
+            mailPassword = mailPassword.substring(7);
+          }
+
           console.log(`[Mail Send] Found server-side credentials for ${mailAccount.email}`);
           smtpConfig = {
             auth: {
