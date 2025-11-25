@@ -567,13 +567,13 @@ export async function fetchEmails(folder = 'INBOX', options = {}, config = {}) {
         cc: formatAddressArray(message.envelope.cc),
         bcc: formatAddressArray(message.envelope.bcc),
         date: message.internalDate,
-        flags: message.flags,
-        isRead: message.flags.includes('\\Seen'),
-        isStarred: message.flags.includes('\\Flagged'),
+        flags: Array.from(message.flags || []),
+        isRead: message.flags?.has('\\Seen') || false,
+        isStarred: message.flags?.has('\\Flagged') || false,
         hasAttachments: hasAttachments(message.bodyStructure),
         folder: folder.toLowerCase().replace('inbox.', ''),
-        // More detailed parsing would happen in fetchEmail
-        preview: options.fetchBody ? await getMessagePreview(client, message.uid) : null
+        // Skip preview fetching for list view - too slow with individual downloads
+        preview: null
       };
       
       emails.push(parsedEmail);
@@ -862,11 +862,13 @@ function formatAddress(address) {
   if (!address || !address.length) {
     return { name: '', email: '' };
   }
-  
+
   const addr = address[0];
+  // Handle both ImapFlow format (mailbox/host) and parsed format (address)
+  const email = addr.address || (addr.mailbox && addr.host ? `${addr.mailbox}@${addr.host}` : '');
   return {
     name: addr.name || '',
-    email: `${addr.mailbox}@${addr.host}`
+    email: email
   };
 }
 
@@ -881,10 +883,13 @@ function formatAddressArray(addresses) {
     return [];
   }
   
-  return addresses.map(addr => ({
-    name: addr.name || '',
-    email: `${addr.mailbox}@${addr.host}`
-  }));
+  return addresses.map(addr => {
+    const email = addr.address || (addr.mailbox && addr.host ? `${addr.mailbox}@${addr.host}` : '');
+    return {
+      name: addr.name || '',
+      email: email
+    };
+  });
 }
 
 /**
