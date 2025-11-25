@@ -128,8 +128,19 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] flex items-center justify-center px-6 py-12">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen relative flex items-center justify-center px-6 py-12 overflow-hidden">
+      {/* Premium Animated Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a0a] via-[#111827] to-[#0f172a]"></div>
+
+      {/* Animated Gradient Orbs */}
+      <div className="absolute top-0 -left-40 w-[500px] h-[500px] bg-primary-500/30 rounded-full blur-[120px] animate-pulse"></div>
+      <div className="absolute bottom-0 -right-40 w-[500px] h-[500px] bg-teal-500/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }}></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[150px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+
+      {/* Noise Texture Overlay */}
+      <div className="absolute inset-0 opacity-[0.015] bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxwYXRoIGQ9Ik0wIDBoMzAwdjMwMEgweiIgZmlsdGVyPSJ1cmwoI2EpIiBvcGFjaXR5PSIuMDUiLz48L3N2Zz4=')]"></div>
+
+      <div className="w-full max-w-md relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -159,7 +170,7 @@ function LoginForm() {
           </div>
 
           {/* Form */}
-          <form id="login-form" onSubmit={handleSubmit} className="space-y-6 bg-white/[0.03] border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
+          <form id="login-form" onSubmit={handleSubmit} className="space-y-6 bg-white/[0.05] border border-white/10 rounded-2xl p-8 backdrop-blur-2xl shadow-2xl shadow-black/50 relative before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-white/[0.08] before:to-transparent before:pointer-events-none">
             {sessionExpired && !error && (
               <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
                 <p className="text-sm text-amber-300">Your session has expired. Please sign in again.</p>
@@ -186,7 +197,7 @@ function LoginForm() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 bg-white/[0.03] border border-white/10 rounded-xl text-white text-[15px] placeholder:text-white/30 focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/20 transition-all"
+                    className="w-full px-4 py-3 bg-white/[0.05] border border-white/10 rounded-xl text-white text-[15px] placeholder:text-white/30 focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/20 focus:bg-white/[0.08] transition-all backdrop-blur-xl shadow-inner"
                     placeholder="you@keykeeper.world"
                   />
                 </div>
@@ -205,7 +216,7 @@ function LoginForm() {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-4 py-3 bg-white/[0.03] border border-white/10 rounded-xl text-white text-[15px] placeholder:text-white/30 focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/20 transition-all"
+                      className="w-full px-4 py-3 pr-12 bg-white/[0.05] border border-white/10 rounded-xl text-white text-[15px] placeholder:text-white/30 focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/20 focus:bg-white/[0.08] transition-all backdrop-blur-xl shadow-inner"
                       placeholder="Enter your password"
                     />
                     <button
@@ -266,7 +277,7 @@ function LoginForm() {
                       }, 100);
                     }
                   }}
-                  className="w-full px-4 py-3 bg-white/[0.03] border border-white/10 rounded-xl text-white text-[24px] placeholder:text-white/30 focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/20 transition-all text-center tracking-widest"
+                  className="w-full px-4 py-3 bg-white/[0.05] border border-white/10 rounded-xl text-white text-[24px] placeholder:text-white/30 focus:outline-none focus:border-primary-500/50 focus:ring-2 focus:ring-primary-500/20 focus:bg-white/[0.08] transition-all text-center tracking-widest backdrop-blur-xl shadow-inner"
                   placeholder="000000"
                 />
                 <p className="mt-2 text-[13px] text-white/50">
@@ -279,10 +290,13 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading || (!requires2FA && (!email || !password)) || (requires2FA && !totpCode)}
-              className="w-full py-3 bg-gradient-to-r from-primary-600 to-teal-500 hover:from-primary-700 hover:to-teal-600 text-white text-[15px] rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40"
+              className="relative w-full py-3 bg-gradient-to-r from-primary-600 to-teal-500 hover:from-primary-700 hover:to-teal-600 text-white text-[15px] rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 hover:scale-[1.02] active:scale-[0.98] overflow-hidden group"
             >
-              {loading ? (requires2FA ? 'Verifying...' : 'Signing in...') : (requires2FA ? 'Verify code' : 'Sign in')}
-              {!loading && <ArrowRight className="w-4 h-4" />}
+              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+              <span className="relative z-10 flex items-center gap-2">
+                {loading ? (requires2FA ? 'Verifying...' : 'Signing in...') : (requires2FA ? 'Verify code' : 'Sign in')}
+                {!loading && <ArrowRight className="w-4 h-4" />}
+              </span>
             </button>
 
             {/* Back button for 2FA */}
@@ -315,8 +329,9 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="text-white/50">Loading...</div>
+      <div className="min-h-screen relative flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a0a] via-[#111827] to-[#0f172a]"></div>
+        <div className="relative z-10 text-white/50">Loading...</div>
       </div>
     }>
       <LoginForm />
