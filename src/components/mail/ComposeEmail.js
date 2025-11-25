@@ -573,7 +573,7 @@ export default function ComposeEmail({
   // Render minimized view
   if (minimized) {
     return (
-      <div className="fixed bottom-0 right-6 w-80 bg-white dark:bg-gray-800 shadow-lg rounded-t-lg border border-gray-300 dark:border-gray-700 z-50">
+      <div className="fixed bottom-0 right-6 w-80 bg-white dark:bg-gray-800 rounded-t-lg border border-gray-300 dark:border-gray-700 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1),0_-10px_15px_-3px_rgba(0,0,0,0.1)]">
         <div className="p-3 flex items-center justify-between bg-gray-100 dark:bg-gray-900 cursor-pointer rounded-t-lg" onClick={() => setMinimized(false)}>
           <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
             {formData.subject || getTitle()}
@@ -604,7 +604,7 @@ export default function ComposeEmail({
   }
   
   return (
-    <div className="fixed bottom-0 right-6 w-[36rem] bg-white dark:bg-gray-800 shadow-xl rounded-t-lg border border-gray-300 dark:border-gray-700 z-50 flex flex-col max-h-[calc(100vh-6rem)]">
+    <div className="fixed bottom-0 right-6 w-[36rem] bg-white dark:bg-gray-800 rounded-t-lg border border-gray-300 dark:border-gray-700 z-50 flex flex-col max-h-[calc(100vh-6rem)] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1),0_-10px_15px_-3px_rgba(0,0,0,0.1),0_-20px_25px_-5px_rgba(0,0,0,0.1)]">
       {/* Header */}
       <div className="p-3 flex items-center justify-between bg-gray-100 dark:bg-gray-900 rounded-t-lg">
         <div className="flex items-center space-x-2">
@@ -656,7 +656,7 @@ export default function ComposeEmail({
         
         {/* Recipients */}
         <div className="mb-2">
-          <div className="flex items-center py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
+          <div className="flex items-center py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all group shadow-sm hover:shadow">
             <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 w-16 pr-3 flex-shrink-0">To</label>
             <input
               type="text"
@@ -681,7 +681,7 @@ export default function ComposeEmail({
         
         {showCc && (
           <div className="mb-2">
-            <div className="flex items-center py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+            <div className="flex items-center py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all shadow-sm hover:shadow">
               <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 w-16 pr-3 flex-shrink-0">Cc</label>
               <input
                 type="text"
@@ -697,7 +697,7 @@ export default function ComposeEmail({
         
         {showBcc && (
           <div className="mb-2">
-            <div className="flex items-center py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+            <div className="flex items-center py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all shadow-sm hover:shadow">
               <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 w-16 pr-3 flex-shrink-0">Bcc</label>
               <input
                 type="text"
@@ -713,7 +713,7 @@ export default function ComposeEmail({
         
         {/* Subject */}
         <div className="mb-4">
-          <div className="flex items-center py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <div className="flex items-center py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all shadow-sm hover:shadow">
             <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 w-16 pr-3 flex-shrink-0">Subject</label>
             <input
               type="text"
@@ -729,7 +729,7 @@ export default function ComposeEmail({
         
         {/* Body */}
         <div className="mb-3">
-          <div className="py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <div className="py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all shadow-sm hover:shadow">
             <textarea
               name="body"
               rows={12}
@@ -779,7 +779,7 @@ export default function ComposeEmail({
         )}
         
         {/* Security info */}
-        <div className="mt-4 rounded-md bg-gray-50 dark:bg-gray-700 p-3">
+        <div className="mt-4 rounded-md bg-gray-50 dark:bg-gray-700 p-3 shadow-sm">
           <div className="flex items-center">
             {isPgpEncrypted ? (
               <LockClosedIcon className="h-5 w-5 text-green-500 mr-2" />
@@ -819,7 +819,7 @@ export default function ComposeEmail({
           <button
             type="button"
             onClick={() => attachmentInputRef.current?.click()}
-            className="inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            className="inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm hover:shadow"
           >
             <PaperClipIcon className="h-4 w-4 mr-1.5" />
             Attach
@@ -837,7 +837,7 @@ export default function ComposeEmail({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            className="inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm hover:shadow"
           >
             Discard
           </button>
@@ -845,12 +845,12 @@ export default function ComposeEmail({
             type="button"
             onClick={handleSend}
             disabled={isLoading}
-            className={`inline-flex items-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm transition-all ${
+            className={`inline-flex items-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-md transition-all ${
               isLoading
                 ? sendingStage === 'sent'
                   ? 'bg-green-600 cursor-default'
                   : 'bg-primary-400 dark:bg-primary-500 cursor-not-allowed opacity-75'
-                : 'bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 hover:shadow-md'
+                : 'bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 hover:shadow-lg'
             }`}
           >
             {sendingStage === 'encrypting' ? (
