@@ -471,15 +471,15 @@ export default function ComposeEmail({
         )}
         
         {/* Recipients */}
-        <div className="mb-3">
-          <div className="flex items-center">
+        <div className="mb-2">
+          <div className="flex items-center py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
             <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 w-16 pr-3 flex-shrink-0">To</label>
             <input
               type="text"
               name="to"
               value={formData.to}
               onChange={handleChange}
-              className="block w-full border-0 p-0 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-0 sm:text-sm bg-transparent"
+              className="block w-full border-0 p-0 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-0 sm:text-sm bg-transparent focus:outline-none"
               placeholder="Recipients"
             />
             <button
@@ -488,76 +488,74 @@ export default function ComposeEmail({
                 setShowCc(!showCc);
                 setShowBcc(!showCc);
               }}
-              className="ml-3 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors whitespace-nowrap"
+              className="ml-3 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors whitespace-nowrap opacity-0 group-hover:opacity-100"
             >
               Cc/Bcc
             </button>
           </div>
-          <div className="border-b border-gray-200 dark:border-gray-700 my-2"></div>
         </div>
         
         {showCc && (
-          <div className="mb-3">
-            <div className="flex items-center">
+          <div className="mb-2">
+            <div className="flex items-center py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
               <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 w-16 pr-3 flex-shrink-0">Cc</label>
               <input
                 type="text"
                 name="cc"
                 value={formData.cc}
                 onChange={handleChange}
-                className="block w-full border-0 p-0 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-0 sm:text-sm bg-transparent"
+                className="block w-full border-0 p-0 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-0 sm:text-sm bg-transparent focus:outline-none"
                 placeholder="Carbon copy recipients"
               />
             </div>
-            <div className="border-b border-gray-200 dark:border-gray-700 my-2"></div>
           </div>
         )}
         
         {showBcc && (
-          <div className="mb-3">
-            <div className="flex items-center">
+          <div className="mb-2">
+            <div className="flex items-center py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
               <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 w-16 pr-3 flex-shrink-0">Bcc</label>
               <input
                 type="text"
                 name="bcc"
                 value={formData.bcc}
                 onChange={handleChange}
-                className="block w-full border-0 p-0 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-0 sm:text-sm bg-transparent"
+                className="block w-full border-0 p-0 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-0 sm:text-sm bg-transparent focus:outline-none"
                 placeholder="Blind carbon copy recipients"
               />
             </div>
-            <div className="border-b border-gray-200 dark:border-gray-700 my-2"></div>
           </div>
         )}
         
         {/* Subject */}
-        <div className="mb-3">
-          <div className="flex items-center">
+        <div className="mb-4">
+          <div className="flex items-center py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
             <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 w-16 pr-3 flex-shrink-0">Subject</label>
             <input
               type="text"
               name="subject"
               value={formData.subject}
               onChange={handleChange}
-              className="block w-full border-0 p-0 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-0 sm:text-sm bg-transparent truncate"
+              className="block w-full border-0 p-0 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-0 sm:text-sm bg-transparent truncate focus:outline-none"
               placeholder="Subject"
               style={{ textOverflow: 'ellipsis' }}
             />
           </div>
-          <div className="border-b border-gray-200 dark:border-gray-700 my-2"></div>
         </div>
         
         {/* Body */}
         <div className="mb-3">
-          <textarea
-            name="body"
-            rows={12}
-            value={formData.body}
-            onChange={handleChange}
-            className="block w-full border-0 py-0 px-0 resize-none text-gray-900 dark:text-white placeholder-gray-400 focus:ring-0 sm:text-sm bg-transparent focus:outline-none leading-relaxed"
-            placeholder="Write your message here..."
-            style={{ border: 'none', boxShadow: 'none' }}
-          />
+          <div className="py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+            <textarea
+              name="body"
+              rows={12}
+              value={formData.body}
+              onChange={handleChange}
+              className="block w-full border-0 py-0 px-0 resize-none text-gray-900 dark:text-white placeholder-gray-400 focus:ring-0 sm:text-sm bg-transparent focus:outline-none leading-relaxed"
+              placeholder="Write your message here..."
+              style={{ border: 'none', boxShadow: 'none' }}
+            />
+          </div>
         </div>
         
         {/* Attachments */}
