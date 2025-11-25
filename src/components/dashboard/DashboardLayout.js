@@ -14,7 +14,8 @@ import {
   ArrowRightOnRectangleIcon,
   ArrowPathIcon,
   PaperAirplaneIcon,
-  UsersIcon
+  UsersIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/lib/auth/useAuth';
 
@@ -26,6 +27,7 @@ export default function DashboardLayout({ children, onInboxClick }) {
   const [userEmail, setUserEmail] = useState('Loading...');
   const [userInitials, setUserInitials] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+  const [draftCount, setDraftCount] = useState(0);
 
   useEffect(() => {
     if (loading) return;
@@ -43,8 +45,9 @@ export default function DashboardLayout({ children, onInboxClick }) {
         setUserInitials('US');
       }
 
-      // Fetch subscription status
+      // Fetch subscription status and draft count
       fetchSubscriptionStatus();
+      fetchDraftCount();
     } else {
       // No user logged in - try localStorage as fallback
       const storedEmail = localStorage.getItem('user_email');
@@ -81,6 +84,26 @@ export default function DashboardLayout({ children, onInboxClick }) {
     }
   };
 
+  const fetchDraftCount = async () => {
+    try {
+      const token = getToken();
+      if (!token) return;
+
+      const response = await fetch('/api/drafts', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDraftCount(data.draftCount || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching draft count:', error);
+    }
+  };
+
   // Format subscription status for display
   const getSubscriptionLabel = () => {
     if (!subscriptionStatus) return '';
@@ -114,6 +137,7 @@ export default function DashboardLayout({ children, onInboxClick }) {
 
   const navigation = [
     { name: 'Inbox', href: '/dashboard', icon: EnvelopeIcon },
+    { name: 'Drafts', href: '/dashboard/drafts', icon: DocumentTextIcon, count: draftCount },
     { name: 'Sent', href: '/dashboard/sent', icon: PaperAirplaneIcon },
     { name: 'Contacts', href: '/dashboard/contacts', icon: UsersIcon },
     { name: 'Addresses', href: '/dashboard/addresses', icon: KeyIcon },
@@ -175,18 +199,25 @@ export default function DashboardLayout({ children, onInboxClick }) {
                   key={item.name}
                   href={item.href}
                   onClick={item.name === 'Inbox' && onInboxClick ? onInboxClick : undefined}
-                  className={`flex items-center px-3 py-2 rounded-md text-sm font-medium ${
+                  className={`flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium ${
                     isCurrent
                       ? 'bg-primary-700/20 text-primary-400'
                       : 'text-gray-300 hover:bg-sidebar hover:text-primary-400'
                   }`}
                 >
-                  <item.icon className={`mr-3 h-5 w-5 ${
-                    isCurrent
-                      ? 'text-primary-500'
-                      : 'text-gray-400'
-                  }`} />
-                  {item.name}
+                  <div className="flex items-center">
+                    <item.icon className={`mr-3 h-5 w-5 ${
+                      isCurrent
+                        ? 'text-primary-500'
+                        : 'text-gray-400'
+                    }`} />
+                    {item.name}
+                  </div>
+                  {item.count > 0 && (
+                    <span className="ml-auto bg-primary-600/20 text-primary-400 text-xs font-medium px-2 py-0.5 rounded-full">
+                      {item.count}
+                    </span>
+                  )}
                 </Link>
               );
             })}

@@ -1,24 +1,28 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { 
-  XMarkIcon, 
-  PaperClipIcon, 
-  ChevronDownIcon, 
+import { useState, useRef, useEffect, useCallback } from 'react';
+import {
+  XMarkIcon,
+  PaperClipIcon,
+  ChevronDownIcon,
   ChevronUpIcon,
-  LockClosedIcon, 
+  LockClosedIcon,
   LockOpenIcon,
   MinusIcon,
   PlusIcon,
-  KeyIcon
+  KeyIcon,
+  CloudArrowUpIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 // Email sending is handled through API routes
 import { getCurrentUserEmail } from '@/lib/auth/getCurrentUser';
 
-export default function ComposeEmail({ 
-  onClose, 
-  initialData = {}, 
-  mode = 'new' // new, reply, forward
+export default function ComposeEmail({
+  onClose,
+  initialData = {},
+  mode = 'new', // new, reply, forward
+  draftId: initialDraftId = null,
+  onDraftSaved = null // callback when draft is saved
 }) {
   const [minimized, setMinimized] = useState(false);
   const [isPgpEncrypted, setIsPgpEncrypted] = useState(false);
@@ -39,6 +43,14 @@ export default function ComposeEmail({
   const [showCc, setShowCc] = useState(!!initialData.cc);
   const [showBcc, setShowBcc] = useState(!!initialData.bcc);
   const attachmentInputRef = useRef(null);
+
+  // Draft auto-save state
+  const [draftId, setDraftId] = useState(initialDraftId);
+  const [draftStatus, setDraftStatus] = useState(null); // null, 'saving', 'saved', 'error'
+  const [lastSavedAt, setLastSavedAt] = useState(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const saveTimerRef = useRef(null);
+  const lastSavedDataRef = useRef(null);
   
   // Initialize based on mode
   useEffect(() => {
@@ -135,7 +147,144 @@ export default function ComposeEmail({
     
     fetchUserData();
   }, []);
-  
+
+  // Save draft function
+  const saveDraft = useCallback(async (forceNew = false) => {
+    // Don't save if there's no content
+    const hasContent = formData.to || formData.subject || formData.body;
+    if (!hasContent) return;
+
+    // Check if data has actually changed since last save
+    const currentData = JSON.stringify({
+      to: formData.to,
+      cc: formData.cc,
+      bcc: formData.bcc,
+      subject: formData.subject,
+      body: formData.body
+    });
+    if (!forceNew && currentData === lastSavedDataRef.current) {
+      return;
+    }
+
+    setDraftStatus('saving');
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch('/api/drafts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          id: forceNew ? null : draftId,
+          to: formData.to,
+          cc: formData.cc,
+          bcc: formData.bcc,
+          subject: formData.subject,
+          body: formData.body,
+          attachments: formData.attachments.map(a => ({
+            name: a.name,
+            size: a.size,
+            type: a.type
+          }))
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to save draft');
+      }
+
+      if (result.id && !draftId) {
+        setDraftId(result.id);
+      }
+
+      lastSavedDataRef.current = currentData;
+      setLastSavedAt(new Date());
+      setDraftStatus('saved');
+      setHasUnsavedChanges(false);
+
+      // Notify parent if callback provided
+      if (onDraftSaved) {
+        onDraftSaved(result.id || draftId);
+      }
+
+      // Reset status after a moment
+      setTimeout(() => {
+        setDraftStatus(null);
+      }, 2000);
+
+    } catch (err) {
+      console.error('Error saving draft:', err);
+      setDraftStatus('error');
+      setTimeout(() => {
+        setDraftStatus(null);
+      }, 3000);
+    }
+  }, [formData, draftId, onDraftSaved]);
+
+  // Delete draft function
+  const deleteDraft = useCallback(async (id) => {
+    if (!id) return;
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) return;
+
+      await fetch(`/api/drafts/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      console.log('[Drafts] Deleted draft after send:', id);
+    } catch (err) {
+      console.error('Error deleting draft:', err);
+    }
+  }, []);
+
+  // Auto-save on changes with debounce
+  useEffect(() => {
+    // Only auto-save for new/draft emails, not replies or forwards (unless they've been edited significantly)
+    if (mode !== 'new' && !draftId) return;
+
+    // Clear existing timer
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+
+    // Set unsaved changes flag
+    const hasContent = formData.to || formData.subject || formData.body;
+    if (hasContent) {
+      setHasUnsavedChanges(true);
+    }
+
+    // Schedule save after 5 seconds of no changes
+    saveTimerRef.current = setTimeout(() => {
+      saveDraft();
+    }, 5000);
+
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+    };
+  }, [formData.to, formData.cc, formData.bcc, formData.subject, formData.body, mode, draftId, saveDraft]);
+
+  // Cleanup on unmount - save if there are unsaved changes
+  useEffect(() => {
+    return () => {
+      if (hasUnsavedChanges && saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        // Note: Can't do async in cleanup, draft will save on next open
+      }
+    };
+  }, [hasUnsavedChanges]);
+
   // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -384,6 +533,11 @@ export default function ComposeEmail({
 
       console.log('Email sent successfully:', result);
 
+      // Delete draft if we had one
+      if (draftId) {
+        await deleteDraft(draftId);
+      }
+
       // Show success state briefly
       setSendingStage('sent');
       await new Promise(resolve => setTimeout(resolve, 800));
@@ -453,9 +607,29 @@ export default function ComposeEmail({
     <div className="fixed bottom-0 right-6 w-[36rem] bg-white dark:bg-gray-800 shadow-xl rounded-t-lg border border-gray-300 dark:border-gray-700 z-50 flex flex-col max-h-[calc(100vh-6rem)]">
       {/* Header */}
       <div className="p-3 flex items-center justify-between bg-gray-100 dark:bg-gray-900 rounded-t-lg">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-          {getTitle()}
-        </h3>
+        <div className="flex items-center space-x-2">
+          <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+            {getTitle()}
+          </h3>
+          {/* Draft status indicator */}
+          {draftStatus === 'saving' && (
+            <span className="flex items-center text-xs text-gray-400">
+              <CloudArrowUpIcon className="h-3.5 w-3.5 mr-1 animate-pulse" />
+              Saving...
+            </span>
+          )}
+          {draftStatus === 'saved' && (
+            <span className="flex items-center text-xs text-green-500">
+              <CheckCircleIcon className="h-3.5 w-3.5 mr-1" />
+              Saved
+            </span>
+          )}
+          {draftStatus === 'error' && (
+            <span className="text-xs text-red-400">
+              Save failed
+            </span>
+          )}
+        </div>
         <div className="flex space-x-2">
           <button
             onClick={() => setMinimized(true)}
