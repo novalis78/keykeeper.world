@@ -180,7 +180,9 @@ export async function incrementEmailCount(userId) {
   try {
     const today = new Date().toISOString().split('T')[0];
 
-    await query(
+    console.log('[Subscription] Incrementing email count for user:', userId, 'date:', today);
+
+    const result = await query(
       `UPDATE users SET
         emails_sent_today = emails_sent_today + 1,
         emails_sent_reset_at = COALESCE(emails_sent_reset_at, ?)
@@ -188,9 +190,17 @@ export async function incrementEmailCount(userId) {
       [today, userId]
     );
 
+    console.log('[Subscription] Increment result:', { affectedRows: result?.affectedRows, userId });
+
+    if (!result || result.affectedRows === 0) {
+      console.error('[Subscription] Increment failed - no rows affected for user:', userId);
+      return false;
+    }
+
     return true;
   } catch (error) {
     console.error('[Subscription] Failed to increment email count:', error);
+    console.error('[Subscription] Error details:', { userId, message: error.message, code: error.code });
     return false;
   }
 }

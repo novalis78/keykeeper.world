@@ -208,7 +208,9 @@ export async function POST(request) {
     console.log('Email sent successfully, messageId:', result.messageId);
 
     // Increment the user's email count after successful send
-    await incrementEmailCount(userId);
+    console.log('[Mail Send] About to increment email count for userId:', userId);
+    const incrementResult = await incrementEmailCount(userId);
+    console.log('[Mail Send] Increment email count result:', incrementResult);
 
     // Auto-create contacts for recipients (non-blocking)
     autoCreateContacts(userId, data.to, data.cc, data.bcc).catch(err => {
