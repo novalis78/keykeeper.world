@@ -28,6 +28,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState('account');
@@ -53,6 +54,12 @@ export default function SettingsPage() {
   const [sessions, setSessions] = useState([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [revokingSession, setRevokingSession] = useState(null);
+
+  // Bitcoin payment state
+  const [showBitcoinPayment, setShowBitcoinPayment] = useState(false);
+  const [bitcoinPayment, setBitcoinPayment] = useState(null);
+  const [bitcoinPaymentStatus, setBitcoinPaymentStatus] = useState('loading');
+  const [bitcoinError, setBitcoinError] = useState('');
 
   // Settings state
   const [settings, setSettings] = useState({
@@ -399,13 +406,95 @@ export default function SettingsPage() {
     return colors[browser] || 'text-gray-400';
   };
 
+  // Bitcoin payment functions
+  const initiateBitcoinPayment = async () => {
+    setBitcoinPaymentStatus('loading');
+    setBitcoinError('');
+    setShowBitcoinPayment(true);
+    setBitcoinPayment(null);
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch('/api/user/payment/bitcoin/initiate', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setBitcoinPayment(data);
+        setBitcoinPaymentStatus('waiting');
+        // Start polling for payment
+        startPaymentPolling(data.paymentToken);
+      } else {
+        setBitcoinError(data.error || 'Failed to initiate Bitcoin payment');
+        setBitcoinPaymentStatus('error');
+      }
+    } catch (error) {
+      console.error('Bitcoin payment error:', error);
+      setBitcoinError('Network error. Please try again.');
+      setBitcoinPaymentStatus('error');
+    }
+  };
+
+  const checkBitcoinPaymentStatus = async (paymentToken) => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch(`/api/user/payment/bitcoin/status/${paymentToken}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        if (data.status === 'confirmed') {
+          setBitcoinPaymentStatus('confirmed');
+          // Refresh user data to show updated subscription
+          fetchUserData();
+          return true; // Stop polling
+        } else if (data.status === 'pending_confirmation') {
+          setBitcoinPaymentStatus('pending_confirmation');
+        }
+      }
+      return false; // Continue polling
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+      return false;
+    }
+  };
+
+  const startPaymentPolling = (paymentToken) => {
+    // Poll every 10 seconds
+    const pollInterval = setInterval(async () => {
+      const shouldStop = await checkBitcoinPaymentStatus(paymentToken);
+      if (shouldStop) {
+        clearInterval(pollInterval);
+      }
+    }, 10000);
+
+    // Clean up on unmount
+    return () => clearInterval(pollInterval);
+  };
+
+  const closeBitcoinPayment = () => {
+    setShowBitcoinPayment(false);
+    setBitcoinPayment(null);
+    setBitcoinPaymentStatus('loading');
+    setBitcoinError('');
+  };
+
   const [upgradeLoading, setUpgradeLoading] = useState(null);
   const [upgradeError, setUpgradeError] = useState('');
 
   const handleUpgrade = async (planId) => {
-    // Bitcoin plan should redirect to crypto payment
+    // Bitcoin plan should show payment modal
     if (planId === 'bitcoin') {
-      window.location.href = '/ai?plan=bitcoin';
+      await initiateBitcoinPayment();
       return;
     }
 
@@ -1402,6 +1491,201 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Bitcoin Payment Modal */}
+      {showBitcoinPayment && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-800 rounded-2xl border border-gray-700 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" className="h-7 w-7 text-amber-500" fill="currentColor">
+                      <path d="M23.638 14.904c-1.602 6.43-8.113 10.34-14.542 8.736C2.67 22.05-1.244 15.525.362 9.105 1.962 2.67 8.475-1.243 14.9.358c6.43 1.605 10.342 8.115 8.738 14.548v-.002z"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">Pay with Bitcoin</h2>
+                    <p className="text-sm text-gray-400">3-Year Plan - $30 one-time payment</p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeBitcoinPayment}
+                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              {/* Error State */}
+              {bitcoinPaymentStatus === 'error' && (
+                <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
+                  <div className="flex items-start gap-3">
+                    <XCircleIcon className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h3 className="text-sm font-medium text-red-400">Payment Error</h3>
+                      <p className="text-sm text-gray-400 mt-1">{bitcoinError}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Loading State */}
+              {bitcoinPaymentStatus === 'loading' && (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-amber-500 mb-4"></div>
+                  <p className="text-gray-400">Generating Bitcoin address...</p>
+                </div>
+              )}
+
+              {/* Payment Details */}
+              {bitcoinPayment && bitcoinPaymentStatus !== 'error' && bitcoinPaymentStatus !== 'loading' && (
+                <div className="space-y-6">
+                  {/* QR Code */}
+                  <div className="flex justify-center">
+                    <div className="bg-white p-6 rounded-2xl">
+                      <QRCodeSVG
+                        value={bitcoinPayment.qrData}
+                        size={256}
+                        level="H"
+                        includeMargin={true}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Bitcoin Address */}
+                  <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium text-gray-300">Bitcoin Address</p>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(bitcoinPayment.bitcoinAddress);
+                          setCopiedField('btc-address');
+                          setTimeout(() => setCopiedField(null), 2000);
+                        }}
+                        className="inline-flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300"
+                      >
+                        {copiedField === 'btc-address' ? (
+                          <>
+                            <CheckIcon className="h-4 w-4" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <ClipboardDocumentIcon className="h-4 w-4" />
+                            Copy
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-sm font-mono text-white break-all bg-gray-800 p-3 rounded-lg">
+                      {bitcoinPayment.bitcoinAddress}
+                    </p>
+                  </div>
+
+                  {/* Amount */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-700">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Amount (BTC)</p>
+                      <p className="text-lg font-mono font-bold text-white">{bitcoinPayment.amount.btc.toFixed(8)}</p>
+                      <p className="text-xs text-gray-500 mt-1">{bitcoinPayment.amount.sats.toLocaleString()} sats</p>
+                    </div>
+                    <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-700">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Amount (USD)</p>
+                      <p className="text-lg font-bold text-white">${bitcoinPayment.amount.usd}</p>
+                      <p className="text-xs text-gray-500 mt-1">1 BTC ≈ ${bitcoinPayment.btcPrice.toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  {/* Payment Status */}
+                  <div className={`rounded-xl p-4 border ${
+                    bitcoinPaymentStatus === 'confirmed'
+                      ? 'bg-green-500/10 border-green-500/30'
+                      : bitcoinPaymentStatus === 'pending_confirmation'
+                      ? 'bg-yellow-500/10 border-yellow-500/30'
+                      : 'bg-blue-500/10 border-blue-500/30'
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      {bitcoinPaymentStatus === 'confirmed' ? (
+                        <>
+                          <CheckCircleIcon className="h-6 w-6 text-green-400 flex-shrink-0" />
+                          <div>
+                            <h3 className="text-sm font-medium text-green-400">Payment Confirmed!</h3>
+                            <p className="text-sm text-gray-400 mt-1">Your 3-year Bitcoin plan is now active. You can close this window.</p>
+                          </div>
+                        </>
+                      ) : bitcoinPaymentStatus === 'pending_confirmation' ? (
+                        <>
+                          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-yellow-400 flex-shrink-0"></div>
+                          <div>
+                            <h3 className="text-sm font-medium text-yellow-400">Payment Detected</h3>
+                            <p className="text-sm text-gray-400 mt-1">Waiting for blockchain confirmations...</p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="animate-pulse h-6 w-6 bg-blue-400/50 rounded-full flex-shrink-0"></div>
+                          <div>
+                            <h3 className="text-sm font-medium text-blue-400">Waiting for Payment</h3>
+                            <p className="text-sm text-gray-400 mt-1">Send the exact amount to the address above</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Instructions */}
+                  <div className="bg-gray-900/30 rounded-xl p-4 border border-gray-700/50">
+                    <h3 className="text-sm font-medium text-gray-300 mb-3">Instructions</h3>
+                    <ul className="space-y-2">
+                      {bitcoinPayment.instructions.map((instruction, index) => (
+                        <li key={index} className="flex items-start gap-2 text-sm text-gray-400">
+                          <span className="text-amber-400 mt-0.5">•</span>
+                          <span>{instruction}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Plan Benefits */}
+                  <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-xl p-4 border border-amber-500/30">
+                    <h3 className="text-sm font-medium text-amber-400 mb-3">What You Get</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex items-center gap-2 text-sm text-gray-300">
+                        <CheckIcon className="h-4 w-4 text-green-400" />
+                        500 emails per day
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-300">
+                        <CheckIcon className="h-4 w-4 text-green-400" />
+                        3 years of service
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-300">
+                        <CheckIcon className="h-4 w-4 text-green-400" />
+                        Maximum privacy
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-300">
+                        <CheckIcon className="h-4 w-4 text-green-400" />
+                        No recurring charges
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Close Button */}
+                  {bitcoinPaymentStatus === 'confirmed' && (
+                    <button
+                      onClick={closeBitcoinPayment}
+                      className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-medium rounded-lg transition-colors"
+                    >
+                      Close & Continue
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
