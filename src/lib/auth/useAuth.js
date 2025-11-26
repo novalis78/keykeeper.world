@@ -83,14 +83,26 @@ export function AuthProvider({ children }) {
           }
         } else {
           // Token is invalid, remove it
+          console.log('Token is invalid or expired, logging out user');
           localStorage.removeItem('auth_token');
-          localStorage.removeItem('user_fingerprint'); // Clear fingerprint too
-          localStorage.removeItem('user_key_id'); // Clear key ID too
+          localStorage.removeItem('user_email');
+          localStorage.removeItem('user_id');
+          localStorage.removeItem('user_fingerprint');
+          localStorage.removeItem('user_key_id');
           clearAllCredentials();
+          // Redirect to login page
+          router.push('/login?expired=true');
         }
       } catch (error) {
         console.error('Auth check error:', error);
         localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('user_fingerprint');
+        localStorage.removeItem('user_key_id');
+        clearAllCredentials();
+        // Redirect to login page on error
+        router.push('/login?expired=true');
       } finally {
         setLoading(false);
       }
