@@ -56,13 +56,13 @@ export async function POST(request) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user with active status
     const userId = uuidv4();
     await query(
       `INSERT INTO users (
         id, email, name, password_hash,
-        account_type, auth_method, created_at
-      ) VALUES (?, ?, ?, ?, 'human', 'password', NOW())`,
+        account_type, auth_method, status, created_at
+      ) VALUES (?, ?, ?, ?, 'human', 'password', 'active', NOW())`,
       [userId, email, name || null, passwordHash]
     );
 

@@ -692,31 +692,21 @@ export default function Dashboard() {
                   </>
                 ) : (
                   <>
-                    <div className="mb-4 bg-red-600/20 p-4 rounded-full">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                      </svg>
+                    <div className="mb-4 bg-primary-600/20 p-4 rounded-full">
+                      <ArrowPathIcon className="h-8 w-8 text-primary-400 animate-spin" />
                     </div>
-                    <h3 className="mt-2 text-lg font-medium text-white">Error loading inbox</h3>
+                    <h3 className="mt-2 text-lg font-medium text-white">Setting up your mailbox</h3>
                     <p className="mt-1 text-sm text-gray-400 max-w-md">
-                      {error}
+                      This may take a moment. If this persists, try refreshing the page.
                     </p>
-                    <div className="mt-6 space-x-4">
+                    <div className="mt-6">
                       <button
                         type="button"
                         onClick={fetchInboxMessages}
                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-500 transition-colors"
                       >
                         <ArrowPathIcon className="h-4 w-4 mr-2" />
-                        Try Again
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowCredentialsModal(true)}
-                        className="inline-flex items-center px-4 py-2 border border-gray-600 text-sm font-medium rounded-md text-gray-200 bg-gray-800 hover:bg-gray-700 transition-colors"
-                      >
-                        <KeyIcon className="h-4 w-4 mr-2" />
-                        Enter Mail Credentials
+                        Refresh
                       </button>
                     </div>
                   </>
