@@ -10,7 +10,7 @@ export class EthereumPaymentService extends BasePaymentService {
     super(config);
     this.blockchain = 'ethereum';
     this.nativeToken = 'ETH';
-    this.paymentAddress = process.env.ETHEREUM_PAYMENT_ADDRESS || '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb';
+    this.paymentAddress = process.env.ETHEREUM_PAYMENT_ADDRESS || '0x8C21d6a78538B3D6e1d97700259c108fd4db8539';
 
     // USDC contract on Ethereum mainnet
     this.usdcContract = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';

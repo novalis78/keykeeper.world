@@ -10,7 +10,7 @@ export class PolygonPaymentService extends BasePaymentService {
     super(config);
     this.blockchain = 'polygon';
     this.nativeToken = 'MATIC';
-    this.paymentAddress = process.env.POLYGON_PAYMENT_ADDRESS || '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb';
+    this.paymentAddress = process.env.POLYGON_PAYMENT_ADDRESS || '0x8C21d6a78538B3D6e1d97700259c108fd4db8539';
 
     // USDC contract on Polygon
     this.usdcContract = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';

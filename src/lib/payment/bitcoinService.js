@@ -2,18 +2,27 @@
  * Bitcoin Payment Service
  *
  * Self-service payment system for AI agents
- * - Generates deterministic BTC addresses
+ * - Generates deterministic BTC addresses from xpub using BIP32
  * - Verifies payments via mempool.space API
  * - No payment gateway needed!
  */
 
 import crypto from 'crypto';
+import * as bitcoin from 'bitcoinjs-lib';
+import BIP32Factory from 'bip32';
+import * as ecc from 'tiny-secp256k1';
+
+// Initialize BIP32 with secp256k1 implementation
+const bip32 = BIP32Factory(ecc);
 
 export class BitcoinPaymentService {
   constructor() {
-    // XPUB for deterministic address generation
-    // TODO: Replace with your actual XPUB in production
+    // XPUB for deterministic address generation (your actual xpub)
     this.xpub = process.env.BITCOIN_XPUB || 'xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKrhko4egpiMZbpiaQL2jkwSB1icqYh2cfDfVxdx4df189oLKnC5fSwqPfgyP3hooxujYzAu3fDVmz';
+
+    // Track the next derivation index (in production, persist this)
+    this.nextIndex = 0;
+    this.addressCache = new Map(); // paymentToken -> { address, index }
 
     // Pricing in USD
     this.pricingTiers = {
@@ -24,6 +33,9 @@ export class BitcoinPaymentService {
 
     // Current BTC price (will be fetched)
     this.btcPriceUSD = 0;
+
+    // Bitcoin network (mainnet)
+    this.network = bitcoin.networks.bitcoin;
   }
 
   /**
@@ -34,21 +46,80 @@ export class BitcoinPaymentService {
   }
 
   /**
-   * Generate deterministic Bitcoin address from payment token
-   * Uses a simpler approach than BIP32 for now
+   * Derive a deterministic index from email/agentId for consistent address generation
    */
-  generateBitcoinAddress(paymentToken) {
-    // Create deterministic hash from token
-    const hash = crypto
-      .createHash('sha256')
-      .update(`${this.xpub}-${paymentToken}`)
-      .digest('hex');
+  deriveIndexFromIdentifier(identifier) {
+    // Create a deterministic index from the identifier
+    const hash = crypto.createHash('sha256').update(identifier).digest();
+    // Use first 4 bytes as index (up to ~4 billion unique addresses)
+    const index = hash.readUInt32BE(0) % 2147483647; // Keep under BIP32 limit
+    return index;
+  }
 
-    // For now, return a deterministic address format
-    // In production, use proper BIP32 derivation
-    const address = `1${hash.substring(0, 33)}`;
+  /**
+   * Generate deterministic Bitcoin address from xpub using BIP32
+   * Each customer gets a unique address based on their identifier (email/agentId)
+   */
+  generateBitcoinAddress(paymentToken, identifier = null) {
+    try {
+      // If we have a cached address for this token, return it
+      if (this.addressCache.has(paymentToken)) {
+        return this.addressCache.get(paymentToken).address;
+      }
 
-    return address;
+      // Derive index - either from identifier or incrementing counter
+      let index;
+      if (identifier) {
+        index = this.deriveIndexFromIdentifier(identifier);
+      } else {
+        index = this.nextIndex++;
+      }
+
+      // Parse the xpub and derive child key
+      const node = bip32.fromBase58(this.xpub, this.network);
+
+      // Derive using standard BIP44 path: m/0/index (external chain)
+      const child = node.derive(0).derive(index);
+
+      // Generate P2PKH address (legacy, starts with 1)
+      const { address } = bitcoin.payments.p2pkh({
+        pubkey: child.publicKey,
+        network: this.network
+      });
+
+      // Cache the result
+      this.addressCache.set(paymentToken, { address, index });
+
+      console.log(`[BitcoinService] Generated address ${address} at index ${index} for token ${paymentToken.substring(0, 20)}...`);
+
+      return address;
+    } catch (error) {
+      console.error('[BitcoinService] Error generating address:', error);
+      throw new Error(`Failed to generate Bitcoin address: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get payment address for a specific identifier (email/agentId)
+   * This ensures the same customer always gets the same address
+   */
+  getPaymentAddressForCustomer(identifier) {
+    const index = this.deriveIndexFromIdentifier(identifier);
+
+    try {
+      const node = bip32.fromBase58(this.xpub, this.network);
+      const child = node.derive(0).derive(index);
+
+      const { address } = bitcoin.payments.p2pkh({
+        pubkey: child.publicKey,
+        network: this.network
+      });
+
+      return { address, index };
+    } catch (error) {
+      console.error('[BitcoinService] Error generating customer address:', error);
+      throw error;
+    }
   }
 
   /**
@@ -165,6 +236,104 @@ export class BitcoinPaymentService {
       console.error('[BitcoinService] Error fetching transactions:', error);
       return [];
     }
+  }
+
+  // Methods required by MultiChainPaymentService
+
+  /**
+   * Get payment address (for Bitcoin, generate from identifier)
+   */
+  getPaymentAddress() {
+    // Bitcoin uses per-customer addresses, so this returns a placeholder
+    // The actual address is generated per payment via generateBitcoinAddress
+    return 'btc-dynamic-address';
+  }
+
+  /**
+   * Get required confirmations (6 for Bitcoin)
+   */
+  getRequiredConfirmations() {
+    return 6;
+  }
+
+  /**
+   * Get estimated confirmation time
+   */
+  getConfirmationTime() {
+    return '30-60 minutes';
+  }
+
+  /**
+   * Get estimated transaction fee
+   */
+  getEstimatedFee() {
+    return '$1-$5';
+  }
+
+  /**
+   * Get blockchain explorer URL
+   */
+  getExplorerUrl(address) {
+    return `https://mempool.space/address/${address}`;
+  }
+
+  /**
+   * Format satoshi amount for display
+   */
+  formatAmount(sats) {
+    return (sats / 100000000).toFixed(8);
+  }
+
+  /**
+   * Convert USD to BTC
+   */
+  async convertUsdToToken(usd) {
+    if (this.btcPriceUSD === 0) {
+      await this.fetchBitcoinPrice();
+    }
+    const btc = usd / this.btcPriceUSD;
+    return {
+      amount: btc,
+      amountSmallestUnit: Math.ceil(btc * 100000000), // sats
+      token: 'BTC'
+    };
+  }
+
+  /**
+   * Get pricing with Bitcoin-specific information
+   */
+  async getPricing(credits) {
+    const tier = this.pricingTiers[credits];
+    if (!tier) {
+      throw new Error('Invalid credit amount. Must be 1000, 10000, or 100000');
+    }
+
+    // Fetch current BTC price
+    await this.fetchBitcoinPrice();
+
+    const btcAmount = tier.usd / this.btcPriceUSD;
+    const sats = Math.ceil(btcAmount * 100000000);
+
+    // Generate a unique address for this payment
+    const paymentToken = this.generatePaymentToken();
+    const paymentAddress = this.generateBitcoinAddress(paymentToken);
+
+    return {
+      ...tier,
+      blockchain: 'bitcoin',
+      token: 'BTC',
+      amount: btcAmount,
+      btc: btcAmount,
+      sats,
+      amountSmallestUnit: sats,
+      btcPrice: this.btcPriceUSD,
+      paymentAddress,
+      paymentToken,
+      requiredConfirmations: this.getRequiredConfirmations(),
+      estimatedTime: this.getConfirmationTime(),
+      estimatedFee: this.getEstimatedFee(),
+      explorerUrl: this.getExplorerUrl(paymentAddress)
+    };
   }
 }
 
