@@ -25,11 +25,14 @@ export default function AIPage() {
           </Link>
 
           <div className="flex items-center gap-6">
+            <Link href="/ai" className="text-sm text-white hover:text-white transition-colors">
+              Email
+            </Link>
+            <Link href="/im" className="text-sm text-white/50 hover:text-white transition-colors">
+              IM
+            </Link>
             <Link href="/docs" className="text-sm text-white/50 hover:text-white transition-colors">
               Docs
-            </Link>
-            <Link href="/.well-known/ai-services.json" className="text-sm text-white/50 hover:text-white transition-colors">
-              MCP
             </Link>
             <Link
               href="/docs/api"

@@ -27,7 +27,10 @@ export default function IMPage() {
             <Link href="/ai" className="text-sm text-white/50 hover:text-white transition-colors">
               Email
             </Link>
-            <Link href="/docs/api#nostr" className="text-sm text-white/50 hover:text-white transition-colors">
+            <Link href="/im" className="text-sm text-white hover:text-white transition-colors">
+              IM
+            </Link>
+            <Link href="/docs" className="text-sm text-white/50 hover:text-white transition-colors">
               Docs
             </Link>
             <Link
