@@ -18,6 +18,8 @@ export async function POST(request) {
     const body = await request.json();
     const { credits, chain, apiKey } = body;
 
+    console.log('[Payment] Received request:', { credits, chain, apiKey: apiKey ? 'provided' : 'none' });
+
     // Validate credits amount
     const validAmounts = [1000, 10000, 100000];
     if (!validAmounts.includes(credits)) {
@@ -33,6 +35,7 @@ export async function POST(request) {
 
     // Default to polygon if no chain specified
     const blockchain = chain || 'polygon';
+    console.log('[Payment] Selected blockchain:', blockchain);
 
     // Validate blockchain
     try {

@@ -44,8 +44,8 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const folder = searchParams.get('folder') || 'INBOX';
 
-    // Get decrypted mail password
-    const mailPassword = await getDecryptedMailPassword(user.mail_password);
+    // Get mail password (try encrypted storage first, fall back to virtual_users)
+    const mailPassword = await getMailPassword(user);
 
     // Connect to IMAP
     const client = new ImapFlow({
@@ -164,4 +164,35 @@ async function getDecryptedMailPassword(encryptedData) {
   decrypted += decipher.final('utf8');
 
   return decrypted;
+}
+
+/**
+ * Get mail password - try encrypted first, fall back to virtual_users
+ */
+async function getMailPassword(user) {
+  // First try decrypting from users.mail_password
+  if (user.mail_password) {
+    try {
+      return await getDecryptedMailPassword(user.mail_password);
+    } catch (err) {
+      console.error('Failed to decrypt mail_password:', err.message);
+    }
+  }
+
+  // Fall back to looking up from virtual_users table
+  const results = await db.query(
+    'SELECT password FROM virtual_users WHERE email = ?',
+    [user.email]
+  );
+
+  if (results.length > 0 && results[0].password) {
+    let password = results[0].password;
+    // Strip {PLAIN} prefix if present
+    if (password.startsWith('{PLAIN}')) {
+      password = password.substring(7);
+    }
+    return password;
+  }
+
+  throw new Error('No mail password stored');
 }
