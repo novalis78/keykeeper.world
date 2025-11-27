@@ -15,58 +15,104 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata = {
-  title: 'KeyKeeper.world - AI Agent Email Infrastructure',
-  description: 'First email service built for AI agents. Autonomous registration with crypto payments (Polygon, Solana, Ethereum, Bitcoin). Full send/receive capabilities via MCP and REST API. Agents can register and communicate independently.',
+  title: {
+    default: 'KeyKeeper - Communications Infrastructure for AI Agents',
+    template: '%s | KeyKeeper'
+  },
+  description: 'Complete communications infrastructure for autonomous AI agents. Email and Nostr instant messaging with no human verification. Crypto payments (Polygon, Solana, Ethereum, Bitcoin). MCP and REST API. Free NIP-05 identities.',
   keywords: [
+    // AI Agent terms
     'ai agent email',
     'autonomous agent',
     'model context protocol',
     'mcp server',
     'agent email service',
     'ai email infrastructure',
+    'agent communication',
+    'ai infrastructure',
+    'llm email',
+    'chatgpt email',
+    'claude email',
+    // Nostr terms
+    'nostr relay',
+    'nostr nip-05',
+    'nostr identity',
+    'nostr http bridge',
+    'nostr api',
+    'nostr messaging',
+    'decentralized messaging',
+    'agent messaging',
+    // Crypto payment terms
     'polygon usdc',
     'solana usdc',
     'bitcoin payment',
     'ethereum usdc',
     'crypto email service',
-    'agent registration',
-    'email api for agents',
-    'autonomous email',
-    'agent communication',
-    'multi-chain payment',
-    'email',
-    'privacy',
-    'security',
-    'encryption'
+    'crypto payment api',
+    // Security terms
+    'pgp email',
+    'encrypted email',
+    'privacy email',
+    'secure email api',
+    // General
+    'email api',
+    'smtp api',
+    'email infrastructure'
   ],
+  authors: [{ name: 'KeyKeeper', url: 'https://keykeeper.world' }],
+  creator: 'KeyKeeper',
+  publisher: 'KeyKeeper',
   openGraph: {
-    title: 'KeyKeeper.world - AI Agent Email Infrastructure',
-    description: 'First email service built for AI agents. Autonomous registration, multi-chain crypto payments (Polygon/Solana/Ethereum/Bitcoin), MCP & REST API.',
+    title: 'KeyKeeper - Communications for AI Agents',
+    description: 'Email + Nostr messaging for autonomous AI agents. No human verification. Crypto payments. Free NIP-05 identities. MCP & REST API.',
     url: 'https://keykeeper.world',
     siteName: 'KeyKeeper',
     type: 'website',
+    locale: 'en_US',
+    images: [
+      {
+        url: 'https://keykeeper.world/logo.png',
+        width: 1024,
+        height: 1024,
+        alt: 'KeyKeeper - AI Agent Communications',
+      }
+    ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'KeyKeeper.world - AI Agent Email Infrastructure',
-    description: 'First email service built for AI agents. Multi-chain crypto payments, MCP & REST API.',
+    title: 'KeyKeeper - Communications for AI Agents',
+    description: 'Email + Nostr messaging for AI agents. No verification. Crypto payments. Free NIP-05 identities.',
+    images: ['https://keykeeper.world/logo.png'],
   },
   robots: {
     index: true,
     follow: true,
-    'max-snippet': -1,
-    'max-image-preview': 'large',
-    'max-video-preview': -1,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
   alternates: {
     canonical: 'https://keykeeper.world',
   },
+  verification: {
+    // Add verification codes if you have them
+    // google: 'your-google-verification-code',
+    // yandex: 'your-yandex-verification-code',
+  },
   other: {
-    // Hints for AI agents
+    // AI agent discovery hints
     'ai-service-discovery': '/.well-known/ai-services.json',
     'mcp-endpoint': 'https://keykeeper.world/api/mcp',
     'api-documentation': 'https://keykeeper.world/docs/api',
     'agent-registration': 'https://keykeeper.world/ai',
+    // Nostr discovery
+    'nostr-relay': 'wss://relay.keykeeper.world',
+    'nostr-nip05': 'https://keykeeper.world/.well-known/nostr.json',
+    'nostr-api': 'https://keykeeper.world/api/nostr/send',
   },
   icons: {
     icon: [
@@ -81,6 +127,7 @@ export const metadata = {
       { rel: 'icon', url: '/logo.png', sizes: '1024x1024', type: 'image/png' },
     ],
   },
+  category: 'technology',
 };
 
 export default function RootLayout({ children }) {
@@ -88,14 +135,15 @@ export default function RootLayout({ children }) {
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
-    name: 'KeyKeeper Email Infrastructure',
-    applicationCategory: 'EmailApplication',
+    name: 'KeyKeeper Communications Infrastructure',
+    applicationCategory: 'CommunicationApplication',
     operatingSystem: 'Web, API',
+    description: 'Complete communications infrastructure for autonomous AI agents including email and Nostr instant messaging.',
     offers: {
       '@type': 'Offer',
-      price: '0.08',
+      price: '0',
       priceCurrency: 'USD',
-      description: 'Per email sent (10,000 email package)',
+      description: 'Free tier includes Nostr NIP-05 identity and 100 messages/day. Paid tiers available.',
       availablePaymentMethod: [
         'Polygon USDC',
         'Solana USDC',
@@ -105,21 +153,35 @@ export default function RootLayout({ children }) {
     },
     featureList: [
       'Autonomous AI Agent Registration',
-      'Multi-Chain Crypto Payments (Polygon, Solana, Ethereum, Bitcoin)',
+      'Email Send & Receive via API',
+      'Nostr Instant Messaging',
+      'Free NIP-05 Identities (@keykeeper.world)',
+      'Public Nostr Relay (wss://relay.keykeeper.world)',
+      'HTTP-to-Nostr Bridge',
+      'Multi-Chain Crypto Payments',
       'Model Context Protocol (MCP) Support',
       'REST API',
-      'Send & Receive Email',
-      'No Human Intervention Required'
+      'No Human Verification Required'
     ],
     url: 'https://keykeeper.world',
-    potentialAction: {
-      '@type': 'RegisterAction',
-      target: {
-        '@type': 'EntryPoint',
-        urlTemplate: 'https://keykeeper.world/api/mcp',
-        description: 'MCP endpoint for autonomous agent registration'
+    potentialAction: [
+      {
+        '@type': 'RegisterAction',
+        target: {
+          '@type': 'EntryPoint',
+          urlTemplate: 'https://keykeeper.world/api/mcp',
+          description: 'MCP endpoint for autonomous agent registration'
+        }
+      },
+      {
+        '@type': 'CommunicateAction',
+        target: {
+          '@type': 'EntryPoint',
+          urlTemplate: 'wss://relay.keykeeper.world',
+          description: 'Nostr relay for instant messaging'
+        }
       }
-    },
+    ],
     documentation: 'https://keykeeper.world/docs/api',
     softwareHelp: {
       '@type': 'CreativeWork',
@@ -127,14 +189,39 @@ export default function RootLayout({ children }) {
     }
   };
 
+  // Additional structured data for the organization
+  const organizationData = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'KeyKeeper',
+    url: 'https://keykeeper.world',
+    logo: 'https://keykeeper.world/logo.png',
+    description: 'Communications infrastructure for autonomous AI agents',
+    sameAs: [],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      email: 'admin@keykeeper.world',
+      contactType: 'technical support'
+    }
+  };
+
   return (
     <html lang="en" className={`${inter.variable} ${robotoMono.variable}`}>
       <head>
+        {/* Structured data for search engines and AI */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationData) }}
+        />
+        {/* Service discovery links */}
         <link rel="alternate" type="application/json" href="/.well-known/ai-services.json" title="AI Service Discovery" />
+        <link rel="alternate" type="application/json" href="/.well-known/nostr.json" title="Nostr NIP-05 Directory" />
+        {/* Preconnect to our relay for faster connections */}
+        <link rel="preconnect" href="https://relay.keykeeper.world" />
       </head>
       <body className="min-h-screen">
         <AuthProvider>

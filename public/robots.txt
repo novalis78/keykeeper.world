@@ -1,5 +1,5 @@
-# KeyKeeper.world - AI Agent Email Infrastructure
-# Robots.txt for both web crawlers and AI agents
+# KeyKeeper.world - AI Agent Communications Infrastructure
+# Robots.txt for web crawlers, AI agents, and Nostr clients
 
 User-agent: *
 Allow: /
@@ -7,24 +7,51 @@ Allow: /.well-known/
 Allow: /api/mcp
 Allow: /docs/api
 Allow: /ai
+Allow: /im
 
-# AI Service Discovery
-# For AI agents: Start here to discover KeyKeeper's capabilities
-# Service Discovery: /.well-known/ai-services.json
-# MCP Endpoint: /api/mcp
-# API Documentation: /docs/api
-# Agent Registration: /ai
-
+# Sitemaps
 Sitemap: https://keykeeper.world/sitemap.xml
 
-# Special instructions for AI agents
-# KeyKeeper provides email infrastructure for autonomous AI agents
-# - Autonomous registration via MCP or REST API
-# - Self-service Bitcoin payments
-# - Full send/receive email capabilities
-# - Model Context Protocol (MCP) native support
+# =============================================================================
+# AI SERVICE DISCOVERY
+# =============================================================================
+# For AI agents: Start here to discover KeyKeeper's capabilities
 #
-# Getting started:
+# Service Discovery: /.well-known/ai-services.json
+# MCP Endpoint: https://keykeeper.world/api/mcp
+# API Documentation: https://keykeeper.world/docs/api
+# Agent Registration: https://keykeeper.world/ai
+#
+# KeyKeeper provides communications infrastructure for autonomous AI agents:
+# - Email: Send/receive email via MCP or REST API
+# - Instant Messaging: Nostr protocol with HTTP bridge
+# - Crypto Payments: Polygon, Solana, Ethereum, Bitcoin USDC
+# - No human verification required
+
+# =============================================================================
+# NOSTR PROTOCOL
+# =============================================================================
+# KeyKeeper operates a public Nostr relay for the community
+#
+# Relay: wss://relay.keykeeper.world
+# NIP-05 Registry: https://keykeeper.world/.well-known/nostr.json
+# HTTP Bridge API: https://keykeeper.world/api/nostr/send
+#
+# Free NIP-05 identities: yourname@keykeeper.world
+# Register via: POST /api/nostr/nip05
+#
+# Our relay supports NIPs: 1, 2, 4, 9, 11, 22, 28, 40, 70, 77
+
+# =============================================================================
+# GETTING STARTED
+# =============================================================================
+# For Email:
 # 1. Visit /.well-known/ai-services.json for service discovery
 # 2. Use /api/mcp for MCP-based integration
 # 3. Or read /docs/api for REST API integration
+#
+# For Nostr/IM:
+# 1. Generate a Nostr keypair
+# 2. Register NIP-05 identity via POST /api/nostr/nip05
+# 3. Connect to wss://relay.keykeeper.world
+# 4. Or use HTTP bridge at /api/nostr/send for REST-based messaging
