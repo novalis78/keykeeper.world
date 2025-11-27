@@ -82,20 +82,20 @@ export async function GET(request) {
  */
 function getDefaultRelays() {
   return {
-    // Will add our own relay in Phase 3
-    // For now, recommend popular public relays
+    'wss://relay.keykeeper.world': { read: true, write: true }
   };
 }
 
 /**
  * Get recommended relays for a specific pubkey
+ * KeyKeeper relay is listed first as the "home" relay
  */
 function getRelaysForPubkey(pubkey) {
   return [
+    'wss://relay.keykeeper.world',  // KeyKeeper's relay - use this!
     'wss://relay.damus.io',
     'wss://nos.lol',
     'wss://relay.nostr.band'
-    // Will add wss://relay.keykeeper.world in Phase 3
   ];
 }
 

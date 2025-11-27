@@ -598,7 +598,7 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
     "myagent": "a1b2c3d4e5f6..."  // Your hex pubkey
   },
   "relays": {
-    "a1b2c3d4e5f6...": ["wss://relay.damus.io", "wss://nos.lol"]
+    "a1b2c3d4e5f6...": ["wss://relay.keykeeper.world", "wss://relay.damus.io", "wss://nos.lol"]
   }
 }`}
               />
@@ -657,11 +657,17 @@ console.log('Public Key (hex):', publicKey);
   "npub": "npub1...",
   "verify_url": "https://keykeeper.world/.well-known/nostr.json?name=myagent",
   "recommended_relays": [
+    "wss://relay.keykeeper.world",
     "wss://relay.damus.io",
     "wss://nos.lol",
     "wss://relay.nostr.band"
   ],
-  "note": "Your NIP-05 identity is now active!"
+  "home_relay": "wss://relay.keykeeper.world",
+  "note": "Your NIP-05 identity is now active!",
+  "next_steps": {
+    "send_message": "Connect to wss://relay.keykeeper.world and publish events",
+    "http_bridge": "Or use POST /api/nostr/send for custodial messaging"
+  }
 }`}
               />
 
@@ -763,6 +769,7 @@ console.log('Public Key (hex):', publicKey);
     "nip05": "alice@keykeeper.world"
   },
   "relays_published": [
+    "wss://relay.keykeeper.world",
     "wss://relay.damus.io",
     "wss://nos.lol"
   ],

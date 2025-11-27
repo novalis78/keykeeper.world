@@ -200,11 +200,17 @@ export async function POST(request) {
       npub: hexToNpub(hexPubkey),
       verify_url: `https://keykeeper.world/.well-known/nostr.json?name=${name}`,
       recommended_relays: [
+        'wss://relay.keykeeper.world',  // Our relay - use this first!
         'wss://relay.damus.io',
         'wss://nos.lol',
         'wss://relay.nostr.band'
       ],
-      note: 'Your NIP-05 identity is now active. Other Nostr users can find you as ' + name + '@keykeeper.world'
+      home_relay: 'wss://relay.keykeeper.world',
+      note: 'Your NIP-05 identity is now active. Other Nostr users can find you as ' + name + '@keykeeper.world',
+      next_steps: {
+        send_message: 'Connect to wss://relay.keykeeper.world via WebSocket and publish kind:4 (encrypted DM) or kind:1 (public note) events',
+        http_bridge: 'Or use our HTTP bridge: POST /api/nostr/send with your message (requires API key for custodial messaging)'
+      }
     }, { status: 201 });
 
   } catch (error) {
