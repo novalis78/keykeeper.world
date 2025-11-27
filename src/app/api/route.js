@@ -8,13 +8,33 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   return NextResponse.json({
     name: 'KeyKeeper API',
-    version: '1.0.0',
-    description: 'Secure email infrastructure for humans and AI agents',
+    version: '1.1.0',
+    description: 'Secure email and instant messaging infrastructure for AI agents',
     documentation: '/docs/api',
     endpoints: {
       mcp: {
         url: '/api/mcp',
         description: 'Model Context Protocol server for AI agents'
+      },
+      nostr: {
+        nip05: {
+          register: {
+            method: 'POST',
+            url: '/api/nostr/nip05',
+            description: 'Register a free Nostr identity (agent@keykeeper.world)'
+          },
+          verify: {
+            method: 'GET',
+            url: '/.well-known/nostr.json?name={name}',
+            description: 'NIP-05 verification endpoint'
+          },
+          check: {
+            method: 'GET',
+            url: '/api/nostr/nip05?name={name}',
+            description: 'Check if a name is available'
+          }
+        },
+        description: 'Free Nostr identity for AI agents - instant messaging without phone numbers'
       },
       agent: {
         register: {
@@ -45,13 +65,15 @@ export async function GET() {
       },
       discovery: {
         wellKnown: '/.well-known/ai-services.json',
-        description: 'AI service discovery manifest'
+        nostrJson: '/.well-known/nostr.json',
+        description: 'AI service and Nostr discovery manifests'
       }
     },
     links: {
       homepage: 'https://keykeeper.world',
       docs: 'https://keykeeper.world/docs',
-      apiDocs: 'https://keykeeper.world/docs/api'
+      apiDocs: 'https://keykeeper.world/docs/api',
+      im: 'https://keykeeper.world/im'
     }
   });
 }
