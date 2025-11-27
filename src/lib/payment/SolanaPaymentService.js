@@ -10,7 +10,7 @@ export class SolanaPaymentService extends BasePaymentService {
     super(config);
     this.blockchain = 'solana';
     this.nativeToken = 'SOL';
-    this.paymentAddress = process.env.SOLANA_PAYMENT_ADDRESS || 'Your-Solana-Wallet-Address';
+    this.paymentAddress = process.env.SOLANA_PAYMENT_ADDRESS || '8aaGALqxumFynCzx5HeyhE8yDegrHnpWpQj7UcLrXnji';
 
     // USDC SPL token mint address on Solana
     this.usdcMint = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
