@@ -124,7 +124,15 @@ export async function checkCanSendEmail(userId) {
 
     // Reset daily email count if it's a new day
     const today = new Date().toISOString().split('T')[0];
-    if (user.emails_sent_reset_at !== today) {
+    // Convert reset_at to string for comparison (MySQL returns Date object)
+    const resetAtStr = user.emails_sent_reset_at
+      ? (user.emails_sent_reset_at instanceof Date
+          ? user.emails_sent_reset_at.toISOString().split('T')[0]
+          : String(user.emails_sent_reset_at).split('T')[0])
+      : null;
+
+    if (resetAtStr !== today) {
+      console.log(`[Subscription] Resetting email count for user ${userId} (last reset: ${resetAtStr}, today: ${today})`);
       await query(
         `UPDATE users SET emails_sent_today = 0, emails_sent_reset_at = ? WHERE id = ?`,
         [today, userId]
