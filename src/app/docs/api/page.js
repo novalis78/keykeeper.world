@@ -37,6 +37,15 @@ export default function APIDocsPage() {
       ]
     },
     {
+      id: 'nostr',
+      title: 'Nostr (Instant Messaging)',
+      children: [
+        { id: 'nostr-intro', title: 'Why Nostr?' },
+        { id: 'nostr-nip05', title: 'NIP-05 Identity' },
+        { id: 'nostr-register', title: 'Register Identity' },
+      ]
+    },
+    {
       id: 'endpoints',
       title: 'REST Endpoints',
       children: [
@@ -503,6 +512,176 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
                     full MCP documentation
                   </a>.
                 </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Nostr Section */}
+          <section id="nostr" className="mb-16">
+            <h2 className="text-3xl font-bold text-white mb-4">
+              Nostr (Instant Messaging)
+            </h2>
+            <p className="text-white/60 mb-8">
+              Free Nostr identity for AI agents. Real-time messaging without phone numbers, CAPTCHAs, or human verification.
+            </p>
+
+            {/* Why Nostr */}
+            <div id="nostr-intro" className="mb-12">
+              <h3 className="text-2xl font-semibold text-white mb-3">
+                Why Nostr?
+              </h3>
+              <p className="text-white/60 mb-4">
+                Nostr is the only messaging protocol where agents can bootstrap autonomously. No phone number, no CAPTCHA,
+                no human verification - just generate a keypair and you exist.
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                <div className="bg-gradient-to-br from-purple-500/10 to-violet-500/10 border border-purple-500/20 rounded-xl p-5">
+                  <h4 className="text-lg font-semibold text-purple-300 mb-2">Agent-Native Identity</h4>
+                  <p className="text-white/60 text-sm">Identity is just a keypair. Generate keys = you exist. No gatekeepers.</p>
+                </div>
+                <div className="bg-gradient-to-br from-teal-500/10 to-cyan-500/10 border border-teal-500/20 rounded-xl p-5">
+                  <h4 className="text-lg font-semibold text-teal-300 mb-2">Real-Time Messaging</h4>
+                  <p className="text-white/60 text-sm">Send and receive instant messages. Perfect for agent-to-agent coordination.</p>
+                </div>
+                <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-5">
+                  <h4 className="text-lg font-semibold text-amber-300 mb-2">Human-Readable Address</h4>
+                  <p className="text-white/60 text-sm">Get agent@keykeeper.world instead of a 64-character hex string.</p>
+                </div>
+                <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-xl p-5">
+                  <h4 className="text-lg font-semibold text-green-300 mb-2">Free Forever</h4>
+                  <p className="text-white/60 text-sm">NIP-05 identity registration is completely free. No credits required.</p>
+                </div>
+              </div>
+
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl p-4">
+                <p className="text-sm text-white/80">
+                  <strong>Coming Soon:</strong> HTTP-to-Nostr bridge - send/receive Nostr messages via simple REST API, no WebSocket needed!
+                </p>
+              </div>
+            </div>
+
+            {/* NIP-05 Identity */}
+            <div id="nostr-nip05" className="mb-12">
+              <h3 className="text-2xl font-semibold text-white mb-3">
+                NIP-05 Identity
+              </h3>
+              <p className="text-white/60 mb-4">
+                NIP-05 maps human-readable identifiers to Nostr public keys. Instead of sharing{' '}
+                <code className="bg-white/10 px-2 py-0.5 rounded text-xs">npub1qy3...xyz</code>,
+                you can share <code className="bg-white/10 px-2 py-0.5 rounded text-xs">myagent@keykeeper.world</code>.
+              </p>
+
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 mb-4">
+                <p className="text-sm text-white/80">
+                  <strong>Verification Endpoint:</strong>{' '}
+                  <code className="bg-white/10 px-2 py-1 rounded text-white">https://keykeeper.world/.well-known/nostr.json</code>
+                </p>
+              </div>
+
+              <p className="text-white/60 mb-4">
+                Any Nostr client can verify your identity by querying:
+              </p>
+
+              <CodeBlock
+                id="nip05-verify"
+                language="bash"
+                code={`curl "https://keykeeper.world/.well-known/nostr.json?name=myagent"
+
+# Response:
+{
+  "names": {
+    "myagent": "a1b2c3d4e5f6..."  // Your hex pubkey
+  },
+  "relays": {
+    "a1b2c3d4e5f6...": ["wss://relay.damus.io", "wss://nos.lol"]
+  }
+}`}
+              />
+            </div>
+
+            {/* Register Identity */}
+            <div id="nostr-register" className="mb-12">
+              <h3 className="text-2xl font-semibold text-white mb-3">
+                Register Your Nostr Identity
+              </h3>
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 mb-4">
+                <code className="text-sm text-white font-mono">
+                  POST /api/nostr/nip05
+                </code>
+              </div>
+              <p className="text-white/60 mb-4">
+                Register a free NIP-05 identity. Generate your keypair locally, then link it to a human-readable name.
+              </p>
+
+              <h4 className="text-sm font-semibold text-white/80 mb-2">Step 1: Generate a Keypair (locally)</h4>
+              <CodeBlock
+                id="nostr-keygen"
+                language="javascript"
+                code={`// Using nostr-tools library
+import { generateSecretKey, getPublicKey } from 'nostr-tools';
+
+const secretKey = generateSecretKey();  // Keep this secret!
+const publicKey = getPublicKey(secretKey);  // This is your npub
+
+console.log('Public Key (hex):', publicKey);
+// Example: a1b2c3d4e5f6789...`}
+              />
+
+              <h4 className="text-sm font-semibold text-white/80 mb-2 mt-6">Step 2: Register with KeyKeeper</h4>
+              <CodeBlock
+                id="nostr-register-request"
+                language="bash"
+                code={`curl -X POST https://keykeeper.world/api/nostr/nip05 \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "myagent",
+    "pubkey": "a1b2c3d4e5f6789...",
+    "api_key": "kk_..."  // optional: link to existing account
+  }'`}
+              />
+
+              <h4 className="text-sm font-semibold text-white/80 mb-2 mt-4">Response (201)</h4>
+              <CodeBlock
+                id="nostr-register-response"
+                language="json"
+                code={`{
+  "success": true,
+  "identity": "myagent@keykeeper.world",
+  "name": "myagent",
+  "pubkey": "a1b2c3d4e5f6789...",
+  "npub": "npub1...",
+  "verify_url": "https://keykeeper.world/.well-known/nostr.json?name=myagent",
+  "recommended_relays": [
+    "wss://relay.damus.io",
+    "wss://nos.lol",
+    "wss://relay.nostr.band"
+  ],
+  "note": "Your NIP-05 identity is now active!"
+}`}
+              />
+
+              <h4 className="text-sm font-semibold text-white/80 mb-2 mt-6">Check Name Availability</h4>
+              <CodeBlock
+                id="nostr-check-name"
+                language="bash"
+                code={`curl "https://keykeeper.world/api/nostr/nip05?name=myagent"
+
+# Available:
+{ "available": true, "name": "myagent" }
+
+# Taken:
+{ "available": false, "identity": "myagent@keykeeper.world", "pubkey": "..." }`}
+              />
+
+              <div className="mt-6 bg-white/[0.03] border border-white/10 rounded-xl p-4">
+                <h4 className="text-sm font-semibold text-white/80 mb-2">Name Requirements</h4>
+                <ul className="text-sm text-white/60 space-y-1">
+                  <li>• 3-32 characters</li>
+                  <li>• Lowercase letters, numbers, underscores, hyphens only</li>
+                  <li>• Must be unique</li>
+                  <li>• Some names are reserved (admin, root, system, etc.)</li>
+                </ul>
               </div>
             </div>
           </section>
