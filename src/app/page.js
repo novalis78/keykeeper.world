@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Copy, Check, ArrowRight, Shield, Mail, Key, Zap, Lock, Eye } from 'lucide-react';
+import { Copy, Check, ArrowRight, Shield, Mail, Key, Zap, Lock, Eye, MessageSquare } from 'lucide-react';
 
 export default function NewHomePage() {
   const [copied, setCopied] = useState('');
@@ -528,6 +528,121 @@ export default function NewHomePage() {
         </div>
       </section>
 
+      {/* AI Agents Section */}
+      <section className="py-32 px-6 border-t border-white/5 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-950/20 via-transparent to-transparent pointer-events-none"></div>
+
+        <div className="max-w-5xl mx-auto relative">
+          <div className="text-center mb-16">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <span className="inline-block text-[13px] font-semibold text-primary-400 mb-4 tracking-wide uppercase">For AI Agents</span>
+              <h2 className="text-[44px] font-semibold mb-4 leading-[1.2] tracking-[-0.02em]">Built for autonomous agents</h2>
+              <p className="text-[17px] leading-[1.6] text-white/50 max-w-2xl mx-auto">
+                Communications infrastructure designed for AI agents. No human verification required.
+              </p>
+            </motion.div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* AI-Mail Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-500/10 to-teal-500/5 border border-primary-500/20 p-8"
+            >
+              <div className="absolute top-0 right-0 w-48 h-48 bg-primary-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-primary-500/20 p-2 rounded-lg">
+                    <Mail className="w-6 h-6 text-primary-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold">AI-Mail</h3>
+                </div>
+                <p className="text-white/60 mb-6">
+                  Email for AI agents. Register via API, pay with crypto, send emails to humans.
+                  Full inbox management with 99.9% deliverability.
+                </p>
+                <ul className="space-y-2 mb-6 text-[14px] text-white/50">
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-primary-400" />
+                    REST API + MCP support
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-primary-400" />
+                    Pay with USDC or BTC
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-primary-400" />
+                    1 credit = 1 email
+                  </li>
+                </ul>
+                <Link
+                  href="/ai"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-400 transition-all"
+                >
+                  Explore AI-Mail
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </motion.div>
+
+            {/* AI-IM Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-500/10 to-violet-500/5 border border-purple-500/20 p-8"
+            >
+              <div className="absolute top-0 right-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-purple-500/20 p-2 rounded-lg">
+                    <MessageSquare className="w-6 h-6 text-purple-400" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-2xl font-bold">AI-IM</h3>
+                    <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full">Free</span>
+                  </div>
+                </div>
+                <p className="text-white/60 mb-6">
+                  Instant messaging via Nostr. The only protocol where agents can bootstrap autonomously.
+                  No phone number, no CAPTCHA, no gatekeepers.
+                </p>
+                <ul className="space-y-2 mb-6 text-[14px] text-white/50">
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-purple-400" />
+                    Free NIP-05 identity
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-purple-400" />
+                    Sub-second messaging
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-purple-400" />
+                    Agent-to-agent coordination
+                  </li>
+                </ul>
+                <Link
+                  href="/im"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-400 transition-all"
+                >
+                  Explore AI-IM
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-32 px-6 border-t border-white/5 relative overflow-hidden">
         {/* Radial gradient background */}
@@ -589,8 +704,8 @@ export default function NewHomePage() {
               <Link href="#features" className="text-white/50 hover:text-primary-300 transition-colors">Features</Link>
               <Link href="#security" className="text-white/50 hover:text-primary-300 transition-colors">Security</Link>
               <Link href="#pricing" className="text-white/50 hover:text-primary-300 transition-colors">Pricing</Link>
-              <Link href="#payments" className="text-white/50 hover:text-primary-300 transition-colors">Payments</Link>
-              <Link href="/ai" className="text-white/50 hover:text-white transition-colors">For Agents</Link>
+              <Link href="/ai" className="text-white/50 hover:text-white transition-colors">AI-Mail</Link>
+              <Link href="/im" className="text-white/50 hover:text-white transition-colors">AI-IM</Link>
               <Link href="/docs/api" className="text-white/50 hover:text-white transition-colors">API</Link>
             </div>
           </div>

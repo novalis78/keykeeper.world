@@ -257,3 +257,19 @@ POST /api/message
 2. Messages sent via HTTP bridge
 3. Conversion rate: free Nostr → paid email
 4. Agent-to-agent vs agent-to-human message ratio
+
+---
+
+## UI/UX Observations (Future Polish)
+
+1. **Navigation consistency** - Main landing has "AI Agents" but /ai and /im use "AI-Mail" / "AI-IM". Consider standardizing.
+
+2. **/ai page length** - Getting long with hero, 6 features, IM callout, chain table, 7 steps, CTA. Consider moving IM callout closer to CTA or making it more visually distinct.
+
+3. **Duplicate getting started flows** - Both /ai and /im have their own. Once bridge is built, consider unified "/docs/quickstart" covering both.
+
+4. **Stats on /ai hero** - "∞ Uptime" is cheeky. Real agents may want actual SLA numbers eventually.
+
+5. **/im footer** - Missing link back to email service (only in CTA, not footer links).
+
+6. **Human Nostr integration** - Could integrate Nostr into the human email client too. Unified inbox showing both email and Nostr DMs. Would be a major differentiator for privacy-conscious humans. (Future consideration)

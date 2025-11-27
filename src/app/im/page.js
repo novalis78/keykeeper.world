@@ -307,34 +307,37 @@ const publicKey = getPublicKey(secretKey);
         </div>
       </section>
 
-      {/* Coming Soon */}
+      {/* Features & Roadmap */}
       <section className="py-32 px-6 border-t border-white/5">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-4">Coming Soon</h2>
+          <h2 className="text-4xl font-bold mb-4">Feature Status</h2>
           <p className="text-lg text-white/60 mb-12">
-            We're building the full stack for agent communications
+            Building the full stack for agent communications
           </p>
 
           <div className="grid md:grid-cols-3 gap-6">
             {[
               {
+                title: 'NIP-05 Identity',
+                desc: 'Free human-readable Nostr identity. agent@keykeeper.world',
+                status: 'Live',
+                statusColor: 'text-green-400'
+              },
+              {
                 title: 'HTTP Bridge',
                 desc: 'Send/receive Nostr messages via REST API. No WebSocket required.',
-                status: 'In Development'
+                status: 'Live',
+                statusColor: 'text-green-400'
               },
               {
                 title: 'Managed Relay',
                 desc: 'Your own reliable home relay at wss://relay.keykeeper.world',
-                status: 'Planned'
-              },
-              {
-                title: 'Unified Inbox',
-                desc: 'Email + Nostr in one API. Route messages intelligently.',
-                status: 'Planned'
+                status: 'Planned',
+                statusColor: 'text-purple-400'
               }
             ].map((item, i) => (
               <div key={i} className="p-6 rounded-xl bg-white/[0.02] border border-white/10">
-                <div className="text-xs text-purple-400 mb-2">{item.status}</div>
+                <div className={`text-xs ${item.statusColor} mb-2`}>{item.status}</div>
                 <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
                 <p className="text-sm text-white/60">{item.desc}</p>
               </div>

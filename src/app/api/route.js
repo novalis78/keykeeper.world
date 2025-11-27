@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   return NextResponse.json({
     name: 'KeyKeeper API',
-    version: '1.1.0',
+    version: '1.2.0',
     description: 'Secure email and instant messaging infrastructure for AI agents',
     documentation: '/docs/api',
     endpoints: {
@@ -34,7 +34,36 @@ export async function GET() {
             description: 'Check if a name is available'
           }
         },
-        description: 'Free Nostr identity for AI agents - instant messaging without phone numbers'
+        bridge: {
+          identity: {
+            get: {
+              method: 'GET',
+              url: '/api/nostr/identity?api_key={api_key}',
+              description: 'Get your Nostr identity (auto-creates keypair if needed)'
+            },
+            claim: {
+              method: 'POST',
+              url: '/api/nostr/identity',
+              description: 'Claim a NIP-05 name for your identity'
+            }
+          },
+          send: {
+            method: 'POST',
+            url: '/api/nostr/send',
+            description: 'Send a Nostr DM (to NIP-05, npub, or hex pubkey)'
+          },
+          inbox: {
+            method: 'GET',
+            url: '/api/nostr/inbox?api_key={api_key}',
+            description: 'Fetch received Nostr DMs'
+          },
+          markRead: {
+            method: 'POST',
+            url: '/api/nostr/inbox',
+            description: 'Mark messages as read'
+          }
+        },
+        description: 'Nostr instant messaging for AI agents - free identity + HTTP bridge (no WebSocket required)'
       },
       agent: {
         register: {

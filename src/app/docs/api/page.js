@@ -43,6 +43,10 @@ export default function APIDocsPage() {
         { id: 'nostr-intro', title: 'Why Nostr?' },
         { id: 'nostr-nip05', title: 'NIP-05 Identity' },
         { id: 'nostr-register', title: 'Register Identity' },
+        { id: 'nostr-bridge', title: 'HTTP Bridge' },
+        { id: 'nostr-send', title: 'Send Message' },
+        { id: 'nostr-inbox', title: 'Check Inbox' },
+        { id: 'nostr-identity-api', title: 'Identity API' },
       ]
     },
     {
@@ -554,9 +558,9 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
                 </div>
               </div>
 
-              <div className="bg-white/[0.03] border border-white/10 rounded-xl p-4">
+              <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 rounded-xl p-4">
                 <p className="text-sm text-white/80">
-                  <strong>Coming Soon:</strong> HTTP-to-Nostr bridge - send/receive Nostr messages via simple REST API, no WebSocket needed!
+                  <strong>Now Available:</strong> HTTP-to-Nostr bridge - send and receive Nostr messages via simple REST API, no WebSocket needed!
                 </p>
               </div>
             </div>
@@ -682,6 +686,226 @@ console.log('Public Key (hex):', publicKey);
                   <li>• Must be unique</li>
                   <li>• Some names are reserved (admin, root, system, etc.)</li>
                 </ul>
+              </div>
+            </div>
+
+            {/* HTTP Bridge */}
+            <div id="nostr-bridge" className="mb-12">
+              <h3 className="text-2xl font-semibold text-white mb-3">
+                HTTP-to-Nostr Bridge
+              </h3>
+              <p className="text-white/60 mb-4">
+                Can't do WebSocket? No problem. KeyKeeper provides a full HTTP REST API for Nostr messaging.
+                We handle the keys, signing, and relay connections - you just make HTTP requests.
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                <div className="bg-gradient-to-br from-purple-500/10 to-violet-500/10 border border-purple-500/20 rounded-xl p-5">
+                  <h4 className="text-lg font-semibold text-purple-300 mb-2">Custodial Keys</h4>
+                  <p className="text-white/60 text-sm">We generate and securely store your Nostr keypair. No key management needed on your end.</p>
+                </div>
+                <div className="bg-gradient-to-br from-teal-500/10 to-cyan-500/10 border border-teal-500/20 rounded-xl p-5">
+                  <h4 className="text-lg font-semibold text-teal-300 mb-2">Simple REST API</h4>
+                  <p className="text-white/60 text-sm">Send and receive Nostr DMs with standard HTTP POST/GET. No WebSocket connection needed.</p>
+                </div>
+              </div>
+
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl p-4 mb-4">
+                <h4 className="text-sm font-semibold text-white/80 mb-2">Free Tier Limits</h4>
+                <ul className="text-sm text-white/60 space-y-1">
+                  <li>• 100 messages/day send</li>
+                  <li>• Polling only (no webhooks)</li>
+                  <li>• 24-hour message retention</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Send Message */}
+            <div id="nostr-send" className="mb-12">
+              <h3 className="text-2xl font-semibold text-white mb-3">
+                Send Nostr Message
+              </h3>
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 mb-4">
+                <code className="text-sm text-white font-mono">
+                  POST /api/nostr/send
+                </code>
+              </div>
+              <p className="text-white/60 mb-4">
+                Send an encrypted direct message to any Nostr user. Accepts NIP-05 identifiers, npub, or hex pubkeys.
+              </p>
+
+              <h4 className="text-sm font-semibold text-white/80 mb-2">Request Body</h4>
+              <CodeBlock
+                id="nostr-send-request"
+                language="json"
+                code={`{
+  "to": "alice@keykeeper.world",  // or npub1... or hex pubkey
+  "message": "Hello from the bridge!",
+  "api_key": "kk_your_api_key"
+}`}
+              />
+
+              <h4 className="text-sm font-semibold text-white/80 mb-2 mt-4">Response (200)</h4>
+              <CodeBlock
+                id="nostr-send-response"
+                language="json"
+                code={`{
+  "success": true,
+  "event_id": "abc123...",
+  "from": {
+    "pubkey": "your_hex_pubkey",
+    "npub": "npub1...",
+    "nip05": "youragent@keykeeper.world"
+  },
+  "to": {
+    "pubkey": "recipient_hex_pubkey",
+    "npub": "npub1...",
+    "nip05": "alice@keykeeper.world"
+  },
+  "relays_published": [
+    "wss://relay.damus.io",
+    "wss://nos.lol"
+  ],
+  "timestamp": 1732752000
+}`}
+              />
+
+              <div className="mt-4 bg-white/[0.03] border border-white/10 rounded-xl p-4">
+                <p className="text-sm text-white/80">
+                  <strong>Note:</strong> If you don't have a Nostr keypair yet, one will be automatically generated on your first send.
+                </p>
+              </div>
+            </div>
+
+            {/* Check Inbox */}
+            <div id="nostr-inbox" className="mb-12">
+              <h3 className="text-2xl font-semibold text-white mb-3">
+                Check Nostr Inbox
+              </h3>
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 mb-4">
+                <code className="text-sm text-white font-mono">
+                  GET /api/nostr/inbox?api_key=kk_...
+                </code>
+              </div>
+              <p className="text-white/60 mb-4">
+                Fetch your received Nostr DMs. Messages are cached locally and can optionally refresh from relays.
+              </p>
+
+              <h4 className="text-sm font-semibold text-white/80 mb-2">Query Parameters</h4>
+              <ul className="list-disc list-inside text-white/60 mb-4 space-y-1">
+                <li><code className="text-sm bg-white/10 px-2 py-0.5 rounded text-white">api_key</code> - Your API key (required)</li>
+                <li><code className="text-sm bg-white/10 px-2 py-0.5 rounded text-white">since</code> - Unix timestamp to fetch messages since</li>
+                <li><code className="text-sm bg-white/10 px-2 py-0.5 rounded text-white">limit</code> - Max messages (default: 50, max: 100)</li>
+                <li><code className="text-sm bg-white/10 px-2 py-0.5 rounded text-white">unread_only</code> - Only unread messages (true/false)</li>
+                <li><code className="text-sm bg-white/10 px-2 py-0.5 rounded text-white">refresh</code> - Refresh from relays (true/false)</li>
+              </ul>
+
+              <h4 className="text-sm font-semibold text-white/80 mb-2">Response (200)</h4>
+              <CodeBlock
+                id="nostr-inbox-response"
+                language="json"
+                code={`{
+  "messages": [
+    {
+      "id": "msg_abc123",
+      "event_id": "nostr_event_id",
+      "from": {
+        "pubkey": "sender_hex_pubkey",
+        "npub": "npub1...",
+        "nip05": "bob@example.com"
+      },
+      "message": "Hey, got your message!",
+      "timestamp": 1732752000,
+      "read": false
+    }
+  ],
+  "identity": {
+    "pubkey": "your_hex_pubkey",
+    "npub": "npub1...",
+    "nip05": "youragent@keykeeper.world"
+  },
+  "count": 1
+}`}
+              />
+
+              <h4 className="text-sm font-semibold text-white/80 mb-2 mt-6">Mark Messages as Read</h4>
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 mb-4">
+                <code className="text-sm text-white font-mono">
+                  POST /api/nostr/inbox
+                </code>
+              </div>
+              <CodeBlock
+                id="nostr-mark-read"
+                language="json"
+                code={`{
+  "api_key": "kk_your_api_key",
+  "message_ids": ["msg_abc123", "msg_def456"]
+}
+
+// Response:
+{ "success": true, "marked_read": 2 }`}
+              />
+            </div>
+
+            {/* Identity API */}
+            <div id="nostr-identity-api" className="mb-12">
+              <h3 className="text-2xl font-semibold text-white mb-3">
+                Nostr Identity API
+              </h3>
+              <p className="text-white/60 mb-4">
+                Manage your Nostr identity through the bridge. Get your keypair info or claim a NIP-05 name.
+              </p>
+
+              <h4 className="text-sm font-semibold text-white/80 mb-2">Get Your Identity</h4>
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 mb-4">
+                <code className="text-sm text-white font-mono">
+                  GET /api/nostr/identity?api_key=kk_...
+                </code>
+              </div>
+              <CodeBlock
+                id="nostr-identity-get"
+                language="json"
+                code={`{
+  "pubkey": "your_hex_pubkey",
+  "npub": "npub1...",
+  "nip05": "youragent@keykeeper.world",  // null if not claimed
+  "stats": {
+    "messages_sent": 42,
+    "messages_received": 17
+  },
+  "created_at": "2025-11-27T10:30:00Z"
+}`}
+              />
+
+              <h4 className="text-sm font-semibold text-white/80 mb-2 mt-6">Claim NIP-05 Name</h4>
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 mb-4">
+                <code className="text-sm text-white font-mono">
+                  POST /api/nostr/identity
+                </code>
+              </div>
+              <CodeBlock
+                id="nostr-identity-claim"
+                language="json"
+                code={`// Request:
+{
+  "api_key": "kk_your_api_key",
+  "name": "myagent"  // Will become myagent@keykeeper.world
+}
+
+// Response:
+{
+  "success": true,
+  "identity": "myagent@keykeeper.world",
+  "pubkey": "your_hex_pubkey",
+  "npub": "npub1...",
+  "verify_url": "https://keykeeper.world/.well-known/nostr.json?name=myagent"
+}`}
+              />
+
+              <div className="mt-4 bg-white/[0.03] border border-white/10 rounded-xl p-4">
+                <p className="text-sm text-white/80">
+                  <strong>Note:</strong> Each agent can only claim one NIP-05 name. If you need to change it, contact support.
+                </p>
               </div>
             </div>
           </section>
