@@ -60,6 +60,14 @@ export async function POST(request) {
     const payment = await multiChain.initiatePayment(credits, blockchain);
     const service = multiChain.getService(blockchain);
 
+    // Extract payment details - getPricing returns paymentAddress, not depositAddress
+    const depositAddress = payment.paymentAddress;
+    const amountUsd = payment.usd || 0;
+    const creditsPurchased = payment.credits || credits;
+    const amountBtc = blockchain === 'bitcoin' ? (payment.btc || 0) : 0;
+    const tokenSymbol = payment.token || (blockchain === 'bitcoin' ? 'BTC' : 'USDC');
+    const payableAmount = payment.amount || amountUsd;
+
     // Store payment request in database
     const paymentId = crypto.randomUUID();
     await db.query(
@@ -70,16 +78,16 @@ export async function POST(request) {
       [
         paymentId,
         userId,
-        payment.depositAddress,
-        blockchain === 'bitcoin' ? payment.amount.btc : 0,
-        payment.amount.usd,
-        payment.amount.credits,
+        depositAddress,
+        amountBtc,
+        amountUsd,
+        creditsPurchased,
         'pending',
         JSON.stringify({
-          token: payment.paymentToken,
+          paymentToken: payment.paymentToken,
           chain: blockchain,
-          token: payment.token,
-          requiredAmount: payment.amount
+          token: tokenSymbol,
+          requiredAmount: payableAmount
         }),
         blockchain
       ]
@@ -90,9 +98,9 @@ export async function POST(request) {
     // Get payment instructions
     const instructions = multiChain.getPaymentInstructions(
       blockchain,
-      payment.depositAddress,
-      blockchain === 'bitcoin' ? payment.amount.btc : payment.amount.usdc,
-      payment.token,
+      depositAddress,
+      payableAmount,
+      tokenSymbol,
       payment.paymentToken
     );
 
@@ -100,9 +108,13 @@ export async function POST(request) {
     return NextResponse.json({
       paymentToken: payment.paymentToken,
       chain: blockchain,
-      depositAddress: payment.depositAddress,
-      token: payment.token,
-      amount: payment.amount,
+      depositAddress: depositAddress,
+      token: tokenSymbol,
+      amount: {
+        credits: creditsPurchased,
+        usd: amountUsd,
+        [tokenSymbol.toLowerCase()]: payableAmount
+      },
       instructions,
       statusUrl: `/v1/agent/payment/status/${payment.paymentToken}`,
       claimUrl: `/v1/agent/payment/claim/${payment.paymentToken}`,
