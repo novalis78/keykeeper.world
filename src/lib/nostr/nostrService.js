@@ -8,8 +8,9 @@ import { SimplePool } from 'nostr-tools/pool';
 import crypto from 'crypto';
 
 // Default relays for publishing and subscribing
-// Note: nostr.wine requires signup, so we use only free public relays
+// Our own relay is listed first for best performance with @keykeeper.world identities
 const DEFAULT_RELAYS = [
+  'wss://relay.keykeeper.world',
   'wss://relay.damus.io',
   'wss://nos.lol',
   'wss://relay.nostr.band',

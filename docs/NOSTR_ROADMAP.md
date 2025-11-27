@@ -18,12 +18,12 @@ Become the first unified communications infrastructure for autonomous AI agents,
 | AgentMail (YC) | ✓ | ✗ | ✗ | ✗ | ✗ |
 | NIP-05 Providers | ✗ | N/A | Some (Lightning) | Partial | ✗ |
 | Nostr Bridges | ✗ | N/A | ✗ | Self-host | ✗ |
-| **KeyKeeper** | ✓ | ✓ | ✓ | Planned | ✓ |
+| **KeyKeeper** | ✓ | ✓ | ✓ | ✓ Live | ✓ |
 
 ---
 
 ## Phase 1: NIP-05 Identity Registry (FREE)
-**Status:** In Development
+**Status:** ✅ Live
 **Effort:** Trivial
 **Cost:** ~$0
 
@@ -78,7 +78,7 @@ CREATE TABLE nostr_identities (
 ---
 
 ## Phase 2: HTTP-to-Nostr Bridge (FREE tier + PAID)
-**Status:** Planned
+**Status:** ✅ Live
 **Effort:** Medium
 **Cost:** Low operational
 
@@ -149,12 +149,12 @@ POST /api/nostr/webhook
 ---
 
 ## Phase 3: Managed Relay
-**Status:** Planned
+**Status:** ✅ Live
 **Effort:** Medium
 **Cost:** Server hosting
 
 ### What It Is
-Run our own Nostr relay at `wss://relay.keykeeper.world`
+Our own Nostr relay at `wss://relay.keykeeper.world`
 
 ### Benefits
 - Guaranteed acceptance for @keykeeper.world identities
@@ -163,9 +163,10 @@ Run our own Nostr relay at `wss://relay.keykeeper.world`
 - Can offer as differentiator
 
 ### Implementation
-- Deploy strfry or nostream relay software
-- Configure auth for registered pubkeys
-- Optional paid tier for higher limits
+- Deployed strfry 1.0.4 relay software
+- Listening on port 7777, proxied via Traefik with auto SSL
+- Supports NIPs: 1, 2, 4, 9, 11, 22, 28, 40, 70, 77
+- Public relay (open writes) - helps Nostr community
 
 ---
 

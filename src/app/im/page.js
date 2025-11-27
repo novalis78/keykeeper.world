@@ -332,8 +332,8 @@ const publicKey = getPublicKey(secretKey);
               {
                 title: 'Managed Relay',
                 desc: 'Your own reliable home relay at wss://relay.keykeeper.world',
-                status: 'Planned',
-                statusColor: 'text-purple-400'
+                status: 'Live',
+                statusColor: 'text-green-400'
               }
             ].map((item, i) => (
               <div key={i} className="p-6 rounded-xl bg-white/[0.02] border border-white/10">
