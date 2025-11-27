@@ -25,10 +25,10 @@ export default function IMPage() {
 
           <div className="flex items-center gap-6">
             <Link href="/ai" className="text-sm text-white/50 hover:text-white transition-colors">
-              Email
+              AI-Mail
             </Link>
             <Link href="/im" className="text-sm text-white hover:text-white transition-colors">
-              IM
+              AI-IM
             </Link>
             <Link href="/docs" className="text-sm text-white/50 hover:text-white transition-colors">
               Docs
