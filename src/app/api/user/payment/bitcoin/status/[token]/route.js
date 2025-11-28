@@ -93,9 +93,9 @@ export async function GET(request, { params }) {
         [txHash, paymentStatus.confirmations, payment.id]
       );
 
-      // Update user subscription to Bitcoin 3-year plan
+      // Update user subscription to Bitcoin 1-year plan
       const expiresAt = new Date();
-      expiresAt.setFullYear(expiresAt.getFullYear() + 3); // Add 3 years
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1); // Add 1 year
 
       await query(
         `UPDATE users
@@ -120,7 +120,7 @@ export async function GET(request, { params }) {
         confirmations: paymentStatus.confirmations,
         confirmedAt: new Date(),
         subscriptionExpiresAt: expiresAt,
-        message: 'Payment confirmed! Your 3-year Bitcoin plan is now active.'
+        message: 'Payment confirmed! Your 1-year Bitcoin plan is now active.'
       });
     }
 

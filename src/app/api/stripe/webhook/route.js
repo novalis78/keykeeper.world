@@ -113,7 +113,7 @@ async function handleCheckoutCompleted(session) {
   // If this is a one-time payment (Bitcoin plan), set subscription directly
   if (session.mode === 'payment' && planId === 'bitcoin') {
     const expiresAt = new Date();
-    expiresAt.setMonth(expiresAt.getMonth() + 36); // 3 years
+    expiresAt.setMonth(expiresAt.getMonth() + 12); // 1 year
 
     await query(
       `UPDATE users SET

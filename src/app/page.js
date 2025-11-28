@@ -396,10 +396,10 @@ export default function NewHomePage() {
                 <span className="text-4xl">₿</span>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-[21px] font-semibold">3-Year Bitcoin Deal</h3>
-                    <span className="bg-orange-500 text-black text-xs font-bold px-2 py-0.5 rounded-full">SAVE 86%</span>
+                    <h3 className="text-[21px] font-semibold">1-Year Bitcoin Deal</h3>
+                    <span className="bg-orange-500 text-black text-xs font-bold px-2 py-0.5 rounded-full">SAVE 50%</span>
                   </div>
-                  <p className="text-[15px] text-white/60 mt-1">Pay once with Bitcoin, get Pro features for 3 years. Just $0.83/month.</p>
+                  <p className="text-[15px] text-white/60 mt-1">Pay once with Bitcoin, get Pro features for 1 year. Just $2.50/month.</p>
                 </div>
               </div>
               <div className="flex items-center gap-6">

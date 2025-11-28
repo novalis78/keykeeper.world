@@ -29,16 +29,16 @@ export default function PricingSection() {
       id: 'tier-bitcoin',
       price: {
         monthly: '$30',
-        annually: 'for 3 years',
+        annually: 'for 1 year',
       },
-      description: 'Privacy-focused payment for 3 years (only $0.85/month).',
+      description: 'Privacy-focused payment for 1 year (only $2.50/month).',
       features: [
-        'Full features for 3 years',
+        'Full features for 1 year',
         '1GB storage',
         'Advanced encryption features',
         'No KeyKeeper branding in emails',
         'Priority message routing',
-        'Regular updates for 3 years',
+        'Regular updates for 1 year',
         'Community support',
       ],
       cta: 'Pay with Bitcoin',
@@ -121,10 +121,10 @@ export default function PricingSection() {
                 </span>
               </p>
               <p className="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-400">
-                {tier.name === 'Bitcoin Plan' 
-                  ? 'One-time payment ($0.85/month equivalent)' 
-                  : tier.price.annually !== 'Custom' 
-                    ? `${tier.price.annually} billed annually` 
+                {tier.name === 'Bitcoin Plan'
+                  ? 'One-time payment ($2.50/month equivalent)'
+                  : tier.price.annually !== 'Custom'
+                    ? `${tier.price.annually} billed annually`
                     : ''}
               </p>
               <ul className="mt-8 space-y-3 text-sm leading-6 text-gray-600 dark:text-gray-300">

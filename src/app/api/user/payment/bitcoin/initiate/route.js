@@ -8,10 +8,10 @@ import { cookies } from 'next/headers';
 export const dynamic = 'force-dynamic';
 
 /**
- * Initiate Bitcoin Payment for Human User (3-Year Plan)
+ * Initiate Bitcoin Payment for Human User (1-Year Plan)
  *
  * This generates a unique Bitcoin address for the user to pay $30
- * for 3 years of Pro features (500 emails/day)
+ * for 1 year of Pro features (500 emails/day)
  */
 export async function POST(request) {
   try {
@@ -74,7 +74,7 @@ export async function POST(request) {
 
     // Get current BTC price and calculate amount needed for $30
     const btcPrice = await bitcoinService.fetchBitcoinPrice();
-    const usdAmount = 30; // 3-year plan price
+    const usdAmount = 30; // 1-year plan price
     const btcAmount = usdAmount / btcPrice;
     const sats = Math.ceil(btcAmount * 100000000);
 
@@ -95,7 +95,7 @@ export async function POST(request) {
         'pending',
         JSON.stringify({
           paymentToken,
-          plan: 'bitcoin-3year',
+          plan: 'bitcoin-1year',
           userEmail,
           btcPrice,
           requiredSats: sats
@@ -118,8 +118,8 @@ export async function POST(request) {
       },
       btcPrice,
       plan: {
-        name: 'Bitcoin 3-Year Plan',
-        duration: '3 years',
+        name: 'Bitcoin 1-Year Plan',
+        duration: '1 year',
         emailsPerDay: 500,
         price: '$30 one-time'
       },

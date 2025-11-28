@@ -51,14 +51,14 @@ const PLANS = {
   },
   bitcoin: {
     id: 'bitcoin',
-    name: 'Bitcoin 3-Year',
+    name: 'Bitcoin 1-Year',
     price: 3000, // cents (one-time)
     priceDisplay: '$30',
     interval: 'once',
-    duration: 36, // months
+    duration: 12, // months
     emailLimit: 500,
     features: [
-      '500 emails per day for 3 years',
+      '500 emails per day for 1 year',
       '5GB storage',
       'Full PGP encryption',
       'No branding in emails',

@@ -854,12 +854,12 @@ function SettingsContent() {
                           Bitcoin
                         </span>
                       </div>
-                      <h3 className="text-lg font-semibold text-white">3-Year Deal</h3>
+                      <h3 className="text-lg font-semibold text-white">1-Year Deal</h3>
                       <div className="mt-2">
                         <span className="text-3xl font-bold text-white">$30</span>
                         <span className="text-gray-400"> one-time</span>
                       </div>
-                      <p className="text-xs text-amber-400 mt-1">Just $0.83/month</p>
+                      <p className="text-xs text-amber-400 mt-1">Just $2.50/month</p>
                       <ul className="mt-4 space-y-2">
                         <li className="flex items-center gap-2 text-sm text-gray-300">
                           <CheckIcon className="h-4 w-4 text-green-400" />
@@ -1642,7 +1642,7 @@ function SettingsContent() {
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-white">Pay with Bitcoin</h2>
-                    <p className="text-sm text-gray-400">3-Year Plan - $30 one-time payment</p>
+                    <p className="text-sm text-gray-400">1-Year Plan - $30 one-time payment</p>
                   </div>
                 </div>
                 <button
@@ -1747,7 +1747,7 @@ function SettingsContent() {
                           <CheckCircleIcon className="h-6 w-6 text-green-400 flex-shrink-0" />
                           <div>
                             <h3 className="text-sm font-medium text-green-400">Payment Confirmed!</h3>
-                            <p className="text-sm text-gray-400 mt-1">Your 3-year Bitcoin plan is now active. You can close this window.</p>
+                            <p className="text-sm text-gray-400 mt-1">Your 1-year Bitcoin plan is now active. You can close this window.</p>
                           </div>
                         </>
                       ) : bitcoinPaymentStatus === 'pending_confirmation' ? (
@@ -1793,7 +1793,7 @@ function SettingsContent() {
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-300">
                         <CheckIcon className="h-4 w-4 text-green-400" />
-                        3 years of service
+                        1 year of service
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-300">
                         <CheckIcon className="h-4 w-4 text-green-400" />
