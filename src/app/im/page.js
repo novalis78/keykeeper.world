@@ -44,7 +44,7 @@ export default function IMPage() {
       </nav>
 
       {/* Hero */}
-      <section className="relative min-h-screen flex items-center px-6 pt-14">
+      <section className="relative min-h-screen flex items-center px-6 pt-14 bg-black">
         <div className="max-w-7xl mx-auto w-full">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left: Content */}
