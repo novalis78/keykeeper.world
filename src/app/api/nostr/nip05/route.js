@@ -1,15 +1,27 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 import db from '@/lib/db';
+import { generateKeypair, hexToNpub as nostrHexToNpub } from '@/lib/nostr/nostrService';
+import { nostrKeys } from '@/lib/nostr/nostrDb';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * Generate a secure API key
+ */
+function generateApiKey() {
+  return 'kk_' + crypto.randomBytes(32).toString('hex');
+}
 
 /**
  * NIP-05 Registration API
  *
  * Allows agents to register a human-readable Nostr identity
  * e.g., agentbob@keykeeper.world -> npub1abc123...
+ *
+ * NEW: Also creates a unified user account with API key for HTTP bridge access
  */
 
 /**
@@ -66,14 +78,19 @@ export async function GET(request) {
 
 /**
  * POST /api/nostr/nip05
- * Register a new NIP-05 identity
+ * Register a new NIP-05 identity with unified account
  *
  * Body:
  * {
  *   "name": "agentbob",
- *   "pubkey": "npub1..." or hex format,
+ *   "pubkey": "npub1..." or hex format (OPTIONAL - we'll generate if not provided),
  *   "api_key": "kk_..." (optional, links to existing account)
  * }
+ *
+ * Returns:
+ * - NIP-05 identity
+ * - API key (for HTTP bridge and future email)
+ * - Nostr keypair (if we generated it)
  */
 export async function POST(request) {
   try {
@@ -111,40 +128,6 @@ export async function POST(request) {
       );
     }
 
-    // Validate pubkey
-    if (!pubkey || typeof pubkey !== 'string') {
-      return NextResponse.json(
-        { error: 'Pubkey is required' },
-        { status: 400 }
-      );
-    }
-
-    // Convert npub to hex if needed
-    let hexPubkey = pubkey;
-    if (pubkey.startsWith('npub1')) {
-      try {
-        hexPubkey = npubToHex(pubkey);
-      } catch (e) {
-        return NextResponse.json(
-          { error: 'Invalid npub format' },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Validate hex pubkey (64 hex chars)
-    if (!/^[a-f0-9]{64}$/i.test(hexPubkey)) {
-      return NextResponse.json(
-        {
-          error: 'Invalid pubkey format',
-          expected: '64 character hex string or npub1... bech32 format'
-        },
-        { status: 400 }
-      );
-    }
-
-    hexPubkey = hexPubkey.toLowerCase();
-
     // Check if name is already taken
     const existingName = await query(
       'SELECT id FROM nostr_identities WHERE name = ?',
@@ -158,32 +141,101 @@ export async function POST(request) {
       );
     }
 
-    // Check if pubkey is already registered
-    const existingPubkey = await query(
-      'SELECT name FROM nostr_identities WHERE pubkey = ?',
-      [hexPubkey]
-    );
+    // Handle keypair - either use provided or generate new one
+    let hexPubkey;
+    let generatedKeypair = null;
+    let secretKeyHex = null;
 
-    if (existingPubkey.length > 0) {
-      return NextResponse.json(
-        {
-          error: 'This pubkey is already registered',
-          existing_identity: `${existingPubkey[0].name}@keykeeper.world`
-        },
-        { status: 409 }
+    if (pubkey && typeof pubkey === 'string' && pubkey.trim()) {
+      // User provided their own pubkey
+      hexPubkey = pubkey;
+      if (pubkey.startsWith('npub1')) {
+        try {
+          hexPubkey = npubToHex(pubkey);
+        } catch (e) {
+          return NextResponse.json(
+            { error: 'Invalid npub format' },
+            { status: 400 }
+          );
+        }
+      }
+
+      // Validate hex pubkey (64 hex chars)
+      if (!/^[a-f0-9]{64}$/i.test(hexPubkey)) {
+        return NextResponse.json(
+          {
+            error: 'Invalid pubkey format',
+            expected: '64 character hex string or npub1... bech32 format'
+          },
+          { status: 400 }
+        );
+      }
+
+      hexPubkey = hexPubkey.toLowerCase();
+
+      // Check if pubkey is already registered
+      const existingPubkey = await query(
+        'SELECT name FROM nostr_identities WHERE pubkey = ?',
+        [hexPubkey]
       );
+
+      if (existingPubkey.length > 0) {
+        return NextResponse.json(
+          {
+            error: 'This pubkey is already registered',
+            existing_identity: `${existingPubkey[0].name}@keykeeper.world`
+          },
+          { status: 409 }
+        );
+      }
+    } else {
+      // Generate keypair for the user (custodial mode)
+      generatedKeypair = generateKeypair();
+      hexPubkey = generatedKeypair.publicKey;
+      secretKeyHex = generatedKeypair.secretKeyHex;
     }
 
-    // Optional: Link to existing KeyKeeper user account
+    // Find or create user account
     let userId = null;
+    let userApiKey = null;
+    let isNewAccount = false;
+
     if (api_key) {
+      // Link to existing account
       const user = await db.users.findByApiKey(api_key);
       if (user) {
         userId = user.id;
+        userApiKey = api_key;
+      } else {
+        return NextResponse.json(
+          { error: 'Invalid API key provided' },
+          { status: 401 }
+        );
       }
+    } else {
+      // Create new user account
+      userId = uuidv4();
+      userApiKey = generateApiKey();
+      isNewAccount = true;
+
+      await db.users.createAgent({
+        id: userId,
+        email: `${name}@keykeeper.world`,  // Use NIP-05 as email
+        name: name,
+        apiKey: userApiKey,
+        credits: 0  // Free tier
+      });
+
+      console.log(`[NIP-05] Created new agent account: ${name} (${userId})`);
     }
 
-    // Create the identity
+    // Store Nostr keypair if we generated one (custodial)
+    if (secretKeyHex) {
+      await nostrKeys.create(userId, hexPubkey, secretKeyHex, name);
+      console.log(`[NIP-05] Stored custodial keypair for ${name}`);
+    }
+
+    // Create the NIP-05 identity
     const id = uuidv4();
     await query(
       'INSERT INTO nostr_identities (id, name, pubkey, user_id) VALUES (?, ?, ?, ?)',
@@ -192,26 +244,57 @@ export async function POST(request) {
 
     console.log(`[NIP-05] Registered: ${name}@keykeeper.world -> ${hexPubkey.substring(0, 16)}...`);
 
-    return NextResponse.json({
+    // Build response
+    const response = {
       success: true,
       identity: `${name}@keykeeper.world`,
       name,
       pubkey: hexPubkey,
       npub: hexToNpub(hexPubkey),
       verify_url: `https://keykeeper.world/.well-known/nostr.json?name=${name}`,
+
+      // Unified API key - works for Nostr HTTP bridge AND email (once credits added)
+      api_key: userApiKey,
+      account: {
+        user_id: userId,
+        is_new: isNewAccount,
+        email_credits: 0,
+        nostr_messages_per_day: 100,  // Free tier
+      },
+
+      // Relay info
       recommended_relays: [
-        'wss://relay.keykeeper.world',  // Our relay - use this first!
+        'wss://relay.keykeeper.world',
         'wss://relay.damus.io',
         'wss://nos.lol',
         'wss://relay.nostr.band'
       ],
       home_relay: 'wss://relay.keykeeper.world',
-      note: 'Your NIP-05 identity is now active. Other Nostr users can find you as ' + name + '@keykeeper.world',
+
+      // Clear next steps
       next_steps: {
-        send_message: 'Connect to wss://relay.keykeeper.world via WebSocket and publish kind:4 (encrypted DM) or kind:1 (public note) events',
-        http_bridge: 'Or use our HTTP bridge: POST /api/nostr/send with your message (requires API key for custodial messaging)'
-      }
-    }, { status: 201 });
+        send_nostr_dm: `POST /api/nostr/send with {"to": "recipient@domain", "message": "Hello!", "api_key": "${userApiKey}"}`,
+        check_inbox: `GET /api/nostr/inbox?api_key=${userApiKey}`,
+        add_email_credits: 'POST /api/v1/agent/payment to add credits for email sending',
+        send_email: `Once you have credits: POST /api/v1/agent/send with Authorization: Bearer ${userApiKey}`
+      },
+
+      note: `Your identity ${name}@keykeeper.world is now active! You can immediately send/receive Nostr DMs using the HTTP bridge.`
+    };
+
+    // Include secret key ONLY if we generated it (custodial mode)
+    // User should save this - we store it encrypted but they may want their own copy
+    if (generatedKeypair) {
+      response.keypair = {
+        warning: 'SAVE THIS! We store it securely, but you may want a backup.',
+        secret_key_hex: secretKeyHex,
+        nsec: generatedKeypair.nsec,
+        public_key_hex: hexPubkey,
+        npub: generatedKeypair.npub
+      };
+    }
+
+    return NextResponse.json(response, { status: 201 });
 
   } catch (error) {
     console.error('[NIP-05 API] Registration error:', error);
