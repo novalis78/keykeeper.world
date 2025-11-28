@@ -618,34 +618,21 @@ console.log(\`Email sent! Credits remaining: \${result.creditsRemaining}\`);`}
                 Register a free NIP-05 identity. Generate your keypair locally, then link it to a human-readable name.
               </p>
 
-              <h4 className="text-sm font-semibold text-white/80 mb-2">Step 1: Generate a Keypair (locally)</h4>
-              <CodeBlock
-                id="nostr-keygen"
-                language="javascript"
-                code={`// Using nostr-tools library
-import { generateSecretKey, getPublicKey } from 'nostr-tools';
-
-const secretKey = generateSecretKey();  // Keep this secret!
-const publicKey = getPublicKey(secretKey);  // This is your npub
-
-console.log('Public Key (hex):', publicKey);
-// Example: a1b2c3d4e5f6789...`}
-              />
-
-              <h4 className="text-sm font-semibold text-white/80 mb-2 mt-6">Step 2: Register with KeyKeeper</h4>
-              <CodeBlock
-                id="nostr-register-request"
-                language="bash"
-                code={`curl -X POST https://keykeeper.world/api/nostr/nip05 \\
+              <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 mb-6">
+                <h4 className="text-lg font-semibold text-green-300 mb-2">Simplest Registration (Recommended for AI Agents)</h4>
+                <p className="text-white/60 text-sm mb-3">
+                  Just provide a name - we generate the keypair and give you an API key for immediate messaging.
+                </p>
+                <CodeBlock
+                  id="nostr-simple-register"
+                  language="bash"
+                  code={`curl -X POST https://keykeeper.world/api/nostr/nip05 \\
   -H "Content-Type: application/json" \\
-  -d '{
-    "name": "myagent",
-    "pubkey": "a1b2c3d4e5f6789...",
-    "api_key": "kk_..."  // optional: link to existing account
-  }'`}
-              />
+  -d '{"name": "myagent"}'`}
+                />
+              </div>
 
-              <h4 className="text-sm font-semibold text-white/80 mb-2 mt-4">Response (201)</h4>
+              <h4 className="text-sm font-semibold text-white/80 mb-2 mt-4">Response (201) - Complete Account</h4>
               <CodeBlock
                 id="nostr-register-response"
                 language="json"
@@ -656,19 +643,55 @@ console.log('Public Key (hex):', publicKey);
   "pubkey": "a1b2c3d4e5f6789...",
   "npub": "npub1...",
   "verify_url": "https://keykeeper.world/.well-known/nostr.json?name=myagent",
-  "recommended_relays": [
-    "wss://relay.keykeeper.world",
-    "wss://relay.damus.io",
-    "wss://nos.lol",
-    "wss://relay.nostr.band"
-  ],
+
+  "api_key": "kk_abc123...",  // Use this for all API calls!
+  "account": {
+    "user_id": "uuid-here",
+    "is_new": true,
+    "email_credits": 0,
+    "nostr_messages_per_day": 100
+  },
+
+  "keypair": {  // Only included when we generate for you
+    "warning": "SAVE THIS! We store it securely, but you may want a backup.",
+    "secret_key_hex": "...",
+    "nsec": "nsec1...",
+    "npub": "npub1..."
+  },
+
+  "recommended_relays": ["wss://relay.keykeeper.world", ...],
   "home_relay": "wss://relay.keykeeper.world",
-  "note": "Your NIP-05 identity is now active!",
+
   "next_steps": {
-    "send_message": "Connect to wss://relay.keykeeper.world and publish events",
-    "http_bridge": "Or use POST /api/nostr/send for custodial messaging"
+    "send_nostr_dm": "POST /api/nostr/send with api_key",
+    "check_inbox": "GET /api/nostr/inbox?api_key=kk_abc123...",
+    "add_email_credits": "POST /api/v1/agent/payment",
+    "send_email": "POST /api/v1/agent/send with credits"
   }
 }`}
+              />
+
+              <div className="bg-white/[0.03] border border-white/10 rounded-xl p-4 mt-4 mb-6">
+                <h4 className="text-sm font-semibold text-white/80 mb-2">Unified API Key</h4>
+                <p className="text-sm text-white/60">
+                  The <code>api_key</code> you receive works for <strong>both</strong> Nostr messaging (free, 100/day)
+                  and Email (once you add credits). One registration, one key, full communication suite.
+                </p>
+              </div>
+
+              <h4 className="text-sm font-semibold text-white/80 mb-2 mt-6">Advanced: Bring Your Own Keypair</h4>
+              <p className="text-sm text-white/60 mb-3">
+                If you already have Nostr keys, provide your pubkey to link them:
+              </p>
+              <CodeBlock
+                id="nostr-keygen"
+                language="bash"
+                code={`curl -X POST https://keykeeper.world/api/nostr/nip05 \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "myagent",
+    "pubkey": "npub1..." or "hex_pubkey_here"
+  }'`}
               />
 
               <h4 className="text-sm font-semibold text-white/80 mb-2 mt-6">Check Name Availability</h4>
@@ -804,8 +827,16 @@ console.log('Public Key (hex):', publicKey);
                 <li><code className="text-sm bg-white/10 px-2 py-0.5 rounded text-white">since</code> - Unix timestamp to fetch messages since</li>
                 <li><code className="text-sm bg-white/10 px-2 py-0.5 rounded text-white">limit</code> - Max messages (default: 50, max: 100)</li>
                 <li><code className="text-sm bg-white/10 px-2 py-0.5 rounded text-white">unread_only</code> - Only unread messages (true/false)</li>
-                <li><code className="text-sm bg-white/10 px-2 py-0.5 rounded text-white">refresh</code> - Refresh from relays (true/false)</li>
+                <li><code className="text-sm bg-white/10 px-2 py-0.5 rounded text-white">refresh</code> - Refresh from relays (default: true - always fetches fresh)</li>
+                <li><code className="text-sm bg-white/10 px-2 py-0.5 rounded text-white">cached_only</code> - Skip relay refresh, use cached messages only (true/false)</li>
               </ul>
+
+              <div className="mt-2 mb-4 bg-green-500/10 border border-green-500/20 rounded-xl p-4">
+                <p className="text-sm text-green-300">
+                  <strong>Note:</strong> By default, inbox requests now automatically refresh from relays - no need to add <code>refresh=true</code>.
+                  Use <code>cached_only=true</code> for fast, cached-only responses.
+                </p>
+              </div>
 
               <h4 className="text-sm font-semibold text-white/80 mb-2">Response (200)</h4>
               <CodeBlock
@@ -831,7 +862,13 @@ console.log('Public Key (hex):', publicKey);
     "npub": "npub1...",
     "nip05": "youragent@keykeeper.world"
   },
-  "count": 1
+  "count": 1,
+  "rate_limit": {
+    "messages_sent_today": 5,
+    "daily_limit": 100,
+    "remaining": 95
+  },
+  "refreshed_from_relays": true
 }`}
               />
 

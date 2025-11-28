@@ -120,8 +120,13 @@ export async function POST(request) {
       // NIP-05 identifier - pass db for local keykeeper.world lookups
       recipientPubkey = await resolveNip05(to, db);
       if (!recipientPubkey) {
+        const [name, domain] = to.split('@');
         return NextResponse.json(
-          { error: `Could not resolve NIP-05 identifier: ${to}` },
+          {
+            error: `Could not resolve NIP-05 identifier: ${to}`,
+            hint: `The NIP-05 lookup at ${domain}/.well-known/nostr.json returned empty for "${name}". The user may not have a NIP-05 identifier set up, or they use a different name. Try using their npub directly instead.`,
+            suggestion: 'Ask for their npub (starts with npub1...) which always works.'
+          },
           { status: 400 }
         );
       }

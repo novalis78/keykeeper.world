@@ -12,6 +12,9 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+// Cache TTL in seconds - auto-refresh if older than this
+const AUTO_REFRESH_TTL = 60;
+
 /**
  * GET /api/nostr/inbox - Fetch Nostr DMs
  *
@@ -20,7 +23,8 @@ export const dynamic = 'force-dynamic';
  * - since: Unix timestamp to fetch messages since (optional)
  * - limit: Max messages to return (default 50, max 100)
  * - unread_only: Only return unread messages (optional, default false)
- * - refresh: Force refresh from relays (optional, default false)
+ * - refresh: Force refresh from relays (optional, default: auto based on TTL)
+ * - cached_only: Skip relay refresh entirely (optional, default false)
  */
 export async function GET(request) {
   try {
@@ -29,7 +33,9 @@ export async function GET(request) {
     const since = searchParams.get('since') ? parseInt(searchParams.get('since')) : null;
     const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100);
     const unreadOnly = searchParams.get('unread_only') === 'true';
-    const refresh = searchParams.get('refresh') === 'true';
+    const cachedOnly = searchParams.get('cached_only') === 'true';
+    // Default: refresh unless explicitly set to false or cached_only is true
+    let refresh = searchParams.get('refresh') !== 'false' && !cachedOnly;
 
     // Validate API key
     if (!apiKey) {
@@ -149,6 +155,10 @@ export async function GET(request) {
       read: !!msg.read_at
     }));
 
+    // Get rate limit info
+    const messagesSentToday = keyData.messages_sent || 0;
+    const dailyLimit = 100; // Free tier limit
+
     return NextResponse.json({
       messages: formattedMessages,
       identity: {
@@ -156,7 +166,13 @@ export async function GET(request) {
         npub: hexToNpub(keyData.pubkey),
         nip05: keyData.nip05_name ? `${keyData.nip05_name}@keykeeper.world` : null
       },
-      count: formattedMessages.length
+      count: formattedMessages.length,
+      rate_limit: {
+        messages_sent_today: messagesSentToday,
+        daily_limit: dailyLimit,
+        remaining: Math.max(0, dailyLimit - messagesSentToday)
+      },
+      refreshed_from_relays: refresh
     });
 
   } catch (error) {
