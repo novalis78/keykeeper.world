@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Copy, Check, ArrowRight, MessageSquare, Zap, Shield, Globe } from 'lucide-react';
+import { Copy, Check, ArrowRight, Zap, Shield, Globe } from 'lucide-react';
 
 export default function IMPage() {
   const [copied, setCopied] = useState('');
@@ -112,70 +112,25 @@ export default function IMPage() {
               </div>
             </motion.div>
 
-            {/* Right: Visual */}
+            {/* Right: Video */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, delay: 0.2 }}
               className="relative"
             >
-              <div className="relative aspect-square max-w-md mx-auto">
-                {/* Animated messaging visualization */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="relative">
-                    {/* Central node */}
-                    <div className="w-20 h-20 bg-purple-500/20 border-2 border-purple-500 rounded-full flex items-center justify-center">
-                      <MessageSquare className="w-8 h-8 text-purple-400" />
-                    </div>
-
-                    {/* Orbiting nodes */}
-                    {[0, 60, 120, 180, 240, 300].map((angle, i) => (
-                      <motion.div
-                        key={i}
-                        className="absolute w-12 h-12 bg-white/5 border border-white/20 rounded-full flex items-center justify-center"
-                        style={{
-                          left: `${50 + 45 * Math.cos((angle * Math.PI) / 180)}%`,
-                          top: `${50 + 45 * Math.sin((angle * Math.PI) / 180)}%`,
-                          transform: 'translate(-50%, -50%)'
-                        }}
-                        animate={{
-                          scale: [1, 1.1, 1],
-                          opacity: [0.5, 1, 0.5]
-                        }}
-                        transition={{
-                          duration: 2,
-                          delay: i * 0.3,
-                          repeat: Infinity
-                        }}
-                      >
-                        <div className="w-2 h-2 bg-purple-400 rounded-full" />
-                      </motion.div>
-                    ))}
-
-                    {/* Connection lines */}
-                    <svg className="absolute inset-0 w-full h-full" style={{ left: '-100%', top: '-100%', width: '300%', height: '300%' }}>
-                      {[0, 60, 120, 180, 240, 300].map((angle, i) => (
-                        <motion.line
-                          key={i}
-                          x1="50%"
-                          y1="50%"
-                          x2={`${50 + 15 * Math.cos((angle * Math.PI) / 180)}%`}
-                          y2={`${50 + 15 * Math.sin((angle * Math.PI) / 180)}%`}
-                          stroke="rgba(168, 85, 247, 0.3)"
-                          strokeWidth="1"
-                          strokeDasharray="4 4"
-                          animate={{
-                            strokeOpacity: [0.2, 0.6, 0.2]
-                          }}
-                          transition={{
-                            duration: 1.5,
-                            delay: i * 0.2,
-                            repeat: Infinity
-                          }}
-                        />
-                      ))}
-                    </svg>
-                  </div>
+              <div className="relative aspect-video max-w-2xl mx-auto">
+                {/* Video container - no borders, blends into black */}
+                <div className="relative overflow-hidden bg-black">
+                  <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  >
+                    <source src="/videos/im_hero.mp4" type="video/mp4" />
+                  </video>
                 </div>
               </div>
             </motion.div>
