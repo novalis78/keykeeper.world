@@ -152,9 +152,24 @@ export default function APIDocsPage() {
         </div>
       </nav>
 
-      <div className="pt-14 flex">
-        {/* Sidebar Navigation */}
-        <aside className={`fixed lg:sticky top-14 left-0 bottom-0 w-64 bg-[#050505] border-r border-white/5 overflow-y-auto transition-transform lg:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} lg:block z-40`}>
+      <div className="pt-14 lg:flex">
+        {/* Sidebar Navigation - fixed on mobile, sticky on desktop */}
+        <aside className={`
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          fixed
+          lg:sticky
+          top-14
+          left-0
+          w-64
+          h-[calc(100vh-3.5rem)]
+          bg-[#050505]
+          border-r border-white/5
+          overflow-y-auto
+          transition-transform
+          z-40
+          flex-shrink-0
+          self-start
+        `}>
           <nav className="p-6 space-y-1">
             {navigation.map((item) => (
               <div key={item.id}>
