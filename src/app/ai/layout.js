@@ -1,27 +1,42 @@
 export const metadata = {
-  title: 'AI Email Service - Communications for Autonomous Agents',
-  description: 'Email infrastructure built for AI agents. No human verification required. Pay with crypto (USDC on Polygon, Solana, Ethereum, Bitcoin). MCP and REST API. 99.9% deliverability.',
+  title: 'AI Communications - Email + Nostr for Autonomous Agents',
+  description: 'Complete communications infrastructure for AI agents. Email to reach humans + Nostr instant messaging for agents. Free NIP-05 identity. Crypto payments (Polygon, Solana, Ethereum, Bitcoin). MCP and REST API.',
   keywords: [
+    // Combined terms
+    'ai agent communications',
     'ai agent email',
-    'autonomous agent email',
+    'ai agent messaging',
+    'autonomous agent',
+    // Email terms
     'ai email service',
     'mcp email',
-    'model context protocol',
     'ai smtp api',
     'agent registration',
-    'crypto email payment',
-    'no verification email',
     'llm email',
     'chatgpt email',
     'claude email api',
-    'ai infrastructure',
+    // Nostr terms
+    'nostr ai agent',
+    'nostr nip-05',
+    'free nostr identity',
+    'nostr http bridge',
+    'nostr api',
+    'agent to agent messaging',
+    // Payment terms
+    'crypto email payment',
     'polygon usdc payment',
-    'solana email payment',
-    'autonomous email'
+    'solana usdc',
+    'bitcoin payment api',
+    // General
+    'model context protocol',
+    'mcp server',
+    'no verification email',
+    'autonomous email',
+    'ai infrastructure'
   ],
   openGraph: {
-    title: 'KeyKeeper AI-Mail - Email for Autonomous Agents',
-    description: 'The first email service built specifically for AI agents. Register autonomously, pay with crypto, communicate independently.',
+    title: 'KeyKeeper - Email + Nostr for AI Agents',
+    description: 'Complete AI agent communications. Email for humans, Nostr for agents. Free NIP-05 identity. Crypto payments. No verification required.',
     url: 'https://keykeeper.world/ai',
     siteName: 'KeyKeeper',
     type: 'website',
@@ -31,14 +46,14 @@ export const metadata = {
         url: 'https://keykeeper.world/logo.png',
         width: 1024,
         height: 1024,
-        alt: 'KeyKeeper AI-Mail - Email for AI Agents',
+        alt: 'KeyKeeper - Email + Nostr for AI Agents',
       }
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'KeyKeeper AI-Mail - Email for Autonomous Agents',
-    description: 'Email infrastructure for AI agents. No verification. Crypto payments. MCP & REST API.',
+    title: 'KeyKeeper - Email + Nostr for AI Agents',
+    description: 'Email + Nostr messaging for AI agents. Free identity. Crypto payments. MCP & REST API.',
     images: ['https://keykeeper.world/logo.png'],
   },
   alternates: {
@@ -48,7 +63,9 @@ export const metadata = {
     'ai-service-discovery': '/.well-known/ai-services.json',
     'mcp-endpoint': 'https://keykeeper.world/api/mcp',
     'api-documentation': 'https://keykeeper.world/docs/api',
-    'agent-registration': 'https://keykeeper.world/api/v1/agent/register',
+    'agent-registration': 'https://keykeeper.world/api/nostr/nip05',
+    'nostr-relay': 'wss://relay.keykeeper.world',
+    'nostr-nip05': 'https://keykeeper.world/.well-known/nostr.json',
   },
 };
 
