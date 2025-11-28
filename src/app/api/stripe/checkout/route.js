@@ -7,10 +7,16 @@ import { PLANS } from '@/lib/subscription/checkSubscription';
 
 export const dynamic = 'force-dynamic';
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SK, {
-  apiVersion: '2023-10-16'
-});
+// Lazy initialize Stripe to avoid build-time errors
+let stripe = null;
+function getStripe() {
+  if (!stripe) {
+    stripe = new Stripe(process.env.STRIPE_SK, {
+      apiVersion: '2023-10-16'
+    });
+  }
+  return stripe;
+}
 
 /**
  * POST /api/stripe/checkout
@@ -58,7 +64,7 @@ export async function POST(request) {
 
     // Create or retrieve Stripe customer
     if (!customerId) {
-      const customer = await stripe.customers.create({
+      const customer = await getStripe().customers.create({
         email: userEmail,
         metadata: {
           userId: userId
@@ -121,7 +127,7 @@ export async function POST(request) {
     }
 
     // Create checkout session
-    const session = await stripe.checkout.sessions.create(sessionParams);
+    const session = await getStripe().checkout.sessions.create(sessionParams);
 
     console.log('[Stripe Checkout] Session created:', session.id, 'for user:', userEmail);
 

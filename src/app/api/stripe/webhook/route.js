@@ -4,13 +4,16 @@ import Stripe from 'stripe';
 
 export const dynamic = 'force-dynamic';
 
-// Initialize Stripe with secret key
-const stripe = new Stripe(process.env.STRIPE_SK, {
-  apiVersion: '2023-10-16'
-});
-
-// Webhook secret for verifying signatures
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+// Lazy initialize Stripe to avoid build-time errors
+let stripe = null;
+function getStripe() {
+  if (!stripe) {
+    stripe = new Stripe(process.env.STRIPE_SK, {
+      apiVersion: '2023-10-16'
+    });
+  }
+  return stripe;
+}
 
 /**
  * POST /api/stripe/webhook
@@ -20,13 +23,14 @@ export async function POST(request) {
   try {
     const body = await request.text();
     const signature = request.headers.get('stripe-signature');
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
     let event;
 
     // Verify webhook signature if secret is configured
     if (webhookSecret) {
       try {
-        event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+        event = getStripe().webhooks.constructEvent(body, signature, webhookSecret);
       } catch (err) {
         console.error('[Stripe Webhook] Signature verification failed:', err.message);
         return NextResponse.json(

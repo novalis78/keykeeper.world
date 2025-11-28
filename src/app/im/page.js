@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Copy, Check, ArrowRight, Zap, Shield, Globe } from 'lucide-react';
+import { Copy, Check, ArrowRight, Zap, Shield, Globe, MessageSquare } from 'lucide-react';
 
 export default function IMPage() {
   const [copied, setCopied] = useState('');
