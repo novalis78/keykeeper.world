@@ -4,22 +4,22 @@ import Link from 'next/link';
 export default function Footer() {
   const navigation = {
     product: [
-      { name: 'Features', href: '#features' },
-      { name: 'Security', href: '#security' },
+      { name: 'AI Email', href: '/ai' },
+      { name: 'AI Messaging', href: '/im' },
+      { name: 'Nostr Relay', href: 'wss://relay.keykeeper.world' },
       { name: 'Pricing', href: '#pricing' },
-      { name: 'SecureMailClient', href: '#' },
     ],
     support: [
-      { name: 'Documentation', href: '#' },
-      { name: 'Guides', href: '#' },
-      { name: 'API Status', href: '#' },
-      { name: 'Contact Support', href: '#' },
+      { name: 'Documentation', href: '/docs' },
+      { name: 'API Reference', href: '/docs/api' },
+      { name: 'System Status', href: '/status' },
+      { name: 'Contact', href: 'mailto:support@keykeeper.world' },
     ],
-    company: [
-      { name: 'About', href: '#' },
-      { name: 'Blog', href: '#' },
-      { name: 'Careers', href: '#' },
-      { name: 'Press', href: '#' },
+    developers: [
+      { name: 'API Docs', href: '/docs/api' },
+      { name: 'NIP-05 Registry', href: '/docs/api#nostr-nip05' },
+      { name: 'HTTP Bridge', href: '/docs/api#nostr-send' },
+      { name: 'GitHub', href: 'https://github.com/novalis78/keykeeper.world' },
     ],
     legal: [
       { name: 'Privacy Policy', href: '#' },
@@ -106,9 +106,9 @@ export default function Footer() {
             </div>
             <div className="md:grid md:grid-cols-2 md:gap-8">
               <div>
-                <h3 className="text-sm font-semibold leading-6 text-gray-900 dark:text-white">Company</h3>
+                <h3 className="text-sm font-semibold leading-6 text-gray-900 dark:text-white">Developers</h3>
                 <ul className="mt-6 space-y-4">
-                  {navigation.company.map((item) => (
+                  {navigation.developers.map((item) => (
                     <li key={item.name}>
                       <a href={item.href} className="text-sm leading-6 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
                         {item.name}
