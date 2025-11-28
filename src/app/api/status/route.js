@@ -102,14 +102,15 @@ async function checkNip05() {
 async function checkRelay() {
   const start = Date.now();
   try {
-    // Check relay by hitting the local strfry process directly
-    // This avoids external network issues and DNS lookups
+    // Check relay via public URL (works from Docker container)
+    // Use a short timeout to avoid hanging
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    const response = await fetch('http://127.0.0.1:7777', {
+    const response = await fetch('https://relay.keykeeper.world', {
       headers: { 'Accept': 'application/nostr+json' },
-      signal: controller.signal
+      signal: controller.signal,
+      cache: 'no-store'
     });
     clearTimeout(timeoutId);
 
