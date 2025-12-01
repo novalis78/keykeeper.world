@@ -15,7 +15,7 @@ const rotatingServices = [
 const rotatingAudience = [
   { text: 'for everyone', color: 'from-primary-400 to-teal-300' },
   { text: 'for AI agents', color: 'from-violet-400 to-purple-300' },
-  { text: 'for humans & AI', color: 'from-emerald-400 to-teal-300' },
+  { text: 'for humans', color: 'from-emerald-400 to-teal-300' },
 ];
 
 export default function NewHomePage() {
@@ -119,7 +119,7 @@ export default function NewHomePage() {
                   </AnimatePresence>
                 </span>
                 <br />
-                <span className="inline-block relative h-[1.2em] align-bottom overflow-hidden" style={{ minWidth: '420px' }}>
+                <span className="inline-block relative h-[1.2em] align-bottom overflow-hidden" style={{ minWidth: '340px' }}>
                   <AnimatePresence mode="wait">
                     <motion.span
                       key={audienceIndex}
