@@ -1,12 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Copy, Check, ArrowRight, Shield, Mail, Key, Zap, Lock, Eye, MessageSquare } from 'lucide-react';
+
+const rotatingWords = [
+  { text: 'email', color: 'from-primary-400 to-teal-300' },
+  { text: 'HTTP proxy', color: 'from-sky-400 to-cyan-300' },
+  { text: 'VPN tunnels', color: 'from-purple-400 to-violet-300' },
+  { text: 'messaging', color: 'from-amber-400 to-orange-300' },
+];
 
 export default function NewHomePage() {
   const [copied, setCopied] = useState('');
+  const [wordIndex, setWordIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setWordIndex((prev) => (prev + 1) % rotatingWords.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
 
   const copy = (text, id) => {
     navigator.clipboard.writeText(text);
@@ -75,7 +90,21 @@ export default function NewHomePage() {
               className="space-y-8"
             >
               <h1 className="text-[56px] md:text-[72px] font-semibold leading-[1.1] tracking-[-0.02em]">
-                Private email
+                Private{' '}
+                <span className="inline-block relative h-[1.2em] align-bottom overflow-hidden" style={{ minWidth: '280px' }}>
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={wordIndex}
+                      initial={{ y: 40, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: -40, opacity: 0 }}
+                      transition={{ duration: 0.4, ease: 'easeInOut' }}
+                      className={`absolute left-0 text-transparent bg-clip-text bg-gradient-to-r ${rotatingWords[wordIndex].color}`}
+                    >
+                      {rotatingWords[wordIndex].text}
+                    </motion.span>
+                  </AnimatePresence>
+                </span>
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-teal-300">
                   for everyone
@@ -83,9 +112,9 @@ export default function NewHomePage() {
               </h1>
 
               <p className="text-[17px] leading-[1.6] text-white/60 max-w-xl font-normal">
-                End-to-end encrypted email with disposable addresses.
-                Zero knowledge. No tracking. No ads.
-                Your messages, your keys, your privacy.
+                Complete infrastructure for AI agents and privacy-conscious humans.
+                Email, HTTP proxy, VPN tunnels, messaging - all with one account.
+                No human verification. Pay with crypto.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3">
@@ -685,6 +714,102 @@ export default function NewHomePage() {
         </div>
       </section>
 
+      {/* Ecosystem Section */}
+      <section className="py-24 px-6 border-t border-white/5 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary-950/10 to-transparent pointer-events-none"></div>
+
+        <div className="max-w-5xl mx-auto relative">
+          <div className="text-center mb-16">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <span className="inline-block text-[13px] font-semibold text-primary-400 mb-4 tracking-wide uppercase">Ecosystem</span>
+              <h2 className="text-[44px] font-semibold mb-4 leading-[1.2] tracking-[-0.02em]">One key, all services</h2>
+              <p className="text-[17px] leading-[1.6] text-white/50 max-w-2xl mx-auto">
+                Your KeyKeeper account unlocks the entire ecosystem. No human verification. Pay with crypto.
+              </p>
+            </motion.div>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                name: 'KeyKeeper',
+                desc: 'Identity & Email',
+                url: '/',
+                color: 'from-primary-500/20 to-teal-500/10',
+                border: 'border-primary-500/30',
+                active: true
+              },
+              {
+                name: 'KeyFetch',
+                desc: 'HTTP Proxy',
+                url: 'https://keyfetch.world',
+                color: 'from-sky-500/20 to-cyan-500/10',
+                border: 'border-sky-500/20',
+                price: '$0.001/req'
+              },
+              {
+                name: 'KeyRoute',
+                desc: 'VPN Tunnels',
+                url: 'https://keyroute.world',
+                color: 'from-purple-500/20 to-violet-500/10',
+                border: 'border-purple-500/20',
+                price: '$0.001/sec'
+              },
+              {
+                name: 'KeyTalk',
+                desc: 'Voice & SMS',
+                url: 'https://keytalk.world',
+                color: 'from-amber-500/20 to-orange-500/10',
+                border: 'border-amber-500/20',
+                soon: true
+              }
+            ].map((service, i) => (
+              <motion.a
+                key={i}
+                href={service.url}
+                target={service.url.startsWith('http') ? '_blank' : undefined}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.3, delay: i * 0.1 }}
+                className={`relative rounded-xl p-5 bg-gradient-to-br ${service.color} border ${service.border} backdrop-blur-sm transition-all duration-300 hover:scale-105 group ${service.active ? 'ring-2 ring-primary-500/50' : ''}`}
+              >
+                {service.active && (
+                  <div className="absolute -top-2 -right-2 bg-primary-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    You are here
+                  </div>
+                )}
+                {service.soon && (
+                  <div className="absolute -top-2 -right-2 bg-amber-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    Soon
+                  </div>
+                )}
+                <h3 className="text-[17px] font-semibold mb-1 group-hover:text-primary-300 transition-colors">{service.name}</h3>
+                <p className="text-[13px] text-white/50 mb-2">{service.desc}</p>
+                {service.price && (
+                  <span className="text-[11px] text-white/40">{service.price}</span>
+                )}
+              </motion.a>
+            ))}
+          </div>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+            className="text-center text-[13px] text-white/40 mt-8"
+          >
+            All services accept USDC, BTC, ETH. Agents can register and pay autonomously.
+          </motion.p>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-white/5 bg-gradient-to-b from-transparent to-primary-950/20">
         <div className="max-w-7xl mx-auto">
@@ -700,13 +825,17 @@ export default function NewHomePage() {
                 <div className="text-xs text-white/40">© 2025 KeyKeeper. Privacy first.</div>
               </div>
             </div>
-            <div className="flex gap-8 text-sm">
+            <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 text-sm">
               <Link href="#features" className="text-white/50 hover:text-primary-300 transition-colors">Features</Link>
               <Link href="#security" className="text-white/50 hover:text-primary-300 transition-colors">Security</Link>
               <Link href="#pricing" className="text-white/50 hover:text-primary-300 transition-colors">Pricing</Link>
               <Link href="/ai" className="text-white/50 hover:text-white transition-colors">AI-Mail</Link>
               <Link href="/im" className="text-white/50 hover:text-white transition-colors">AI-IM</Link>
               <Link href="/docs/api" className="text-white/50 hover:text-white transition-colors">API</Link>
+              <span className="text-white/20">|</span>
+              <a href="https://keyfetch.world" target="_blank" className="text-white/50 hover:text-sky-300 transition-colors">KeyFetch</a>
+              <a href="https://keyroute.world" target="_blank" className="text-white/50 hover:text-purple-300 transition-colors">KeyRoute</a>
+              <a href="https://keytalk.world" target="_blank" className="text-white/50 hover:text-amber-300 transition-colors">KeyTalk</a>
             </div>
           </div>
         </div>

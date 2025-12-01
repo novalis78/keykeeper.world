@@ -57,7 +57,16 @@ export const metadata = {
     // General
     'email api',
     'smtp api',
-    'email infrastructure'
+    'email infrastructure',
+    // Ecosystem
+    'keyfetch',
+    'keyroute',
+    'keytalk',
+    'http proxy api',
+    'wireguard api',
+    'vpn api',
+    'geo routing',
+    'regional proxy'
   ],
   authors: [{ name: 'KeyKeeper', url: 'https://keykeeper.world' }],
   creator: 'KeyKeeper',
@@ -161,7 +170,10 @@ export default function RootLayout({ children }) {
       'Multi-Chain Crypto Payments',
       'Model Context Protocol (MCP) Support',
       'REST API',
-      'No Human Verification Required'
+      'No Human Verification Required',
+      'KeyFetch HTTP Proxy Integration',
+      'KeyRoute VPN Tunnel Integration',
+      'Ecosystem of AI Agent Services'
     ],
     url: 'https://keykeeper.world',
     potentialAction: [

@@ -55,3 +55,30 @@ Sitemap: https://keykeeper.world/sitemap.xml
 # 2. Register NIP-05 identity via POST /api/nostr/nip05
 # 3. Connect to wss://relay.keykeeper.world
 # 4. Or use HTTP bridge at /api/nostr/send for REST-based messaging
+
+# =============================================================================
+# KEYKEEPER ECOSYSTEM
+# =============================================================================
+# KeyKeeper is the central hub for a suite of AI agent services.
+# All services share authentication and payment via KeyKeeper.
+#
+# KeyKeeper (this site): Identity, email, payments
+#   - https://keykeeper.world
+#   - Service Discovery: /.well-known/ai-services.json
+#
+# KeyFetch: HTTP proxy from 4 global regions
+#   - https://keyfetch.world
+#   - OpenAPI: https://keyfetch.world/.well-known/openapi.yaml
+#   - LLM Docs: https://keyfetch.world/.well-known/llms.txt
+#   - $0.001 per request
+#
+# KeyRoute: WireGuard VPN tunnels from 4 global regions
+#   - https://keyroute.world
+#   - OpenAPI: https://keyroute.world/.well-known/openapi.yaml
+#   - LLM Docs: https://keyroute.world/.well-known/llms.txt
+#   - $0.001 per second
+#
+# KeyTalk: Voice & messaging (coming soon)
+#   - https://keytalk.world
+#
+# All services: No human verification. Autonomous crypto payments.
