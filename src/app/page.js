@@ -5,22 +5,35 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Copy, Check, ArrowRight, Shield, Mail, Key, Zap, Lock, Eye, MessageSquare } from 'lucide-react';
 
-const rotatingWords = [
+const rotatingServices = [
   { text: 'email', color: 'from-primary-400 to-teal-300' },
   { text: 'HTTP proxy', color: 'from-sky-400 to-cyan-300' },
   { text: 'VPN tunnels', color: 'from-purple-400 to-violet-300' },
-  { text: 'messaging', color: 'from-amber-400 to-orange-300' },
+  { text: 'Nostr', color: 'from-amber-400 to-orange-300' },
+];
+
+const rotatingAudience = [
+  { text: 'for everyone', color: 'from-primary-400 to-teal-300' },
+  { text: 'for AI agents', color: 'from-violet-400 to-purple-300' },
+  { text: 'for humans & AI', color: 'from-emerald-400 to-teal-300' },
 ];
 
 export default function NewHomePage() {
   const [copied, setCopied] = useState('');
-  const [wordIndex, setWordIndex] = useState(0);
+  const [serviceIndex, setServiceIndex] = useState(0);
+  const [audienceIndex, setAudienceIndex] = useState(0);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setWordIndex((prev) => (prev + 1) % rotatingWords.length);
+    const serviceInterval = setInterval(() => {
+      setServiceIndex((prev) => (prev + 1) % rotatingServices.length);
     }, 2500);
-    return () => clearInterval(interval);
+    const audienceInterval = setInterval(() => {
+      setAudienceIndex((prev) => (prev + 1) % rotatingAudience.length);
+    }, 3500);
+    return () => {
+      clearInterval(serviceInterval);
+      clearInterval(audienceInterval);
+    };
   }, []);
 
   const copy = (text, id) => {
@@ -91,23 +104,34 @@ export default function NewHomePage() {
             >
               <h1 className="text-[56px] md:text-[72px] font-semibold leading-[1.1] tracking-[-0.02em]">
                 Private{' '}
-                <span className="inline-block relative h-[1.2em] align-bottom overflow-hidden" style={{ minWidth: '280px' }}>
+                <span className="inline-block relative h-[1.2em] align-bottom overflow-hidden" style={{ minWidth: '320px' }}>
                   <AnimatePresence mode="wait">
                     <motion.span
-                      key={wordIndex}
+                      key={serviceIndex}
                       initial={{ y: 40, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
                       exit={{ y: -40, opacity: 0 }}
                       transition={{ duration: 0.4, ease: 'easeInOut' }}
-                      className={`absolute left-0 text-transparent bg-clip-text bg-gradient-to-r ${rotatingWords[wordIndex].color}`}
+                      className={`absolute left-0 text-transparent bg-clip-text bg-gradient-to-r ${rotatingServices[serviceIndex].color}`}
                     >
-                      {rotatingWords[wordIndex].text}
+                      {rotatingServices[serviceIndex].text}
                     </motion.span>
                   </AnimatePresence>
                 </span>
                 <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-teal-300">
-                  for everyone
+                <span className="inline-block relative h-[1.2em] align-bottom overflow-hidden" style={{ minWidth: '420px' }}>
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={audienceIndex}
+                      initial={{ y: 40, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: -40, opacity: 0 }}
+                      transition={{ duration: 0.4, ease: 'easeInOut' }}
+                      className={`absolute left-0 text-transparent bg-clip-text bg-gradient-to-r ${rotatingAudience[audienceIndex].color}`}
+                    >
+                      {rotatingAudience[audienceIndex].text}
+                    </motion.span>
+                  </AnimatePresence>
                 </span>
               </h1>
 
