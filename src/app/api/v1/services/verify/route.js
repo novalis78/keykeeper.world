@@ -14,6 +14,14 @@ const SERVICE_COSTS = {
   keyroute: {
     tunnel_hour: 0.10,   // $0.10 per hour of tunnel time
     data_gb: 0.05        // $0.05 per GB transferred
+  },
+  keyhook: {
+    webhook_received: 0.001  // $0.001 per webhook received
+  },
+  keyspark: {
+    lightning_send: 0.001,     // 0.1% of transaction (min ~$0.001)
+    lightning_receive: 0,      // Free
+    onchain_withdrawal: 0.01   // ~500 sats service fee
   }
 };
 
@@ -66,7 +74,7 @@ export async function POST(request) {
       );
     }
 
-    if (!service || !['keyfetch', 'keyroute'].includes(service)) {
+    if (!service || !['keyfetch', 'keyroute', 'keyhook', 'keyspark'].includes(service)) {
       return NextResponse.json(
         { valid: false, error: 'Invalid service' },
         { status: 400 }
