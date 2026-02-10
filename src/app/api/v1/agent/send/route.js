@@ -94,7 +94,7 @@ export async function POST(request) {
 
     // Create SMTP transporter
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'localhost',
+      host: process.env.SMTP_HOST || process.env.MAIL_HOST || 'localhost',
       port: parseInt(process.env.SMTP_PORT || '587'),
       secure: process.env.SMTP_SECURE === 'true',
       auth: {

@@ -705,7 +705,7 @@ async function sendEmail(args, user) {
 
   // Send email
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'localhost',
+    host: process.env.SMTP_HOST || process.env.MAIL_HOST || 'localhost',
     port: parseInt(process.env.SMTP_PORT || '587'),
     secure: process.env.SMTP_SECURE === 'true',
     auth: {
@@ -758,7 +758,7 @@ async function checkInbox(args, user) {
   const folder = args?.folder || 'INBOX';
 
   const client = new ImapFlow({
-    host: process.env.IMAP_HOST || 'localhost',
+    host: process.env.IMAP_HOST || process.env.MAIL_HOST || 'localhost',
     port: parseInt(process.env.IMAP_PORT || '993'),
     secure: true,
     auth: {
@@ -819,7 +819,7 @@ async function getEmail(args, user) {
   }
 
   const client = new ImapFlow({
-    host: process.env.IMAP_HOST || 'localhost',
+    host: process.env.IMAP_HOST || process.env.MAIL_HOST || 'localhost',
     port: parseInt(process.env.IMAP_PORT || '993'),
     secure: true,
     auth: {

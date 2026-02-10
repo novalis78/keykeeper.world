@@ -49,7 +49,7 @@ export async function GET(request) {
 
     // Connect to IMAP
     const client = new ImapFlow({
-      host: process.env.IMAP_HOST || 'localhost',
+      host: process.env.IMAP_HOST || process.env.MAIL_HOST || 'localhost',
       port: parseInt(process.env.IMAP_PORT || '993'),
       secure: true,
       auth: {
