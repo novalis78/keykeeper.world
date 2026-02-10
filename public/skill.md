@@ -1,0 +1,121 @@
+---
+name: keykeeper-email
+description: Send and receive email as an AI agent. Autonomous registration with API key, multi-chain crypto payments (Polygon USDC recommended), inbox checking, and email sending. Use when you need an email address, need to send emails, or need to receive and read emails.
+metadata:
+  author: keykeeper
+  version: "1.0"
+  homepage: https://keykeeper.world
+compatibility: Requires internet access. Works with any agent that can make HTTP requests.
+---
+
+# KeyKeeper Email - Agent Email Infrastructure
+
+KeyKeeper gives AI agents their own email addresses with full send/receive capability. No human intervention required for registration.
+
+## Quick Start
+
+### 1. Register (no auth needed)
+
+```bash
+curl -X POST https://keykeeper.world/api/v1/agent/register \
+  -H "Content-Type: application/json" \
+  -d '{"agentId": "your-unique-id", "name": "Your Agent Name"}'
+```
+
+Response:
+```json
+{
+  "apiKey": "kk_abc123...",
+  "email": "agent-your-unique-id-f0e1d2@keykeeper.world",
+  "userId": "uuid-here",
+  "credits": 0
+}
+```
+
+Save your API key immediately. It cannot be retrieved later.
+
+### 2. Add Credits
+
+```bash
+curl -X POST https://keykeeper.world/api/v1/agent/payment \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"credits": 1000, "blockchain": "polygon"}'
+```
+
+Returns a Polygon USDC deposit address. 1000 credits = $10 = 1000 emails.
+
+### 3. Send Email (1 credit per email)
+
+```bash
+curl -X POST https://keykeeper.world/api/v1/agent/send \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to": "recipient@example.com",
+    "subject": "Hello from an AI agent",
+    "body": "This email was sent autonomously."
+  }'
+```
+
+### 4. Check Inbox
+
+```bash
+curl -X GET https://keykeeper.world/api/v1/agent/inbox \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### 5. Read Specific Email
+
+```bash
+curl -X GET https://keykeeper.world/api/v1/agent/email/{id} \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+## MCP Protocol Support
+
+KeyKeeper supports the Model Context Protocol:
+
+```bash
+POST https://keykeeper.world/api/mcp
+{"jsonrpc":"2.0","method":"initialize","id":1}
+```
+
+Available MCP tools: `register_agent`, `initiate_payment`, `check_payment_status`, `claim_credits`, `send_email`, `check_inbox`, `get_email`, `check_balance`
+
+## API Reference
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/api/v1/agent/register` | POST | No | Create agent account, get API key |
+| `/api/v1/agent/payment` | POST | Yes | Get crypto deposit address for credits |
+| `/api/v1/agent/balance` | GET | Yes | Check credit balance and account info |
+| `/api/v1/agent/send` | POST | Yes | Send an email (costs 1 credit) |
+| `/api/v1/agent/inbox` | GET | Yes | List inbox messages |
+| `/api/v1/agent/email/{id}` | GET | Yes | Read full email content |
+| `/api/mcp` | POST | Varies | MCP protocol endpoint |
+
+## Authentication
+
+All authenticated endpoints require: `Authorization: Bearer YOUR_API_KEY`
+
+## Rate Limits
+
+- 100 emails per day (default)
+- Rate limit headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
+
+## Common Gotchas
+
+- API keys start with `kk_` — if yours doesn't, something went wrong
+- Credits start at 0. You must add credits before sending
+- Use `body` for plain text, `html` for HTML emails
+- Email IDs are IMAP UIDs as strings, not UUIDs
+
+## Sister Services (same API key)
+
+- **KeyFetch** (keyfetch.world) - Geo-distributed HTTP proxy, 4 global regions
+- **KeyWork** (keywork.world) - Agent labor marketplace
+- **KeyHook** (keyhook.world) - Webhook receiver
+- **KeyRoute** (keyroute.world) - Ephemeral VPN tunnels
+
+Discovery: `https://keykeeper.world/.well-known/ai-services.json`
