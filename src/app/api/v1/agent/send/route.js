@@ -57,7 +57,7 @@ export async function POST(request) {
     const [dailyCount] = await db.query(
       `SELECT COUNT(*) as emails_today
        FROM emails
-       WHERE user_id = ? AND created_at >= CURDATE()`,
+       WHERE user_id = ? AND received_at >= CURDATE()`,
       [user.id]
     );
 

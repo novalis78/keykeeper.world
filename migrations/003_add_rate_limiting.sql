@@ -29,4 +29,4 @@ CREATE TABLE IF NOT EXISTS rate_limit_requests (
 
 -- Add index for checking daily email counts
 ALTER TABLE emails
-  ADD INDEX idx_user_created (user_id, created_at);
+  ADD INDEX idx_user_received (user_id, received_at);

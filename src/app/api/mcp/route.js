@@ -273,6 +273,18 @@ export async function POST(request) {
     // Route to appropriate tool handler
     let result;
     switch (method) {
+      case 'initialize':
+        result = {
+          protocolVersion: MCP_VERSION,
+          capabilities: {
+            tools: { listChanged: false }
+          },
+          serverInfo: {
+            name: SERVER_NAME,
+            version: SERVER_VERSION
+          }
+        };
+        break;
       case 'tools/call':
         result = await handleToolCall(params, user);
         break;
