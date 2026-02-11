@@ -52,8 +52,8 @@ const TOOLS = [
       properties: {
         credits: {
           type: 'number',
-          description: 'Number of credits to purchase (1000, 10000, or 100000)',
-          enum: [1000, 10000, 100000]
+          description: 'Number of credits to purchase (10, 1000, 10000, or 100000)',
+          enum: [10, 1000, 10000, 100000]
         },
         blockchain: {
           type: 'string',
@@ -399,8 +399,8 @@ async function registerAgent(args) {
 async function initiatePayment(args) {
   const { credits, blockchain = 'polygon', token, apiKey } = args;
 
-  if (!credits || ![1000, 10000, 100000].includes(credits)) {
-    throw new Error('Invalid credit amount. Must be 1000, 10000, or 100000');
+  if (!credits || ![10, 1000, 10000, 100000].includes(credits)) {
+    throw new Error('Invalid credit amount. Must be 10, 1000, 10000, or 100000');
   }
 
   // If API key provided, validate it

@@ -21,7 +21,7 @@ export async function POST(request) {
     console.log('[Payment] Received request:', { credits, chain, apiKey: apiKey ? 'provided' : 'none' });
 
     // Validate credits amount
-    const validAmounts = [1000, 10000, 100000];
+    const validAmounts = [10, 1000, 10000, 100000];
     if (!validAmounts.includes(credits)) {
       return NextResponse.json(
         {

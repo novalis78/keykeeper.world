@@ -26,6 +26,7 @@ export class BitcoinPaymentService {
 
     // Pricing in USD
     this.pricingTiers = {
+      10: { usd: 1, credits: 10 },
       1000: { usd: 100, credits: 1000 },
       10000: { usd: 800, credits: 10000 },
       100000: { usd: 5000, credits: 100000 }
@@ -305,7 +306,7 @@ export class BitcoinPaymentService {
   async getPricing(credits) {
     const tier = this.pricingTiers[credits];
     if (!tier) {
-      throw new Error('Invalid credit amount. Must be 1000, 10000, or 100000');
+      throw new Error('Invalid credit amount. Must be 10, 1000, 10000, or 100000');
     }
 
     // Fetch current BTC price

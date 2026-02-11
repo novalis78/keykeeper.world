@@ -17,6 +17,7 @@ export class BasePaymentService {
    */
   async getPricing(credits) {
     const PRICING_TIERS = {
+      10: { usd: 1, credits: 10 },
       1000: { usd: 100, credits: 1000 },
       10000: { usd: 800, credits: 10000 },
       100000: { usd: 5000, credits: 100000 }
@@ -24,7 +25,7 @@ export class BasePaymentService {
 
     const tier = PRICING_TIERS[credits];
     if (!tier) {
-      throw new Error('Invalid credit amount. Must be 1000, 10000, or 100000');
+      throw new Error('Invalid credit amount. Must be 10, 1000, 10000, or 100000');
     }
 
     return tier;
