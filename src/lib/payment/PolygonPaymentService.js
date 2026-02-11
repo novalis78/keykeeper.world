@@ -68,7 +68,7 @@ export class PolygonPaymentService extends BasePaymentService {
    */
   toChecksumAddress(addrHex) {
     const lower = addrHex.toLowerCase();
-    const hashHex = Buffer.from(keccak_256(lower)).toString('hex');
+    const hashHex = Buffer.from(keccak_256(Buffer.from(lower, 'ascii'))).toString('hex');
 
     let checksummed = '0x';
     for (let i = 0; i < 40; i++) {
