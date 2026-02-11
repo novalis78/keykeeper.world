@@ -8,7 +8,7 @@ import crypto from 'crypto';
 import { BasePaymentService } from './BasePaymentService.js';
 import BIP32Factory from 'bip32';
 import * as ecc from 'tiny-secp256k1';
-import { keccak_256 } from '@noble/hashes/sha3';
+import { keccak_256 } from '@noble/hashes/sha3.js';
 
 // Initialize BIP32 with secp256k1
 const bip32 = BIP32Factory(ecc);
