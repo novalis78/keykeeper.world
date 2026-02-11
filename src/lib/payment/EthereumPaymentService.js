@@ -1,17 +1,15 @@
 /**
  * Ethereum Payment Service
  * Handles USDC payments on Ethereum mainnet
- * Uses BIP32 HD wallet derivation for unique per-payment addresses
+ * Uses deterministic HD address derivation for unique per-payment addresses
+ *
+ * Derivation: HMAC-SHA256(masterSecret, paymentToken) → private key → ECDH pubkey → keccak256 → address
+ * Uses only Node.js built-in crypto + @noble/hashes (no WASM dependencies)
  */
 
 import crypto from 'crypto';
 import { BasePaymentService } from './BasePaymentService.js';
-import BIP32Factory from 'bip32';
-import * as ecc from 'tiny-secp256k1';
 import { keccak_256 } from '@noble/hashes/sha3.js';
-
-// Initialize BIP32 with secp256k1
-const bip32 = BIP32Factory(ecc);
 
 export class EthereumPaymentService extends BasePaymentService {
   constructor(config = {}) {
@@ -19,8 +17,8 @@ export class EthereumPaymentService extends BasePaymentService {
     this.blockchain = 'ethereum';
     this.nativeToken = 'ETH';
 
-    // EVM xpub for HD address derivation (m/44'/60'/0') — same as Polygon
-    this.xpub = process.env.EVM_XPUB || 'xpub6DJGAZykKQ4XNDseX3oJ9g499RqBqHmFrR97i56w3msfgE3LiZUNG6xkhoqtnbEWFm7TgyUqEJkDVmbXdhHz4EXhM4GdPXG727mhd8fvHUU';
+    // Same master secret as Polygon (shared EVM derivation)
+    this.masterSecret = process.env.PAYMENT_MASTER_SECRET || 'keykeeper-payment-hd-master-2025';
 
     // USDC contract on Ethereum mainnet
     this.usdcContract = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
@@ -29,44 +27,29 @@ export class EthereumPaymentService extends BasePaymentService {
     this.apiKey = process.env.ETHERSCAN_API_KEY || 'YourApiKeyToken';
     this.apiUrl = 'https://api.etherscan.io/api';
 
-    // Address cache: paymentToken -> { address, index }
+    // Address cache
     this.addressCache = new Map();
   }
 
-  /**
-   * Derive a deterministic index from an identifier (paymentToken, agentId, etc.)
-   */
-  deriveIndexFromIdentifier(identifier) {
-    const hash = crypto.createHash('sha256').update(identifier).digest();
-    return hash.readUInt32BE(0) % 2147483647;
+  derivePrivateKey(identifier) {
+    return crypto.createHmac('sha256', this.masterSecret)
+      .update(identifier)
+      .digest();
   }
 
-  /**
-   * Derive an EVM address from the xpub at a given index
-   */
-  deriveEvmAddress(index) {
-    const node = bip32.fromBase58(this.xpub);
-    const child = node.derive(0).derive(index);
-
-    // Get uncompressed public key (65 bytes)
-    const uncompressed = Buffer.from(ecc.pointCompress(child.publicKey, false));
-
-    // Keccak256 of public key bytes (without the 0x04 prefix)
-    const hash = keccak_256(uncompressed.slice(1));
-
-    // Last 20 bytes = Ethereum address
+  deriveEvmAddressFromPrivateKey(privateKey) {
+    const ecdh = crypto.createECDH('secp256k1');
+    ecdh.setPrivateKey(privateKey);
+    const uncompressedPubKey = ecdh.getPublicKey();
+    const pubKeyWithoutPrefix = uncompressedPubKey.slice(1);
+    const hash = keccak_256(pubKeyWithoutPrefix);
     const addrHex = Buffer.from(hash).slice(-20).toString('hex');
-
     return this.toChecksumAddress(addrHex);
   }
 
-  /**
-   * EIP-55 mixed-case checksum encoding
-   */
   toChecksumAddress(addrHex) {
     const lower = addrHex.toLowerCase();
     const hashHex = Buffer.from(keccak_256(Buffer.from(lower, 'ascii'))).toString('hex');
-
     let checksummed = '0x';
     for (let i = 0; i < 40; i++) {
       checksummed += parseInt(hashHex[i], 16) >= 8
@@ -76,61 +59,32 @@ export class EthereumPaymentService extends BasePaymentService {
     return checksummed;
   }
 
-  /**
-   * Generate a unique payment address for a specific payment
-   */
   generatePaymentAddress(paymentToken, identifier = null) {
     if (this.addressCache.has(paymentToken)) {
       return this.addressCache.get(paymentToken).address;
     }
-
-    const index = this.deriveIndexFromIdentifier(identifier || paymentToken);
-    const address = this.deriveEvmAddress(index);
-
-    this.addressCache.set(paymentToken, { address, index });
-    console.log(`[EthereumService] Generated address ${address} at index ${index} for token ${paymentToken.substring(0, 20)}...`);
-
+    const privateKey = this.derivePrivateKey(identifier || paymentToken);
+    const address = this.deriveEvmAddressFromPrivateKey(privateKey);
+    this.addressCache.set(paymentToken, { address, privateKey: privateKey.toString('hex') });
+    console.log(`[EthereumService] Generated address ${address} for token ${paymentToken.substring(0, 20)}...`);
     return address;
   }
 
-  /**
-   * Get payment address for a specific customer (deterministic)
-   */
   getPaymentAddressForCustomer(identifier) {
-    const index = this.deriveIndexFromIdentifier(identifier);
-    const address = this.deriveEvmAddress(index);
-    return { address, index };
+    const privateKey = this.derivePrivateKey(identifier);
+    const address = this.deriveEvmAddressFromPrivateKey(privateKey);
+    return { address };
   }
 
-  /**
-   * Get default payment address (index 0, for backward compat)
-   */
   getPaymentAddress() {
-    return this.deriveEvmAddress(0);
+    return this.deriveEvmAddressFromPrivateKey(this.derivePrivateKey('default'));
   }
 
-  /**
-   * Get required confirmations (12 blocks ~3 minutes on Ethereum)
-   */
-  getRequiredConfirmations() {
-    return 12;
-  }
-
-  getConfirmationTime() {
-    return '3-5 minutes';
-  }
-
-  getEstimatedFee() {
-    return '$5-$50 (varies with network congestion)';
-  }
-
-  getExplorerUrl(address) {
-    return `https://etherscan.io/address/${address}`;
-  }
-
-  formatAmount(amount) {
-    return (amount / 1000000).toFixed(2);
-  }
+  getRequiredConfirmations() { return 12; }
+  getConfirmationTime() { return '3-5 minutes'; }
+  getEstimatedFee() { return '$5-$50 (varies with network congestion)'; }
+  getExplorerUrl(address) { return `https://etherscan.io/address/${address}`; }
+  formatAmount(amount) { return (amount / 1000000).toFixed(2); }
 
   async convertUsdToToken(usd) {
     return {
@@ -141,42 +95,22 @@ export class EthereumPaymentService extends BasePaymentService {
     };
   }
 
-  /**
-   * Check payment status using Etherscan API
-   * Checks for USDC transfers to the specific derived address
-   */
   async checkPaymentStatus(address, requiredAmount, options = {}) {
     try {
       const url = `${this.apiUrl}?module=account&action=tokentx&contractaddress=${this.usdcContract}&address=${address}&page=1&offset=100&sort=desc&apikey=${this.apiKey}`;
-
       const response = await fetch(url);
       const data = await response.json();
 
       if (data.status !== '1') {
-        return {
-          totalReceived: 0,
-          totalReceivedSmallestUnit: 0,
-          confirmations: 0,
-          isPaid: false,
-          isConfirmed: false,
-          transactions: []
-        };
+        return { totalReceived: 0, totalReceivedSmallestUnit: 0, confirmations: 0, isPaid: false, isConfirmed: false, transactions: [] };
       }
 
-      // Filter transactions TO this specific payment address
       const relevantTxs = data.result.filter(tx =>
         tx.to.toLowerCase() === address.toLowerCase()
       );
 
       if (relevantTxs.length === 0) {
-        return {
-          totalReceived: 0,
-          totalReceivedSmallestUnit: 0,
-          confirmations: 0,
-          isPaid: false,
-          isConfirmed: false,
-          transactions: []
-        };
+        return { totalReceived: 0, totalReceivedSmallestUnit: 0, confirmations: 0, isPaid: false, isConfirmed: false, transactions: [] };
       }
 
       let totalReceivedSmallestUnit = 0;
@@ -199,14 +133,11 @@ export class EthereumPaymentService extends BasePaymentService {
       const isConfirmed = isPaid && minConfirmations >= this.getRequiredConfirmations();
 
       return {
-        totalReceived,
-        totalReceivedSmallestUnit,
+        totalReceived, totalReceivedSmallestUnit,
         confirmations: minConfirmations === Infinity ? 0 : minConfirmations,
-        isPaid,
-        isConfirmed,
+        isPaid, isConfirmed,
         transactions: relevantTxs.map(tx => ({
-          hash: tx.hash,
-          amount: parseInt(tx.value) / 1000000,
+          hash: tx.hash, amount: parseInt(tx.value) / 1000000,
           blockNumber: parseInt(tx.blockNumber),
           timestamp: new Date(parseInt(tx.timeStamp) * 1000).toISOString()
         }))
@@ -217,9 +148,6 @@ export class EthereumPaymentService extends BasePaymentService {
     }
   }
 
-  /**
-   * Get pricing with unique per-payment address
-   */
   async getPricing(credits) {
     const basePricing = await super.getPricing(credits);
     const tokenInfo = await this.convertUsdToToken(basePricing.usd);

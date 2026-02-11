@@ -1,17 +1,15 @@
 /**
  * Polygon Payment Service
  * Handles USDC payments on Polygon network
- * Uses BIP32 HD wallet derivation for unique per-payment addresses
+ * Uses deterministic HD address derivation for unique per-payment addresses
+ *
+ * Derivation: HMAC-SHA256(masterSecret, paymentToken) → private key → ECDH pubkey → keccak256 → address
+ * Uses only Node.js built-in crypto + @noble/hashes (no WASM dependencies)
  */
 
 import crypto from 'crypto';
 import { BasePaymentService } from './BasePaymentService.js';
-import BIP32Factory from 'bip32';
-import * as ecc from 'tiny-secp256k1';
 import { keccak_256 } from '@noble/hashes/sha3.js';
-
-// Initialize BIP32 with secp256k1
-const bip32 = BIP32Factory(ecc);
 
 export class PolygonPaymentService extends BasePaymentService {
   constructor(config = {}) {
@@ -19,8 +17,9 @@ export class PolygonPaymentService extends BasePaymentService {
     this.blockchain = 'polygon';
     this.nativeToken = 'MATIC';
 
-    // EVM xpub for HD address derivation (m/44'/60'/0')
-    this.xpub = process.env.EVM_XPUB || 'xpub6DJGAZykKQ4XNDseX3oJ9g499RqBqHmFrR97i56w3msfgE3LiZUNG6xkhoqtnbEWFm7TgyUqEJkDVmbXdhHz4EXhM4GdPXG727mhd8fvHUU';
+    // Master secret for deterministic address derivation
+    // HMAC(masterSecret, identifier) → private key → public key → ETH address
+    this.masterSecret = process.env.PAYMENT_MASTER_SECRET || 'keykeeper-payment-hd-master-2025';
 
     // USDC contract on Polygon
     this.usdcContract = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
@@ -29,32 +28,34 @@ export class PolygonPaymentService extends BasePaymentService {
     this.apiKey = process.env.POLYGONSCAN_API_KEY || 'YourApiKeyToken';
     this.apiUrl = 'https://api.polygonscan.com/api';
 
-    // Address cache: paymentToken -> { address, index }
+    // Address cache: paymentToken -> { address, privateKey }
     this.addressCache = new Map();
   }
 
   /**
-   * Derive a deterministic index from an identifier (paymentToken, agentId, etc.)
+   * Derive a private key deterministically from an identifier
+   * Uses HMAC-SHA256(masterSecret, identifier) → 32-byte private key
    */
-  deriveIndexFromIdentifier(identifier) {
-    const hash = crypto.createHash('sha256').update(identifier).digest();
-    return hash.readUInt32BE(0) % 2147483647; // Keep under BIP32 limit
+  derivePrivateKey(identifier) {
+    return crypto.createHmac('sha256', this.masterSecret)
+      .update(identifier)
+      .digest();
   }
 
   /**
-   * Derive an EVM (Ethereum/Polygon) address from the xpub at a given index
-   * Uses BIP32 derivation + keccak256 for address computation
+   * Derive an EVM address from a private key using Node.js built-in ECDH
    */
-  deriveEvmAddress(index) {
-    // Parse xpub and derive child key: m/0/index (external chain)
-    const node = bip32.fromBase58(this.xpub);
-    const child = node.derive(0).derive(index);
+  deriveEvmAddressFromPrivateKey(privateKey) {
+    // Use Node.js built-in ECDH for secp256k1 public key derivation
+    const ecdh = crypto.createECDH('secp256k1');
+    ecdh.setPrivateKey(privateKey);
 
     // Get uncompressed public key (65 bytes, starts with 0x04)
-    const uncompressed = Buffer.from(ecc.pointCompress(child.publicKey, false));
+    const uncompressedPubKey = ecdh.getPublicKey();
 
     // Keccak256 of public key bytes (without the 0x04 prefix)
-    const hash = keccak_256(uncompressed.slice(1));
+    const pubKeyWithoutPrefix = uncompressedPubKey.slice(1); // 64 bytes
+    const hash = keccak_256(pubKeyWithoutPrefix);
 
     // Last 20 bytes = Ethereum address
     const addrHex = Buffer.from(hash).slice(-20).toString('hex');
@@ -80,19 +81,19 @@ export class PolygonPaymentService extends BasePaymentService {
   }
 
   /**
-   * Generate a unique payment address for a specific payment/agent
-   * Each payment gets its own derived address (like Bitcoin)
+   * Generate a unique payment address for a specific payment
+   * Each payment gets its own derived address
    */
   generatePaymentAddress(paymentToken, identifier = null) {
     if (this.addressCache.has(paymentToken)) {
       return this.addressCache.get(paymentToken).address;
     }
 
-    const index = this.deriveIndexFromIdentifier(identifier || paymentToken);
-    const address = this.deriveEvmAddress(index);
+    const privateKey = this.derivePrivateKey(identifier || paymentToken);
+    const address = this.deriveEvmAddressFromPrivateKey(privateKey);
 
-    this.addressCache.set(paymentToken, { address, index });
-    console.log(`[PolygonService] Generated address ${address} at index ${index} for token ${paymentToken.substring(0, 20)}...`);
+    this.addressCache.set(paymentToken, { address, privateKey: privateKey.toString('hex') });
+    console.log(`[PolygonService] Generated address ${address} for token ${paymentToken.substring(0, 20)}...`);
 
     return address;
   }
@@ -101,57 +102,24 @@ export class PolygonPaymentService extends BasePaymentService {
    * Get payment address for a specific customer (deterministic)
    */
   getPaymentAddressForCustomer(identifier) {
-    const index = this.deriveIndexFromIdentifier(identifier);
-    const address = this.deriveEvmAddress(index);
-    return { address, index };
+    const privateKey = this.derivePrivateKey(identifier);
+    const address = this.deriveEvmAddressFromPrivateKey(privateKey);
+    return { address };
   }
 
   /**
-   * Get default payment address (index 0, for backward compat)
+   * Get default payment address (for backward compat)
    */
   getPaymentAddress() {
-    return this.deriveEvmAddress(0);
+    return this.deriveEvmAddressFromPrivateKey(this.derivePrivateKey('default'));
   }
 
-  /**
-   * Get required confirmations (128 blocks ~2-3 minutes on Polygon)
-   */
-  getRequiredConfirmations() {
-    return 128;
-  }
+  getRequiredConfirmations() { return 128; }
+  getConfirmationTime() { return '2-3 minutes'; }
+  getEstimatedFee() { return '~$0.01'; }
+  getExplorerUrl(address) { return `https://polygonscan.com/address/${address}`; }
+  formatAmount(amount) { return (amount / 1000000).toFixed(2); }
 
-  /**
-   * Get estimated confirmation time
-   */
-  getConfirmationTime() {
-    return '2-3 minutes';
-  }
-
-  /**
-   * Get estimated gas fee
-   */
-  getEstimatedFee() {
-    return '~$0.01';
-  }
-
-  /**
-   * Get blockchain explorer URL
-   */
-  getExplorerUrl(address) {
-    return `https://polygonscan.com/address/${address}`;
-  }
-
-  /**
-   * Format amount for display
-   */
-  formatAmount(amount) {
-    // USDC has 6 decimals
-    return (amount / 1000000).toFixed(2);
-  }
-
-  /**
-   * Convert USD to USDC (1:1 for stablecoins)
-   */
   async convertUsdToToken(usd) {
     return {
       amount: usd,
@@ -163,11 +131,9 @@ export class PolygonPaymentService extends BasePaymentService {
 
   /**
    * Check payment status using Polygonscan API
-   * Checks for USDC transfers to the specific derived address
    */
   async checkPaymentStatus(address, requiredAmount, options = {}) {
     try {
-      // Get USDC token transfers to the specific payment address
       const url = `${this.apiUrl}?module=account&action=tokentx&contractaddress=${this.usdcContract}&address=${address}&page=1&offset=100&sort=desc&apikey=${this.apiKey}`;
 
       const response = await fetch(url);
@@ -200,11 +166,9 @@ export class PolygonPaymentService extends BasePaymentService {
         };
       }
 
-      // Sum up all USDC received
       let totalReceivedSmallestUnit = 0;
       let minConfirmations = Infinity;
 
-      // Get current block number
       const blockResponse = await fetch(`${this.apiUrl}?module=proxy&action=eth_blockNumber&apikey=${this.apiKey}`);
       const blockData = await blockResponse.json();
       const currentBlock = parseInt(blockData.result, 16);
@@ -216,8 +180,8 @@ export class PolygonPaymentService extends BasePaymentService {
         minConfirmations = Math.min(minConfirmations, txConfirmations);
       }
 
-      const totalReceived = totalReceivedSmallestUnit / 1000000; // Convert from 6 decimals
-      const requiredWithTolerance = requiredAmount * 0.95; // 5% tolerance
+      const totalReceived = totalReceivedSmallestUnit / 1000000;
+      const requiredWithTolerance = requiredAmount * 0.95;
       const isPaid = totalReceivedSmallestUnit >= requiredWithTolerance;
       const isConfirmed = isPaid && minConfirmations >= this.getRequiredConfirmations();
 
@@ -247,7 +211,6 @@ export class PolygonPaymentService extends BasePaymentService {
     const basePricing = await super.getPricing(credits);
     const tokenInfo = await this.convertUsdToToken(basePricing.usd);
 
-    // Generate unique payment address for this payment
     const paymentToken = this.generatePaymentToken();
     const paymentAddress = this.generatePaymentAddress(paymentToken);
 
