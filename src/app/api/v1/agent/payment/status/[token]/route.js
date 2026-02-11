@@ -1,21 +1,24 @@
 import { NextResponse } from 'next/server';
-import bitcoinService from '@/lib/payment/bitcoinService';
+import { MultiChainPaymentService } from '@/lib/payment/MultiChainPaymentService';
 import db from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
+const multiChain = new MultiChainPaymentService();
+
 /**
  * Check Payment Status
  *
- * Agent polls this endpoint to check if their payment has been confirmed
+ * Agent polls this endpoint to check if their payment has been confirmed.
+ * Uses the correct blockchain service based on the payment's chain.
  */
 export async function GET(request, { params }) {
   try {
     const paymentToken = params.token;
 
-    // Find payment in database
+    // Find payment in database by paymentToken stored in metadata
     const payments = await db.query(
-      `SELECT * FROM crypto_payments WHERE JSON_EXTRACT(metadata, '$.token') = ?`,
+      `SELECT * FROM crypto_payments WHERE JSON_EXTRACT(metadata, '$.paymentToken') = ?`,
       [paymentToken]
     );
 
@@ -27,24 +30,31 @@ export async function GET(request, { params }) {
     }
 
     const payment = payments[0];
+    const metadata = JSON.parse(payment.metadata);
+    const blockchain = metadata.chain || payment.blockchain || 'bitcoin';
 
     // If already confirmed and claimed, return that status
     if (payment.status === 'confirmed' && payment.claimed_at) {
       return NextResponse.json({
         status: 'claimed',
+        blockchain,
         credits: parseFloat(payment.credits_purchased),
         message: 'Payment confirmed and credits already claimed'
       });
     }
 
-    // Check blockchain for payment
-    const metadata = JSON.parse(payment.metadata);
-    const requiredSats = metadata.requiredSats;
+    // Get the correct service for this blockchain
+    const service = multiChain.getService(blockchain);
+
+    // Determine required amount based on chain type
+    const requiredAmount = blockchain === 'bitcoin'
+      ? metadata.requiredSats
+      : metadata.requiredAmount; // USD amount for stablecoins (USDC is 1:1)
 
     try {
-      const paymentStatus = await bitcoinService.checkPaymentStatus(
+      const paymentStatus = await service.checkPaymentStatus(
         payment.payment_address,
-        requiredSats
+        requiredAmount
       );
 
       // Update payment record if confirmed
@@ -56,25 +66,15 @@ export async function GET(request, { params }) {
           ['confirmed', paymentStatus.confirmations, payment.id]
         );
 
-        console.log(`[Payment] Payment ${payment.id} confirmed with ${paymentStatus.confirmations} confirmations`);
+        console.log(`[Payment] Payment ${payment.id} confirmed on ${blockchain} with ${paymentStatus.confirmations} confirmations`);
       }
 
-      // Return current status
-      return NextResponse.json({
+      // Build response based on chain type
+      const response = {
         status: paymentStatus.isConfirmed ? 'confirmed' : 'pending',
+        blockchain,
         paymentAddress: payment.payment_address,
-        required: {
-          sats: requiredSats,
-          btc: requiredSats / 100000000
-        },
-        received: {
-          totalSats: paymentStatus.totalReceivedSats,
-          confirmedSats: paymentStatus.confirmedSats,
-          pendingSats: paymentStatus.pendingSats,
-          btc: paymentStatus.totalReceivedSats / 100000000
-        },
         confirmations: paymentStatus.confirmations,
-        percentPaid: paymentStatus.percentPaid.toFixed(2),
         isPaid: paymentStatus.isPaid,
         isConfirmed: paymentStatus.isConfirmed,
         canClaim: paymentStatus.isConfirmed && !payment.claimed_at,
@@ -83,14 +83,46 @@ export async function GET(request, { params }) {
           ? 'Payment confirmed! You can now claim your credits.'
           : paymentStatus.isPaid
           ? 'Payment detected, waiting for confirmations...'
-          : 'Waiting for payment...'
-      });
-    } catch (blockchainError) {
-      console.error('[Payment] Error checking blockchain:', blockchainError);
+          : 'Waiting for payment...',
+        transactions: paymentStatus.transactions || []
+      };
 
-      // Return cached status if blockchain check fails
+      // Add chain-specific amount info
+      if (blockchain === 'bitcoin') {
+        response.required = {
+          sats: metadata.requiredSats,
+          btc: metadata.requiredSats / 100000000
+        };
+        response.received = {
+          totalSats: paymentStatus.totalReceivedSats || 0,
+          confirmedSats: paymentStatus.confirmedSats || 0,
+          pendingSats: paymentStatus.pendingSats || 0,
+          btc: (paymentStatus.totalReceivedSats || 0) / 100000000
+        };
+        response.percentPaid = paymentStatus.percentPaid
+          ? paymentStatus.percentPaid.toFixed(2)
+          : '0.00';
+      } else {
+        response.required = {
+          amount: metadata.requiredAmount,
+          token: metadata.token || 'USDC'
+        };
+        response.received = {
+          total: paymentStatus.totalReceived || 0,
+          token: metadata.token || 'USDC'
+        };
+        response.percentPaid = metadata.requiredAmount > 0
+          ? ((paymentStatus.totalReceived || 0) / metadata.requiredAmount * 100).toFixed(2)
+          : '0.00';
+      }
+
+      return NextResponse.json(response);
+    } catch (blockchainError) {
+      console.error(`[Payment] Error checking ${blockchain} blockchain:`, blockchainError);
+
       return NextResponse.json({
         status: payment.status,
+        blockchain,
         paymentAddress: payment.payment_address,
         message: 'Unable to check blockchain. Please try again.',
         lastChecked: payment.confirmed_at || payment.created_at

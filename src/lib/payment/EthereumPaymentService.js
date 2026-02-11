@@ -1,16 +1,26 @@
 /**
  * Ethereum Payment Service
  * Handles USDC payments on Ethereum mainnet
+ * Uses BIP32 HD wallet derivation for unique per-payment addresses
  */
 
+import crypto from 'crypto';
 import { BasePaymentService } from './BasePaymentService.js';
+import BIP32Factory from 'bip32';
+import * as ecc from 'tiny-secp256k1';
+import { keccak_256 } from '@noble/hashes/sha3';
+
+// Initialize BIP32 with secp256k1
+const bip32 = BIP32Factory(ecc);
 
 export class EthereumPaymentService extends BasePaymentService {
   constructor(config = {}) {
     super(config);
     this.blockchain = 'ethereum';
     this.nativeToken = 'ETH';
-    this.paymentAddress = process.env.ETHEREUM_PAYMENT_ADDRESS || '0x8C21d6a78538B3D6e1d97700259c108fd4db8539';
+
+    // EVM xpub for HD address derivation (m/44'/60'/0') — same as Polygon
+    this.xpub = process.env.EVM_XPUB || 'xpub6DJGAZykKQ4XNDseX3oJ9g499RqBqHmFrR97i56w3msfgE3LiZUNG6xkhoqtnbEWFm7TgyUqEJkDVmbXdhHz4EXhM4GdPXG727mhd8fvHUU';
 
     // USDC contract on Ethereum mainnet
     this.usdcContract = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
@@ -18,13 +28,85 @@ export class EthereumPaymentService extends BasePaymentService {
     // Etherscan API (free tier)
     this.apiKey = process.env.ETHERSCAN_API_KEY || 'YourApiKeyToken';
     this.apiUrl = 'https://api.etherscan.io/api';
+
+    // Address cache: paymentToken -> { address, index }
+    this.addressCache = new Map();
   }
 
   /**
-   * Get payment address
+   * Derive a deterministic index from an identifier (paymentToken, agentId, etc.)
+   */
+  deriveIndexFromIdentifier(identifier) {
+    const hash = crypto.createHash('sha256').update(identifier).digest();
+    return hash.readUInt32BE(0) % 2147483647;
+  }
+
+  /**
+   * Derive an EVM address from the xpub at a given index
+   */
+  deriveEvmAddress(index) {
+    const node = bip32.fromBase58(this.xpub);
+    const child = node.derive(0).derive(index);
+
+    // Get uncompressed public key (65 bytes)
+    const uncompressed = Buffer.from(ecc.pointCompress(child.publicKey, false));
+
+    // Keccak256 of public key bytes (without the 0x04 prefix)
+    const hash = keccak_256(uncompressed.slice(1));
+
+    // Last 20 bytes = Ethereum address
+    const addrHex = Buffer.from(hash).slice(-20).toString('hex');
+
+    return this.toChecksumAddress(addrHex);
+  }
+
+  /**
+   * EIP-55 mixed-case checksum encoding
+   */
+  toChecksumAddress(addrHex) {
+    const lower = addrHex.toLowerCase();
+    const hashHex = Buffer.from(keccak_256(lower)).toString('hex');
+
+    let checksummed = '0x';
+    for (let i = 0; i < 40; i++) {
+      checksummed += parseInt(hashHex[i], 16) >= 8
+        ? lower[i].toUpperCase()
+        : lower[i];
+    }
+    return checksummed;
+  }
+
+  /**
+   * Generate a unique payment address for a specific payment
+   */
+  generatePaymentAddress(paymentToken, identifier = null) {
+    if (this.addressCache.has(paymentToken)) {
+      return this.addressCache.get(paymentToken).address;
+    }
+
+    const index = this.deriveIndexFromIdentifier(identifier || paymentToken);
+    const address = this.deriveEvmAddress(index);
+
+    this.addressCache.set(paymentToken, { address, index });
+    console.log(`[EthereumService] Generated address ${address} at index ${index} for token ${paymentToken.substring(0, 20)}...`);
+
+    return address;
+  }
+
+  /**
+   * Get payment address for a specific customer (deterministic)
+   */
+  getPaymentAddressForCustomer(identifier) {
+    const index = this.deriveIndexFromIdentifier(identifier);
+    const address = this.deriveEvmAddress(index);
+    return { address, index };
+  }
+
+  /**
+   * Get default payment address (index 0, for backward compat)
    */
   getPaymentAddress() {
-    return this.paymentAddress;
+    return this.deriveEvmAddress(0);
   }
 
   /**
@@ -34,41 +116,23 @@ export class EthereumPaymentService extends BasePaymentService {
     return 12;
   }
 
-  /**
-   * Get estimated confirmation time
-   */
   getConfirmationTime() {
     return '3-5 minutes';
   }
 
-  /**
-   * Get estimated gas fee (warning: can be high!)
-   */
   getEstimatedFee() {
     return '$5-$50 (varies with network congestion)';
   }
 
-  /**
-   * Get blockchain explorer URL
-   */
   getExplorerUrl(address) {
     return `https://etherscan.io/address/${address}`;
   }
 
-  /**
-   * Format amount for display
-   */
   formatAmount(amount) {
-    // USDC has 6 decimals
     return (amount / 1000000).toFixed(2);
   }
 
-  /**
-   * Convert USD to USDC (1:1 for stablecoins)
-   */
   async convertUsdToToken(usd) {
-    // USDC is 1:1 with USD
-    // Return in smallest unit (6 decimals)
     return {
       amount: usd,
       amountSmallestUnit: Math.floor(usd * 1000000),
@@ -79,10 +143,10 @@ export class EthereumPaymentService extends BasePaymentService {
 
   /**
    * Check payment status using Etherscan API
+   * Checks for USDC transfers to the specific derived address
    */
   async checkPaymentStatus(address, requiredAmount, options = {}) {
     try {
-      // Get USDC token transfers to our address
       const url = `${this.apiUrl}?module=account&action=tokentx&contractaddress=${this.usdcContract}&address=${address}&page=1&offset=100&sort=desc&apikey=${this.apiKey}`;
 
       const response = await fetch(url);
@@ -99,9 +163,9 @@ export class EthereumPaymentService extends BasePaymentService {
         };
       }
 
-      // Filter transactions to our payment address
+      // Filter transactions TO this specific payment address
       const relevantTxs = data.result.filter(tx =>
-        tx.to.toLowerCase() === this.paymentAddress.toLowerCase()
+        tx.to.toLowerCase() === address.toLowerCase()
       );
 
       if (relevantTxs.length === 0) {
@@ -115,11 +179,9 @@ export class EthereumPaymentService extends BasePaymentService {
         };
       }
 
-      // Sum up all USDC received
       let totalReceivedSmallestUnit = 0;
       let minConfirmations = Infinity;
 
-      // Get current block number
       const blockResponse = await fetch(`${this.apiUrl}?module=proxy&action=eth_blockNumber&apikey=${this.apiKey}`);
       const blockData = await blockResponse.json();
       const currentBlock = parseInt(blockData.result, 16);
@@ -131,8 +193,8 @@ export class EthereumPaymentService extends BasePaymentService {
         minConfirmations = Math.min(minConfirmations, txConfirmations);
       }
 
-      const totalReceived = totalReceivedSmallestUnit / 1000000; // Convert from 6 decimals
-      const requiredWithTolerance = requiredAmount * 0.95; // 5% tolerance
+      const totalReceived = totalReceivedSmallestUnit / 1000000;
+      const requiredWithTolerance = requiredAmount * 0.95;
       const isPaid = totalReceivedSmallestUnit >= requiredWithTolerance;
       const isConfirmed = isPaid && minConfirmations >= this.getRequiredConfirmations();
 
@@ -156,11 +218,14 @@ export class EthereumPaymentService extends BasePaymentService {
   }
 
   /**
-   * Get pricing with Ethereum-specific information
+   * Get pricing with unique per-payment address
    */
   async getPricing(credits) {
     const basePricing = await super.getPricing(credits);
     const tokenInfo = await this.convertUsdToToken(basePricing.usd);
+
+    const paymentToken = this.generatePaymentToken();
+    const paymentAddress = this.generatePaymentAddress(paymentToken);
 
     return {
       ...basePricing,
@@ -170,11 +235,12 @@ export class EthereumPaymentService extends BasePaymentService {
       amountSmallestUnit: tokenInfo.amountSmallestUnit,
       contract: tokenInfo.contract,
       decimals: 6,
-      paymentAddress: this.getPaymentAddress(),
+      paymentAddress,
+      paymentToken,
       requiredConfirmations: this.getRequiredConfirmations(),
       estimatedTime: this.getConfirmationTime(),
       estimatedFee: this.getEstimatedFee(),
-      explorerUrl: this.getExplorerUrl(this.getPaymentAddress()),
+      explorerUrl: this.getExplorerUrl(paymentAddress),
       warning: 'Ethereum gas fees can be high ($5-$50). Consider using Polygon for lower fees.'
     };
   }

@@ -1,16 +1,19 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import bitcoinService from '@/lib/payment/bitcoinService';
+import { MultiChainPaymentService } from '@/lib/payment/MultiChainPaymentService';
 import db from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
+const multiChain = new MultiChainPaymentService();
+
 /**
  * Claim Credits After Payment Confirmed
  *
- * Agent exchanges payment token for credits
- * Can optionally provide API key to add to existing account
- * Or create a new agent account with the credits
+ * Agent exchanges payment token for credits.
+ * Uses the correct blockchain service to verify payment.
+ * Can optionally provide API key to add to existing account,
+ * or create a new agent account with the credits.
  */
 export async function POST(request, { params }) {
   try {
@@ -18,9 +21,9 @@ export async function POST(request, { params }) {
     const body = await request.json();
     const { apiKey, agentId } = body;
 
-    // Find payment in database
+    // Find payment in database by paymentToken
     const payments = await db.query(
-      `SELECT * FROM crypto_payments WHERE JSON_EXTRACT(metadata, '$.token') = ?`,
+      `SELECT * FROM crypto_payments WHERE JSON_EXTRACT(metadata, '$.paymentToken') = ?`,
       [paymentToken]
     );
 
@@ -32,6 +35,8 @@ export async function POST(request, { params }) {
     }
 
     const payment = payments[0];
+    const metadata = JSON.parse(payment.metadata);
+    const blockchain = metadata.chain || payment.blockchain || 'bitcoin';
 
     // Check if already claimed
     if (payment.claimed_at) {
@@ -43,21 +48,27 @@ export async function POST(request, { params }) {
 
     // Verify payment is confirmed
     if (payment.status !== 'confirmed') {
-      // Double-check blockchain status
-      const metadata = JSON.parse(payment.metadata);
-      const paymentStatus = await bitcoinService.checkPaymentStatus(
+      // Double-check blockchain status using the correct service
+      const service = multiChain.getService(blockchain);
+
+      const requiredAmount = blockchain === 'bitcoin'
+        ? metadata.requiredSats
+        : metadata.requiredAmount;
+
+      const paymentStatus = await service.checkPaymentStatus(
         payment.payment_address,
-        metadata.requiredSats
+        requiredAmount
       );
 
       if (!paymentStatus.isConfirmed) {
         return NextResponse.json(
           {
             error: 'Payment not yet confirmed',
+            blockchain,
             status: paymentStatus.isPaid ? 'awaiting_confirmations' : 'awaiting_payment',
             confirmations: paymentStatus.confirmations
           },
-          { status: 402 } // Payment Required
+          { status: 402 }
         );
       }
 
@@ -86,7 +97,7 @@ export async function POST(request, { params }) {
       // Add credits to user account
       await db.users.updateCredits(userId, parseFloat(payment.credits_purchased));
 
-      console.log(`[Payment] Added ${payment.credits_purchased} credits to user ${userId}`);
+      console.log(`[Payment] Added ${payment.credits_purchased} credits to user ${userId} via ${blockchain}`);
     } else {
       // Create new agent account with credits
       userId = crypto.randomUUID();
@@ -101,7 +112,7 @@ export async function POST(request, { params }) {
         [userId, agentEmail, agentId || 'AI Agent', 'agent', 'active', newApiKey, parseFloat(payment.credits_purchased)]
       );
 
-      console.log(`[Payment] Created new agent account ${userId} with ${payment.credits_purchased} credits`);
+      console.log(`[Payment] Created new agent account ${userId} with ${payment.credits_purchased} credits via ${blockchain}`);
     }
 
     // Mark payment as claimed
@@ -121,7 +132,7 @@ export async function POST(request, { params }) {
         'purchase',
         parseFloat(payment.credits_purchased),
         parseFloat(payment.credits_purchased),
-        `Purchased ${payment.credits_purchased} credits via Bitcoin`,
+        `Purchased ${payment.credits_purchased} credits via ${blockchain}`,
         payment.id
       ]
     );
@@ -130,13 +141,15 @@ export async function POST(request, { params }) {
     await db.activityLogs.create(userId, 'credits_purchased', {
       paymentId: payment.id,
       credits: payment.credits_purchased,
-      btcAmount: payment.amount_btc
+      blockchain,
+      amount: blockchain === 'bitcoin' ? payment.amount_btc : payment.amount_usd
     });
 
     // Return success with credits
     const response = {
       success: true,
       credits: parseFloat(payment.credits_purchased),
+      blockchain,
       message: `Successfully claimed ${payment.credits_purchased} credits`
     };
 
