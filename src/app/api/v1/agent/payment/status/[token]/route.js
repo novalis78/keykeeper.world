@@ -30,7 +30,7 @@ export async function GET(request, { params }) {
     }
 
     const payment = payments[0];
-    const metadata = JSON.parse(payment.metadata);
+    const metadata = typeof payment.metadata === 'string' ? JSON.parse(payment.metadata) : payment.metadata;
     const blockchain = metadata.chain || payment.blockchain || 'bitcoin';
 
     // If already confirmed and claimed, return that status
