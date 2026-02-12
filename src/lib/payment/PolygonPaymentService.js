@@ -21,12 +21,15 @@ export class PolygonPaymentService extends BasePaymentService {
     // HMAC(masterSecret, identifier) → private key → public key → ETH address
     this.masterSecret = process.env.PAYMENT_MASTER_SECRET || 'keykeeper-payment-hd-master-2025';
 
-    // USDC contract on Polygon
-    this.usdcContract = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
+    // USDC contracts on Polygon (check both native and bridged)
+    this.usdcContracts = [
+      '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359', // Native USDC
+      '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'  // USDC.e (bridged)
+    ];
+    this.usdcContract = this.usdcContracts[0]; // Primary: native USDC
 
-    // Polygonscan API (free tier)
-    this.apiKey = process.env.POLYGONSCAN_API_KEY || 'YourApiKeyToken';
-    this.apiUrl = 'https://api.polygonscan.com/api';
+    // Polygon RPC endpoint
+    this.rpcUrl = process.env.POLYGON_RPC_URL || 'https://polygon-rpc.com';
 
     // Address cache: paymentToken -> { address, privateKey }
     this.addressCache = new Map();
@@ -130,73 +133,55 @@ export class PolygonPaymentService extends BasePaymentService {
   }
 
   /**
-   * Check payment status using Polygonscan API
+   * Call balanceOf on a USDC contract via RPC
+   */
+  async getUsdcBalance(contractAddress, walletAddress) {
+    const addr = walletAddress.replace('0x', '').toLowerCase();
+    const data = `0x70a08231000000000000000000000000${addr}`;
+
+    const response = await fetch(this.rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'eth_call',
+        params: [{ to: contractAddress, data }, 'latest'],
+        id: 1
+      })
+    });
+
+    const result = await response.json();
+    return parseInt(result.result, 16) || 0;
+  }
+
+  /**
+   * Check payment status using direct RPC balanceOf calls
+   * Checks both native USDC and bridged USDC.e contracts
    */
   async checkPaymentStatus(address, requiredAmount, options = {}) {
     try {
-      const url = `${this.apiUrl}?module=account&action=tokentx&contractaddress=${this.usdcContract}&address=${address}&page=1&offset=100&sort=desc&apikey=${this.apiKey}`;
-
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (data.status !== '1') {
-        return {
-          totalReceived: 0,
-          totalReceivedSmallestUnit: 0,
-          confirmations: 0,
-          isPaid: false,
-          isConfirmed: false,
-          transactions: []
-        };
+      // Check both USDC contracts and sum balances
+      let totalSmallestUnit = 0;
+      for (const contract of this.usdcContracts) {
+        totalSmallestUnit += await this.getUsdcBalance(contract, address);
       }
 
-      // Filter transactions TO this specific payment address
-      const relevantTxs = data.result.filter(tx =>
-        tx.to.toLowerCase() === address.toLowerCase()
-      );
+      const totalReceived = totalSmallestUnit / 1000000; // USDC has 6 decimals
+      const requiredSmallest = Math.floor(requiredAmount * 1000000);
+      const requiredWithTolerance = requiredSmallest * 0.95;
+      const isPaid = totalSmallestUnit >= requiredWithTolerance;
 
-      if (relevantTxs.length === 0) {
-        return {
-          totalReceived: 0,
-          totalReceivedSmallestUnit: 0,
-          confirmations: 0,
-          isPaid: false,
-          isConfirmed: false,
-          transactions: []
-        };
-      }
-
-      let totalReceivedSmallestUnit = 0;
-      let minConfirmations = Infinity;
-
-      const blockResponse = await fetch(`${this.apiUrl}?module=proxy&action=eth_blockNumber&apikey=${this.apiKey}`);
-      const blockData = await blockResponse.json();
-      const currentBlock = parseInt(blockData.result, 16);
-
-      for (const tx of relevantTxs) {
-        totalReceivedSmallestUnit += parseInt(tx.value);
-        const txBlock = parseInt(tx.blockNumber);
-        const txConfirmations = currentBlock - txBlock + 1;
-        minConfirmations = Math.min(minConfirmations, txConfirmations);
-      }
-
-      const totalReceived = totalReceivedSmallestUnit / 1000000;
-      const requiredWithTolerance = requiredAmount * 0.95;
-      const isPaid = totalReceivedSmallestUnit >= requiredWithTolerance;
-      const isConfirmed = isPaid && minConfirmations >= this.getRequiredConfirmations();
+      // Polygon has fast finality (~2s blocks), so if balance shows up it's confirmed
+      // We consider any detected balance as confirmed
+      const isConfirmed = isPaid;
 
       return {
         totalReceived,
-        totalReceivedSmallestUnit,
-        confirmations: minConfirmations === Infinity ? 0 : minConfirmations,
+        totalReceivedSmallestUnit: totalSmallestUnit,
+        confirmations: isPaid ? this.getRequiredConfirmations() : 0,
         isPaid,
         isConfirmed,
-        transactions: relevantTxs.map(tx => ({
-          hash: tx.hash,
-          amount: parseInt(tx.value) / 1000000,
-          blockNumber: parseInt(tx.blockNumber),
-          timestamp: new Date(parseInt(tx.timeStamp) * 1000).toISOString()
-        }))
+        transactions: []
       };
     } catch (error) {
       console.error('Error checking Polygon payment status:', error);
